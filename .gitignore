@@ -1,0 +1,34 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ---- PyInstaller build output ----
+build/
+*.spec.bak
+
+# ---- DTX Forge working + distribution artifacts ----
+jobs/*
+!jobs/.keep
+dist/
+*.zip
+
+# large bundled binaries are fetched by setup, not committed
+assets/bin/deno.exe
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# ---- scratch / temp ----
+_*.py
+!**/__init__.py
+*.tmp
+*.wav
+!assets/drumkit/*.wav

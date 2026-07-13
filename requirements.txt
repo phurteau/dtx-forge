@@ -1,0 +1,14 @@
+# Core runtime
+numpy
+imageio-ffmpeg      ; bundled ffmpeg (audio decode/encode)
+yt-dlp              ; YouTube audio download
+fastapi
+uvicorn[standard]
+python-multipart    ; file uploads
+mido                ; MIDI drum-tab parsing
+PyGuitarPro         ; Guitar Pro (.gp/.gp5/.gpx) parsing
+pywebview           ; native desktop window (optional; app runs in browser without it)
+
+# Drum removal (option C) - heavy (~2 GB, pulls in torch). Optional:
+#   pip install demucs soundfile
+# The app runs fine without it if you leave "Remove drums" unchecked.

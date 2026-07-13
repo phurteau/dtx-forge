@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DTX Forge</title>
+<style>
+  :root{ --acc:#1f8a3b; --acc2:#3fbe5a; --acc-ink:#fff; --radius:12px; }
+  html[data-theme="dark"]{
+    --bg:#04140b; --bg2:#02100a; --panel:#0a2414; --panel2:#0e3120; --line:#1a5230;
+    --txt:#e8f5ec; --dim:#8fbf9f; --glow:rgba(0,0,0,.35);
+    --headgrad:linear-gradient(90deg,var(--panel),var(--bg));
+    --bodyglow:radial-gradient(1500px 760px at 50% -280px,color-mix(in srgb,var(--acc) 40%,transparent),transparent);
+  }
+  html[data-theme="light"]{
+    --bg:#eef4ef; --bg2:#e6ede8; --panel:#ffffff; --panel2:#f2f7f3; --line:#cfe0d4;
+    --txt:#12251a; --dim:#5c7a66; --glow:rgba(20,60,35,.10);
+    --headgrad:linear-gradient(90deg,#ffffff,#eef4ef);
+    --bodyglow:radial-gradient(1500px 760px at 50% -280px,color-mix(in srgb,var(--acc) 18%,transparent),transparent);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;color:var(--txt);
+    background:var(--bodyglow),var(--bg);transition:background .25s,color .25s;
+    display:flex;flex-direction:column;overflow:hidden}
+  header{flex:0 0 auto;padding:15px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;background:var(--headgrad)}
+  header .logo{font-size:26px} header h1{font-size:20px;margin:0;letter-spacing:2px}
+  header .tag{color:var(--dim);font-size:13px;margin-left:auto}
+  .tools{display:flex;align-items:center;gap:10px}
+  .tbtn{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:20px;padding:7px 12px;cursor:pointer;font-size:13px}
+  .tbtn:hover{border-color:var(--acc2)}
+  .swatch{width:16px;height:16px;border-radius:50%;border:2px solid #fff3;background:var(--acc)}
+  .picker{position:relative}
+  .pop{position:absolute;right:0;top:44px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;width:250px;box-shadow:0 8px 30px var(--glow);z-index:20}
+  .pop.hidden{display:none}
+  .pop h4{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+  .presets button{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+  .presets button.on{border-color:var(--txt);box-shadow:0 0 0 2px var(--acc2)}
+  .pop label{font-size:12px;color:var(--dim);display:block;margin:8px 0 4px}
+  .pop input[type=color]{width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);cursor:pointer}
+  .pop .reset{width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;cursor:pointer;font-size:13px}
+
+  main{flex:1 1 auto;min-height:0;display:grid;gap:20px;padding:22px;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr);grid-template-rows:1fr;max-width:1750px;width:100%;margin:0 auto}
+  .col{min-height:0;display:flex;flex-direction:column;gap:18px;overflow:auto;padding-right:4px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:0 2px 14px var(--glow)}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin:0 0 12px;display:flex;align-items:center}
+  .card h2 .n{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--acc);color:var(--acc-ink);border-radius:50%;font-size:12px;margin-right:8px}
+  label{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
+  input[type=text],input[type=number],input[type=file]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none}
+  input[type=file]{padding:8px} input:focus{border-color:var(--acc2)}
+  .seg{display:flex;flex-wrap:wrap;gap:8px}
+  .seg button{flex:1;min-width:105px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);padding:11px;border-radius:8px;cursor:pointer;font-size:14px;transition:.15s}
+  .seg button.active{background:var(--acc);border-color:var(--acc2);color:var(--acc-ink);font-weight:600}
+  .seg button:hover:not(.active){border-color:var(--acc2);color:var(--txt)}
+  .row{display:flex;gap:14px;flex-wrap:wrap}.row>div{flex:1;min-width:130px}
+  .hint{font-size:12px;color:var(--dim);margin-top:6px}
+  .chk{display:flex;align-items:flex-start;gap:9px;margin-top:12px;cursor:pointer}
+  .chk input{width:18px;height:18px;accent-color:var(--acc);margin-top:1px}.chk b{color:var(--txt)}
+  .adv{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel2)}
+  .adv+.adv{margin-top:12px}.adv .head{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:4px}.adv .ic{font-size:18px}
+
+  .go{width:100%;padding:16px;font-size:16px;font-weight:700;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--acc-ink);border:none;border-radius:10px;cursor:pointer;letter-spacing:.5px;flex:0 0 auto}
+  .go:disabled{opacity:.5;cursor:not-allowed}
+  .panel{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+  /* visualizer */
+  .viz{margin-top:16px;flex:0 0 auto}
+  .viz .lbl{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin-bottom:10px}
+  .steps{display:flex;flex-direction:column;gap:2px}
+  .step{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:8px;transition:.2s}
+  .step .dot{width:26px;height:26px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--line);background:var(--panel2);font-size:13px;color:var(--dim)}
+  .step .nm{font-size:14px;color:var(--dim)}
+  .step.done .dot{background:var(--acc);border-color:var(--acc);color:#fff}
+  .step.done .nm{color:var(--txt)}
+  .step.active{background:color-mix(in srgb,var(--acc) 14%,transparent)}
+  .step.active .dot{border-color:var(--acc2);color:var(--acc2);animation:pulse 1s infinite}
+  .step.active .nm{color:var(--txt);font-weight:600}
+  .step.skipped .dot{opacity:.5}.step.skipped .nm{opacity:.5;text-decoration:line-through}
+  .step.error .dot{background:#8a2f2f;border-color:#c05050;color:#fff}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--acc2) 55%,transparent)}50%{box-shadow:0 0 0 6px transparent}}
+
+  .panel h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin:16px 0 8px;flex:0 0 auto}
+  #log{flex:1 1 auto;min-height:90px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px;font-family:Consolas,monospace;font-size:13px;line-height:1.6;overflow:auto;white-space:pre-wrap}
+  #log .m{color:var(--dim)} #log .m:last-child{color:var(--txt)} #log .ready{color:var(--dim);opacity:.75}
+  .badge{display:inline-block;padding:8px 14px;border-radius:8px;margin:4px 8px 4px 0;font-size:14px;font-weight:600}
+  .badge.playable{background:#16401f;color:#7ee89a;border:1px solid #2f8f4a}
+  .badge.tight{background:#3d3410;color:#ecd06a;border:1px solid #8a7420}
+  .badge.problem{background:#451717;color:#f0938a;border:1px solid #8a3030}
+  .stat{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:4px 8px 4px 0;font-size:14px}.stat b{color:var(--acc2)}
+  .dl{display:block;text-align:center;margin-top:14px;background:var(--acc);color:var(--acc-ink);font-weight:700;text-decoration:none;padding:14px 24px;border-radius:10px;font-size:15px;flex:0 0 auto}
+  .hidden{display:none}
+  .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--acc2);border-radius:50%;animation:s .8s linear infinite;vertical-align:middle;margin-right:8px}
+  @keyframes s{to{transform:rotate(360deg)}}
+  @media (max-width:900px){ body{overflow:auto} main{grid-template-columns:1fr;grid-template-rows:auto;max-width:720px} .col{overflow:visible} #log{min-height:160px} }
+</style>
+</head>
+<body>
+<header>
+  <span class="logo">🥁</span><h1>DTX&nbsp;FORGE</h1>
+  <span class="tag">tab / audio → DTXMania chart</span>
+  <div class="tools">
+    <button class="tbtn" id="themeBtn"><span id="themeIcon">🌙</span><span id="themeLbl">Dark</span></button>
+    <div class="picker"><button class="tbtn" id="pickBtn"><span class="swatch"></span>Color</button>
+      <div class="pop hidden" id="pop"><h4>Accent color</h4><div class="presets" id="presets"></div>
+        <label>Custom</label><input type="color" id="colorInput" value="#1f8a3b">
+        <button class="reset" id="resetBtn">Reset to forest green</button></div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: inputs -->
+  <div class="col">
+    <div class="card">
+      <h2><span class="n">1</span>Notation source</h2>
+      <div class="seg" id="tabseg"><button data-v="url" class="active">URL / paste</button><button data-v="file">Upload file</button></div>
+      <div id="src-url"><label>Tab URL or pasted tab</label>
+        <input type="text" id="url" placeholder="Songsterr link · Guitar Pro / MIDI URL · or paste an ASCII tab">
+        <div class="hint">Auto-detects the source: <b>Songsterr</b> link, a <b>Guitar Pro</b> (.gp/.gp5) or <b>MIDI</b> URL, or a pasted plain-text drum tab. Any URL with readable drum notes works.</div></div>
+      <div id="src-file" class="hidden"><label>Tab file</label><input type="file" id="tabfile" accept=".gp,.gp3,.gp4,.gp5,.gpx,.gtp,.mid,.midi,.txt,.tab">
+        <div class="hint">Guitar Pro (.gp5, .gpx…), MIDI (.mid), or a plain-text drum tab (.txt). Type detected automatically.</div></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">2</span>Audio (BGM)</h2>
+      <div class="seg" id="audseg"><button data-v="youtube" class="active">YouTube</button><button data-v="upload">Upload file</button></div>
+      <div id="aud-youtube"><label>YouTube URL</label><input type="text" id="yt" placeholder="https://www.youtube.com/watch?v=...">
+        <div class="hint">Works anonymously for most; if blocked it auto-uses your browser's YouTube session. Otherwise use Upload file.</div></div>
+      <div id="aud-upload" class="hidden"><label>Audio file (mp3 / wav / ogg / m4a)</label><input type="file" id="audio" accept="audio/*"></div>
+
+      <label>Drums in the backing track</label>
+      <div class="seg" id="drumseg"><button data-v="keep" class="active">Keep</button><button data-v="quiet">Quiet</button><button data-v="remove">Remove</button></div>
+      <div class="hint" id="drumHint">Plays the complete song, drums included.</div>
+      <label class="chk"><input type="checkbox" id="autoSync" checked><span><b>Auto-sync audio to chart</b><br><span class="hint" style="margin:0">Aligns YouTube/uploaded audio to the notes (fixes intro offset &amp; slight tempo diffs).</span></span></label>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">3</span>Details</h2>
+      <div class="row"><div><label>Title <span class="hint">(auto if blank)</span></label><input type="text" id="title"></div>
+        <div><label>Artist</label><input type="text" id="artist"></div></div>
+      <div class="row" style="margin-top:6px"><div><label>Author <span class="hint">(chart creator - you)</span></label><input type="text" id="author"></div></div>
+      <div class="row" style="margin-top:6px"><div><label>BPM <span class="hint">(optional)</span></label><input type="number" id="bpm" step="0.001" placeholder="auto"></div>
+        <div><label>Difficulty <span class="hint">(0–99 or 0.00–9.99)</span></label><input type="text" id="dlevel" value="5.00"></div></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4</span>Advanced - foot technique</h2>
+      <div class="adv"><div class="head">Hi-Hat Pedal</div>
+        <div class="hint">Layers in <b>left-foot hi-hat</b> notes (the DTX left-pedal lane) to mimic how a real drummer works the hi-hat with their foot while their hands stay busy. Pick how much to add:</div>
+        <div class="seg" id="hhseg" style="margin-top:8px"><button data-v="1to1">1:1 True</button><button data-v="medium">Medium</button><button data-v="off" class="active">Off</button></div>
+        <div class="hint" id="hhHint" style="margin-top:8px"></div></div>
+      <div class="adv"><div class="head">DKDK Mode</div>
+        <div class="hint">When ON, kicks too fast to play one-legged are auto-converted to a double kick - right-foot kick + left pedal (DTXMania style). Kicks slow enough for one foot stay as-is.</div>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="dbToggle"><span><b>Enable double bass kicks</b> <span class="hint" style="margin:0">- AI decides where it's needed</span></span></label></div>
+      <div class="hint" style="margin-top:10px">A human-playability check runs at the end and auto-relaxes anything impossible for 2 hands + 2 feet.</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: action + visualizer + console -->
+  <div class="col">
+    <div class="card panel">
+      <button class="go" id="genBtn">⚒  Generate DTX chart</button>
+      <div class="viz">
+        <div class="lbl">Pipeline</div>
+        <div class="steps" id="steps"></div>
+      </div>
+      <h3 id="outh">Console</h3>
+      <div id="log"><div class="ready">Ready - configure on the left, then hit Generate.</div></div>
+      <div id="done" class="hidden">
+        <div id="stats" style="margin-top:14px"></div>
+        <a id="dl" class="dl" href="#">⬇  Download chart .zip</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const STAGES=[["notation","Notation"],["audio","Audio"],["separate","Drum separation"],["align","Auto-sync"],["humanize","Foot technique"],["playability","Playability"],["package","Package"]];
+const ICON={pending:"",active:"",done:"✓",skipped:"–",error:"✕"};
+function renderSteps(stages){
+  const map={}; (stages||[]).forEach(s=>map[s.id]=s.state);
+  $('#steps').innerHTML=STAGES.map(([id,nm])=>{
+    const st=map[id]||'pending';
+    const inner = st==='active' ? '<span class="spin" style="margin:0"></span>' : (ICON[st]||'');
+    return `<div class="step ${st}"><div class="dot">${inner}</div><div class="nm">${nm}</div></div>`;
+  }).join('');
+}
+renderSteps([]);
+
+/* theme + accent */
+const PRESETS=["#1f8a3b","#025500","#2f8fd6","#8b5cf6","#e0562f","#d6a12f","#d64f8f","#20b2aa"];
+function hexToHsl(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');
+  const r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255;
+  const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let hh,s,l=(mx+mn)/2;
+  if(mx===mn){hh=s=0;}else{const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);switch(mx){case r:hh=(g-b)/d+(g<b?6:0);break;case g:hh=(b-r)/d+2;break;default:hh=(r-g)/d+4;}hh/=6;}return [hh*360,s*100,l*100];}
+const hsl=(h,s,l)=>`hsl(${h.toFixed(0)} ${s.toFixed(0)}% ${l.toFixed(0)}%)`;
+function applyAccent(hex){const [h,s,l]=hexToHsl(hex);
+  document.documentElement.style.setProperty('--acc',hex);
+  document.documentElement.style.setProperty('--acc2',hsl(h,Math.max(45,s),Math.min(72,l+18)));
+  document.documentElement.style.setProperty('--acc-ink',l>62?'#0c1710':'#ffffff');
+  $('#colorInput').value=hex;document.querySelectorAll('#presets button').forEach(b=>b.classList.toggle('on',b.dataset.c.toLowerCase()===hex.toLowerCase()));
+  localStorage.setItem('dtx_accent',hex);}
+function applyTheme(m){document.documentElement.setAttribute('data-theme',m);$('#themeIcon').textContent=m==='dark'?'🌙':'☀️';$('#themeLbl').textContent=m==='dark'?'Dark':'Light';localStorage.setItem('dtx_theme',m);}
+const pcp=$('#presets');PRESETS.forEach(c=>{const b=document.createElement('button');b.dataset.c=c;b.style.background=c;b.onclick=()=>applyAccent(c);pcp.appendChild(b);});
+$('#themeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+$('#pickBtn').onclick=e=>{e.stopPropagation();$('#pop').classList.toggle('hidden');};
+document.addEventListener('click',e=>{if(!$('#pop').contains(e.target)&&e.target!==$('#pickBtn')&&!$('#pickBtn').contains(e.target))$('#pop').classList.add('hidden');});
+$('#colorInput').oninput=e=>applyAccent(e.target.value);$('#resetBtn').onclick=()=>applyAccent('#1f8a3b');
+applyTheme(localStorage.getItem('dtx_theme')||'dark');applyAccent(localStorage.getItem('dtx_accent')||'#1f8a3b');
+
+/* segmented controls */
+let tabSource="url",audSource="youtube",drumMode="keep",hhLevel="off";
+function segWire(id,cb){document.querySelectorAll('#'+id+' button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('active'));b.classList.add('active');cb(b.dataset.v);};});}
+segWire('tabseg',v=>{tabSource=v;['url','file'].forEach(x=>$('#src-'+x).classList.toggle('hidden',x!==v));});
+segWire('audseg',v=>{audSource=v;['youtube','upload'].forEach(x=>$('#aud-'+x).classList.toggle('hidden',x!==v));});
+const DH={
+  keep:"<b>Keep</b> - the backing track is the <b>full original song, drums included</b>. Your pads still trigger drum sounds too, so you'll hear the song's drums layered with your hits. Best for playing along to the complete track. <i>(No drum separation - fastest.)</i>",
+  quiet:"<b>Quiet</b> - the song's drums are <b>reduced ~50%</b> in the backing track (AI-separated), so they sit softly underneath while your hits carry the groove. A middle ground between Keep and Remove. <i>(Uses drum separation - slower.)</i>",
+  remove:"<b>Remove</b> - the song's drums are <b>~90% stripped</b> from the backing track (AI-separated), so <b>your hits supply the drums</b> - true arcade feel. Your pads always make drum sounds in every mode; this just clears them out of the music. <i>(Uses drum separation - slower.)</i>"
+};
+segWire('drumseg',v=>{drumMode=v;$('#drumHint').innerHTML=DH[v];});
+$('#drumHint').innerHTML=DH[drumMode];
+const HH={
+  "1to1":"<b>1:1 True</b> - most authentic. Adds a left-foot pedal note on <b>every quarter beat</b> (1-2-3-4) where a hand isn't already on a hat/cymbal, <b>plus</b> a quick foot “chick” right after each <b>open</b> hi-hat to close it - exactly how a real drummer plays. Most notes, hardest.",
+  "medium":"<b>Medium</b> - adds a left-foot pedal note on <b>beats 2 &amp; 4</b> only (the backbeat). This is the most common casual foot-hat pattern: keeps a natural feel with far fewer notes than 1:1.",
+  "off":"<b>Off</b> - no left-foot pedal notes are added; the chart uses only what's in the tab. Considered “off” because your hi-hat foot stays free - nothing extra to play. Choose Medium or 1:1 True to layer in foot-pedal realism."
+};
+segWire('hhseg',v=>{hhLevel=v;$('#hhHint').innerHTML=HH[v];});
+$('#hhHint').innerHTML=HH[hhLevel];
+
+/* generate */
+$('#genBtn').onclick=async()=>{
+  const fd=new FormData();
+  fd.append('tab_source',tabSource==='file'?'url':tabSource);fd.append('audio_source',audSource);fd.append('drum_mode',drumMode);
+  fd.append('auto_sync',$('#autoSync').checked);fd.append('hihat_foot',hhLevel);fd.append('double_bass',$('#dbToggle').checked);
+  fd.append('title',$('#title').value);fd.append('artist',$('#artist').value);fd.append('author',$('#author').value);
+  fd.append('bpm',$('#bpm').value);fd.append('dlevel',$('#dlevel').value);
+  if(tabSource==='url'){if(!$('#url').value.trim()){alert('Paste a tab URL or an ASCII drum tab.');return;}fd.append('songsterr_url',$('#url').value.trim());}
+  if(tabSource==='file'){if(!$('#tabfile').files[0]){alert('Choose a tab file (Guitar Pro, MIDI, or .txt).');return;}fd.append('tab_file',$('#tabfile').files[0]);}
+  if(audSource==='youtube'){if(!$('#yt').value.trim()){alert('Paste a YouTube URL (or switch to Upload file).');return;}fd.append('youtube_url',$('#yt').value.trim());}
+  if(audSource==='upload'){if(!$('#audio').files[0]){alert('Choose an audio file.');return;}fd.append('audio_file',$('#audio').files[0]);}
+  $('#genBtn').disabled=true;$('#done').classList.add('hidden');renderSteps([]);
+  $('#outh').innerHTML='<span class="spin"></span>Working…';$('#log').innerHTML='';lastN=0;
+  try{const r=await fetch('/api/generate',{method:'POST',body:fd});const j=await r.json();if(j.error)throw new Error(j.error);poll(j.job_id);}
+  catch(e){logline('ERROR: '+e);$('#genBtn').disabled=false;$('#outh').textContent='Failed';}
+};
+function logline(t){const d=document.createElement('div');d.className='m';d.textContent='› '+t;$('#log').appendChild(d);$('#log').scrollTop=1e9;}
+let lastN=0;
+async function poll(id){
+  try{const r=await fetch('/api/job/'+id);const j=await r.json();
+    renderSteps(j.stages);
+    (j.messages||[]).slice(lastN).forEach(logline);lastN=(j.messages||[]).length;
+    if(j.status==='done'){$('#outh').textContent='✓ Complete';$('#genBtn').disabled=false;const s=j.stats;
+      const pv=s.playability||'',pc=pv==='playable'?'playable':(pv==='tight'?'tight':'problem');
+      const f=s.faithfulness; const fc=f>=100?'playable':(f>=97?'tight':'problem');
+      const chg=[]; if(s.notes_moved)chg.push(s.notes_moved+' moved to left foot'); if(s.notes_dropped)chg.push(s.notes_dropped+' dropped'); if(s.notes_added)chg.push(s.notes_added+' foot notes added');
+      const ftitle=f>=100?'✓ 100% faithful to tab':('Tab faithfulness '+f+'%');
+      $('#stats').innerHTML=
+        `<span class="badge ${fc}" title="${chg.length?chg.join('; '):'tab untouched'}">🎯 ${ftitle}</span>`+
+        `<span class="badge ${pc}">${pv==='playable'?'✓ Human-playable':(pv==='tight'?'△ Tight but playable':'⚠ Hard spots')} · ${s.play_score}/100</span>`+
+        (chg.length?`<div class="hint" style="margin:8px 0 0">Changes from the tab: ${chg.join(' · ')}. Everything else is exactly as charted.</div>`:`<div class="hint" style="margin:8px 0 0">The tab was transcribed exactly - no notes changed.</div>`)+
+        `<div style="margin-top:6px"><span class="stat"><b>${s.chips}</b> notes</span><span class="stat"><b>${s.measures}</b> bars</span><span class="stat"><b>${s.bpm}</b> BPM</span>`+
+        `<span class="stat">drums: <b>${s.drum_mode}</b></span><span class="stat">hi-hat foot: <b>${s.hihat_foot}</b></span><span class="stat">double kick: <b>${s.double_bass}${s.double_bass==='on'&&s.double_kicks?' ('+s.double_kicks+')':''}</b></span></div>`;
+      $('#dl').href=j.download;$('#done').classList.remove('hidden');return;}
+    if(j.status==='error'){$('#outh').textContent='✗ Failed';$('#genBtn').disabled=false;return;}
+    setTimeout(()=>poll(id),1200);
+  }catch(e){logline('poll error: '+e);setTimeout(()=>poll(id),2000);}
+}
+</script>
+</body>
+</html>
