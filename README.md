@@ -32,19 +32,28 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 
 ---
 
-## Setup (one time)
+## Install - pick ONE
 
-1. Install **Python 3.10+** (tick *Add Python to PATH*).
-2. Double-click **`setup.cmd`** - installs core dependencies and offers to install
-   Demucs (needed for audio-only transcription and the *Quiet* / *Remove* drum modes, ~2 GB).
+There are two independent ways to run DTX Forge. You don't need both.
+
+### Option A - Standalone app (no Python)
+1. Download **`DTX-Forge-EXE.zip`** from the [Releases](../../releases) page and unzip it.
+2. Double-click **`DTX Forge.exe`**. That's it.
+
+### Option B - From source (Python)
+1. Install **Python 3.10+** - use the installer from <https://www.python.org/downloads/> and
+   tick *Add Python to PATH*. (The Microsoft Store build works too, but only exposes `python`,
+   not `pythonw`; the launcher handles that automatically.)
+2. Double-click **`setup.cmd`** - installs dependencies and offers Demucs (needed for audio-only
+   transcription and the *Quiet* / *Remove* drum modes, ~2 GB).
+3. Run it:
+   - **App window:** double-click **`DTX Forge.cmd`**, or
+   - **Browser:** double-click **`run.cmd`** → opens <http://127.0.0.1:8765>.
 
 Full-kit separation models (~160 MB + ~515 MB) download automatically the first time you
-transcribe from audio with no tab. *(The `.exe` build needs none of the Python setup - just unzip and run.)*
+transcribe from audio with no tab (both options).
 
-## Run
-
-- **App window:** double-click **`DTX Forge.cmd`** (opens its own desktop window), or
-- **Browser:** double-click **`run.cmd`** → opens <http://127.0.0.1:8765>.
+## Using it
 
 Fill in **Title** and **Artist** (both required), pick your sources, hit **Generate**, download the zip.
 
