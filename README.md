@@ -18,8 +18,9 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 - **Real audio from almost anywhere.** Paste a link from **YouTube, SoundCloud, Bandcamp, Vimeo** and
   1000+ sites, a **direct audio-file URL**, or upload a file. DTX Forge auto-syncs it to the chart.
 - **Full song by default.** Keep the complete track, quiet the drums, or fully remove them (arcade feel).
-- **Auto difficulty.** Leave Difficulty blank and it's rated from a skilled-player reference, so a
-  beginner gets a realistic sense of what's coming.
+- **Difficulty tiers.** Pick a level - **Basic / Advanced / Extreme / Master** - or let **Auto** derive it
+  from a 0.00–9.99 score rated against a skilled-player reference. The output `.dtx` is named by tier
+  (`bsc` / `adv` / `ext` / `mstr`), the DTXMania / GITADORA convention.
 - **Advanced foot technique.** Optional left-foot hi-hat on the **2 & 4 backbeat**, plus **DKDK** double-bass
   that converts only the kicks too fast to play one-legged.
 - **Human-playability check.** Every chart is verified against a 2-hands + 2-feet model and
@@ -45,7 +46,7 @@ transcribe from audio with no tab. *(The `.exe` build needs none of the Python s
 - **App window:** double-click **`DTX Forge.cmd`** (opens its own desktop window), or
 - **Browser:** double-click **`run.cmd`** → opens <http://127.0.0.1:8765>.
 
-Pick your sources, hit **Generate**, download the zip.
+Fill in **Title** and **Artist** (both required), pick your sources, hit **Generate**, download the zip.
 
 ## Install a chart
 
@@ -68,8 +69,10 @@ Unzip the downloaded `Artist - Title.zip` into your DTXMania songs folder
   toms and ride are recovered - not just kick/snare/hat.
 - **Foot technique** - optional left-foot hi-hat on 2 & 4 and DKDK double-bass, written to lane 1B with
   the correct samples.
-- **Difficulty** - if left blank, rated 0.00–9.99 from note density, peak bursts, limb speed, and kit
-  variety, referenced to a player with some drum skill.
+- **Difficulty** - choose a tier (Basic / Advanced / Extreme / Master) or let **Auto** map it from a
+  0.00–9.99 score (note density, peak bursts, limb speed, kit variety), referenced to a player with some
+  drum skill. Tier boundaries: Basic < 3.00 · Advanced 3.00–5.99 · Extreme 6.00–8.49 · Master ≥ 8.50.
+  The chart file is named by tier (`bsc.dtx` / `adv.dtx` / `ext.dtx` / `mstr.dtx`) in its `set.def` slot.
 - **Playability** - flags any foot/hand asked to move faster than humanly possible, and relaxes it.
 - **Package** - Shift-JIS `.dtx` + BGM + a synthesized drum kit, zipped.
 
