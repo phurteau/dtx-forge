@@ -117,9 +117,9 @@
   <!-- LEFT: inputs -->
   <div class="col">
     <div class="card">
-      <h2><span class="n">1</span>Details</h2>
-      <div class="row"><div><label>Title <span class="hint">(auto if blank)</span></label><input type="text" id="title"></div>
-        <div><label>Artist</label><input type="text" id="artist"></div></div>
+      <h2><span class="n">1</span>Details<span class="tagpill req">required</span></h2>
+      <div class="row"><div><label>Title <span class="hint">(required)</span></label><input type="text" id="title"></div>
+        <div><label>Artist <span class="hint">(required)</span></label><input type="text" id="artist"></div></div>
       <div class="row" style="margin-top:6px">
         <div><label>Difficulty Level</label>
           <select id="dtier">
@@ -246,6 +246,9 @@ $('#dtier').addEventListener('change',()=>{$('#dtier').dataset.auto='';});
 /* generate */
 $('#genBtn').onclick=async()=>{
   const fd=new FormData();
+  // Title and Artist are required.
+  if(!$('#title').value.trim()){alert('Title is required.');$('#title').focus();return;}
+  if(!$('#artist').value.trim()){alert('Artist is required.');$('#artist').focus();return;}
   // Notation is OPTIONAL. If it's blank, transcribe the drums from the audio itself.
   const _url=$('#url').value.trim(), _tabFile=$('#tabfile').files[0];
   const hasNotation=(tabSource==='url'&&_url)||(tabSource==='file'&&_tabFile);

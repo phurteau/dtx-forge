@@ -50,8 +50,10 @@ def run(opts, workdir, assets_dir, progress):
     def setdata(key, value):
         if hasattr(progress, "set_data"): progress.set_data(key, value)
 
-    title = opts.get("title") or "Untitled"
-    artist = opts.get("artist") or "Unknown"
+    title = (opts.get("title") or "").strip()
+    artist = (opts.get("artist") or "").strip()
+    if not title or not artist:
+        raise RuntimeError("Title and Artist are required.")
     bpm = opts.get("bpm")
     m = None
 
