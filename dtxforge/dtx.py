@@ -28,10 +28,10 @@ LANE_ORDER = ["13", "12", "11", "18", "1B", "14", "15", "17", "16", "1A", "19"]
 # DTXMania / GITADORA difficulty tiers, keyed by the 0.00-9.99 auto-difficulty score.
 # Each: (key, .dtx filename, set.def label, set.def Ln slot, low, high)  -- range is [low, high)
 DIFF_TIERS = [
-    ("basic",    "bsc.dtx",  "BASIC",    1, 0.00, 2.50),
-    ("advanced", "adv.dtx",  "ADVANCED", 2, 2.50, 5.00),
-    ("extreme",  "ext.dtx",  "EXTREME",  3, 5.00, 8.00),
-    ("master",   "mstr.dtx", "MASTER",   4, 8.00, 10.01),
+    ("basic",    "bsc.dtx",  "BASIC",    1, 0.00, 3.00),
+    ("advanced", "adv.dtx",  "ADVANCED", 2, 3.00, 6.00),
+    ("extreme",  "ext.dtx",  "EXTREME",  3, 6.00, 8.50),
+    ("master",   "mstr.dtx", "MASTER",   4, 8.50, 10.01),
 ]
 _TIER_BY_KEY = {t[0]: t for t in DIFF_TIERS}
 
