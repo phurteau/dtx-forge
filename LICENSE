@@ -27,28 +27,29 @@ Third-party components used at runtime (not redistributed in this source repo):
 - PyTorch (BSD-3) - Demucs backend
 - yt-dlp (Unlicense) - audio download
 - FFmpeg (LGPL/GPL, via imageio-ffmpeg) - audio decode/encode
-- Deno (MIT) - JavaScript runtime for YouTube challenge solving
+- Deno (MIT) - JavaScript runtime for site challenge solving (e.g. YouTube)
 - PyGuitarPro (LGPL-3) - Guitar Pro parsing
 - FastAPI, Uvicorn, pywebview, mido, numpy - see requirements.txt
 
-Optional audio-only "full kit" drum-detection engines (models downloaded at
-runtime to %LOCALAPPDATA%/DTXForge, NOT bundled or redistributed here):
+Optional audio-only full-kit drum detection uses two separation models, downloaded
+at runtime to %LOCALAPPDATA%/DTXForge (NOT bundled or redistributed here) and run
+automatically when transcribing from audio with no tab:
 
-- inagoy DrumSep ("Full kit" engine) - a Demucs (HDemucs) checkpoint that
-  separates a drum stem into kick/snare/toms/cymbals.
+- inagoy DrumSep - a Demucs (HDemucs) checkpoint that separates a drum stem into
+  kick/snare/toms/cymbals.
   Source: https://github.com/inagoy/drumsep (checkpoint redistributed via
   https://github.com/ZFTurbo/Music-Source-Separation-Training). The upstream
-  project states no explicit license; DTX Forge fetches it at runtime for the
-  user's own use and does not redistribute the weights.
+  project states no explicit license; the model is fetched at runtime for the
+  end user's own use and its weights are not redistributed here.
 
-- LarsNet ("Full kit+" engine) - Mezza, Giampiccolo, Bernardini, Sarti,
-  "Toward deep drum source separation," Pattern Recognition Letters 183 (2024).
+- LarsNet - Mezza, Giampiccolo, Bernardini, Sarti, "Toward deep drum source
+  separation," Pattern Recognition Letters 183 (2024).
   Source: https://github.com/polimi-ispl/larsnet. The UNet architecture file is
   vendored at dtxforge/vendor/larsnet_unet.py. The pretrained MODEL WEIGHTS are
   licensed CC BY-NC 4.0 (NON-COMMERCIAL) and are downloaded at runtime, never
-  bundled. Charts you generate with this engine inherit that non-commercial
-  restriction on the model's contribution; use the "Fast" or "Full kit" engine,
-  or supply your own notation, if you need a commercial-safe pipeline.
+  bundled. Charts produced by audio-only transcription therefore inherit that
+  non-commercial restriction on the model's contribution; supply your own notation
+  (tab / MIDI / Guitar Pro) for a commercial-safe pipeline.
 
 DTX Forge's own source code remains MIT-licensed. The MIT license covers the
 code only, not the third-party model weights fetched at runtime.
