@@ -25,6 +25,31 @@ WAV_SLOTS = [
 LABEL2SLOT = {lab: slot for slot, lab in WAV_SLOTS}
 LANE_ORDER = ["13", "12", "11", "18", "1B", "14", "15", "17", "16", "1A", "19"]
 
+# DTXMania / GITADORA difficulty tiers, keyed by the 0.00-9.99 auto-difficulty score.
+# Each: (key, .dtx filename, set.def label, set.def Ln slot, low, high)  -- range is [low, high)
+DIFF_TIERS = [
+    ("basic",    "bsc.dtx",  "BASIC",    1, 0.00, 2.50),
+    ("advanced", "adv.dtx",  "ADVANCED", 2, 2.50, 5.00),
+    ("extreme",  "ext.dtx",  "EXTREME",  3, 5.00, 8.00),
+    ("master",   "mstr.dtx", "MASTER",   4, 8.00, 10.01),
+]
+_TIER_BY_KEY = {t[0]: t for t in DIFF_TIERS}
+
+
+def tier_from_score(score):
+    """Map a 0.00-9.99 difficulty score to a tier key (basic/advanced/extreme/master)."""
+    s = max(0.0, min(9.99, float(score)))
+    for key, _fn, _lbl, _slot, lo, hi in DIFF_TIERS:
+        if lo <= s < hi:
+            return key
+    return "master"
+
+
+def tier_info(key):
+    """Return (dtx_filename, set.def label, set.def slot) for a tier key."""
+    t = _TIER_BY_KEY.get(str(key).lower(), _TIER_BY_KEY["extreme"])
+    return t[1], t[2], t[3]
+
 def _lcm(a, b): return a * b // math.gcd(a, b)
 
 
@@ -105,20 +130,22 @@ def count_chips(events):
     return sum(len(sm) for ch in events for sm in ch.values())
 
 
-def package(out_dir, song_name, dtx_text, bgm_src, kit_dir, kit_files):
-    """Write folder <out_dir>/<song_name>/ with dtx + bgm + kit wavs, then zip it."""
+def package(out_dir, song_name, dtx_text, bgm_src, kit_dir, kit_files,
+            dtx_name="chart.dtx", set_label="Drums", set_slot=1):
+    """Write folder <out_dir>/<song_name>/ with dtx + bgm + kit wavs, then zip it.
+    dtx_name / set_label / set_slot follow the DTXMania difficulty-tier convention
+    (e.g. ext.dtx in set.def slot L3 labelled EXTREME)."""
     import shutil
     folder = os.path.join(out_dir, song_name)
     os.makedirs(folder, exist_ok=True)
     for f in os.listdir(folder):
         try: os.remove(os.path.join(folder, f))
         except OSError: pass
-    dtx_name = "chart.dtx"
     with open(os.path.join(folder, dtx_name), "w", encoding="shift_jis", errors="replace") as fh:
         fh.write(dtx_text)
-    # set.def
+    # set.def -- place the chart in its difficulty slot with the tier label
     with open(os.path.join(folder, "set.def"), "w", encoding="shift_jis", errors="replace") as fh:
-        fh.write(f"#TITLE {song_name}\n#L1LABEL Drums\n#L1FILE {dtx_name}\n")
+        fh.write(f"#TITLE {song_name}\n#L{set_slot}LABEL {set_label}\n#L{set_slot}FILE {dtx_name}\n")
     # bgm
     shutil.copy2(bgm_src, os.path.join(folder, os.path.basename(bgm_src)))
     # kit

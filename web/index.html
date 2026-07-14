@@ -49,7 +49,8 @@
   .card h2 .tagpill{text-transform:none;letter-spacing:0;font-size:10px;font-weight:600;color:var(--dim);border:1px solid var(--line);border-radius:10px;padding:2px 7px;margin-left:8px}
   .card h2 .tagpill.req{color:var(--acc2);border-color:var(--acc2)}
   label{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
-  input[type=text],input[type=number],input[type=file]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none}
+  input[type=text],input[type=number],input[type=file],select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none}
+  select{cursor:pointer;height:42px}
   input[type=file]{padding:8px} input:focus{border-color:var(--acc2)}
   .seg{display:flex;flex-wrap:wrap;gap:8px}
   .seg button{flex:1;min-width:105px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);padding:11px;border-radius:8px;cursor:pointer;font-size:14px;transition:.15s}
@@ -119,9 +120,19 @@
       <h2><span class="n">1</span>Details</h2>
       <div class="row"><div><label>Title <span class="hint">(auto if blank)</span></label><input type="text" id="title"></div>
         <div><label>Artist</label><input type="text" id="artist"></div></div>
-      <div class="row" style="margin-top:6px"><div><label>BPM <span class="hint" id="bpmHint">(optional)</span></label><input type="number" id="bpm" step="0.001" placeholder="auto"></div>
-        <div><label>Difficulty <span class="hint" id="dlevelHint">(auto-rated if blank)</span></label><input type="text" id="dlevel" placeholder="auto"></div></div>
-      <div class="row" style="margin-top:6px"><div><label>Author</label><input type="text" id="author"></div></div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Difficulty Level</label>
+          <select id="dtier">
+            <option value="auto" selected>Auto (from score)</option>
+            <option value="basic">Basic</option>
+            <option value="advanced">Advanced</option>
+            <option value="extreme">Extreme</option>
+            <option value="master">Master</option>
+          </select></div>
+        <div><label>Difficulty Score <span class="hint" id="dlevelHint">(auto-rated if blank)</span></label><input type="text" id="dlevel" placeholder="auto"></div></div>
+      <div class="row" style="margin-top:6px">
+        <div><label>BPM <span class="hint" id="bpmHint">(optional)</span></label><input type="number" id="bpm" step="0.001" placeholder="auto"></div>
+        <div><label>Author</label><input type="text" id="author"></div></div>
     </div>
 
     <div class="card">
@@ -229,6 +240,8 @@ $('#drumHint').innerHTML=DH[drumMode];
 $('#bpm').addEventListener('input',()=>{$('#bpm').dataset.auto='';$('#bpmHint').textContent='(optional)';});
 /* same for difficulty: a typed value is respected; blank => auto-rated */
 $('#dlevel').addEventListener('input',()=>{$('#dlevel').dataset.auto='';$('#dlevelHint').textContent='(auto-rated if blank)';});
+/* a manually-chosen difficulty level sticks; "Auto" lets the score decide */
+$('#dtier').addEventListener('change',()=>{$('#dtier').dataset.auto='';});
 
 /* generate */
 $('#genBtn').onclick=async()=>{
@@ -243,6 +256,7 @@ $('#genBtn').onclick=async()=>{
   fd.append('auto_sync',$('#autoSync').checked);fd.append('hihat_foot',$('#hhToggle').checked?'on':'off');fd.append('double_bass',$('#dbToggle').checked);
   fd.append('title',$('#title').value);fd.append('artist',$('#artist').value);fd.append('author',$('#author').value);
   fd.append('bpm',$('#bpm').value);fd.append('dlevel',$('#dlevel').value);
+  { const t=$('#dtier'); const tierAuto=(t.value==='auto'||t.dataset.auto==='1'); fd.append('dlevel_tier', tierAuto?'auto':t.value); }
   // Audio is REQUIRED.
   if(audSource==='url'){if(!$('#yt').value.trim()){alert('Audio is required - paste an audio link, or switch to Upload file.');return;}fd.append('audio_url',$('#yt').value.trim());}
   if(audSource==='upload'){if(!$('#audio').files[0]){alert('Audio is required - choose an audio file.');return;}fd.append('audio_file',$('#audio').files[0]);}
@@ -263,6 +277,9 @@ async function poll(id){
     // auto-fill Difficulty once the chart is rated (only if the user left it blank)
     if(j.data&&j.data.dlevel){const el=$('#dlevel');
       if(!el.value.trim()||el.dataset.auto==='1'){el.value=j.data.dlevel.toFixed(2);el.dataset.auto='1';$('#dlevelHint').textContent='(auto-rated)';}}
+    // reflect the derived Difficulty Level in the picker (unless the user chose one)
+    if(j.data&&j.data.dlevel_tier){const el=$('#dtier');
+      if(el.value==='auto'||el.dataset.auto==='1'){el.value=j.data.dlevel_tier;el.dataset.auto='1';}}
     (j.messages||[]).slice(lastN).forEach(logline);lastN=(j.messages||[]).length;
     if(j.status==='done'){$('#outh').textContent='✓ Complete';$('#genBtn').disabled=false;const s=j.stats;
       const pv=s.playability||'',pc=pv==='playable'?'playable':(pv==='tight'?'tight':'problem');
@@ -283,7 +300,9 @@ async function poll(id){
         `<span class="badge ${pc}">${pv==='playable'?'✓ Human-playable':(pv==='tight'?'△ Tight but playable':'⚠ Hard spots')} · ${s.play_score}/100</span>`+
         (chg.length?`<div class="hint" style="margin:8px 0 0">Changes from the ${isAudio?'transcription':'tab'}: ${chg.join(' · ')}. Everything else is exactly as charted.</div>`:`<div class="hint" style="margin:8px 0 0">${isAudio?'No changes after transcription - notes are exactly as detected.':'The tab was transcribed exactly - no notes changed.'}</div>`)+
         `<div style="margin-top:6px"><span class="stat"><b>${s.chips}</b> notes</span><span class="stat"><b>${s.measures}</b> bars</span><span class="stat"><b>${s.bpm}</b> BPM</span>`+
-        `<span class="stat">difficulty: <b>${s.dlevel!=null?s.dlevel.toFixed(2):'-'}</b>${s.dlevel_auto?' (auto)':''}</span>`+
+        `<span class="stat">level: <b>${s.dlevel_tier?s.dlevel_tier.charAt(0).toUpperCase()+s.dlevel_tier.slice(1):'-'}</b>${s.tier_manual?'':' (auto)'}</span>`+
+        `<span class="stat">score: <b>${s.dlevel!=null?s.dlevel.toFixed(2):'-'}</b></span>`+
+        `<span class="stat">file: <b>${s.dtx_file||'-'}</b></span>`+
         `<span class="stat">drums: <b>${s.drum_mode}</b></span><span class="stat">hi-hat foot: <b>${s.hihat_foot}</b></span><span class="stat">double kick: <b>${s.double_bass}${s.double_bass==='on'&&s.double_kicks?' ('+s.double_kicks+')':''}</b></span></div>`;
       $('#dl').href=j.download;$('#done').classList.remove('hidden');return;}
     if(j.status==='error'){$('#outh').textContent='✗ Failed';$('#genBtn').disabled=false;return;}

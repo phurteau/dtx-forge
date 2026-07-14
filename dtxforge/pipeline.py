@@ -271,6 +271,16 @@ def run(opts, workdir, assets_dir, progress):
             f"{fa.get('lanes')} lanes). Rated for a player with some drum skill.")
         setdata("dlevel", dlevel_display)
 
+    # ---------- 6d. DIFFICULTY TIER (Basic/Advanced/Extreme/Master -> filename) ----------
+    tier_choice = str(opts.get("dlevel_tier", "auto")).strip().lower()
+    if tier_choice in ("basic", "advanced", "extreme", "master"):
+        tier_key = tier_choice
+    else:
+        tier_key = dtx.tier_from_score(dlevel_display)
+    dtx_name, tier_label, tier_slot = dtx.tier_info(tier_key)
+    setdata("dlevel_tier", tier_key)
+    log(f"Difficulty level: {tier_label.title()} (score {dlevel_display:.2f}) -> {dtx_name}.")
+
     # ---------- 7. PACKAGE ----------
     stg("package", "Building DTX chart...")
     if bgm_file is None:
@@ -290,7 +300,8 @@ def run(opts, workdir, assets_dir, progress):
     dtx_text = dtx.emit_dtx(events, barlens, meta)
 
     song_name = f"{_slug(artist)} - {_slug(title)}"
-    folder, zpath = dtx.package(os.path.join(workdir, "dist"), song_name, dtx_text, bgm_file, kit_dir, kit_files)
+    folder, zpath = dtx.package(os.path.join(workdir, "dist"), song_name, dtx_text, bgm_file, kit_dir, kit_files,
+                                dtx_name=dtx_name, set_label=tier_label, set_slot=tier_slot)
     if hasattr(progress, "finish"): progress.finish()
     stats = dict(measures=len(events), chips=dtx.count_chips(events), bpm=meta["bpm"],
                  drum_mode=drum_mode if raw_audio else "none",
@@ -302,6 +313,7 @@ def run(opts, workdir, assets_dir, progress):
                  faithfulness=fscore["percent"], notes_moved=fscore["moved"],
                  notes_dropped=fscore["dropped"], notes_added=fscore["added"],
                  dlevel=dlevel_display, dlevel_auto=dlevel_auto,
+                 dlevel_tier=tier_key, dtx_file=dtx_name, tier_manual=(tier_choice in ("basic","advanced","extreme","master")),
                  source=opts["tab_source"], title=title, artist=artist)
     log("Done.")
     return dict(folder=folder, zip=zpath, stats=stats, playability=play_report, faithfulness=fscore)

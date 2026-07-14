@@ -76,6 +76,7 @@ async def api_generate(
     author: str = Form(""),
     bpm: str = Form(""),
     dlevel: str = Form(""),
+    dlevel_tier: str = Form("auto"),
     midi_file: UploadFile = File(None),
     tab_file: UploadFile = File(None),
     audio_file: UploadFile = File(None),
@@ -114,6 +115,7 @@ async def api_generate(
         title=title.strip(), artist=artist.strip(), author=author.strip(),
         bpm=(float(bpm) if bpm.strip() else None),
         dlevel=dlevel.strip(),
+        dlevel_tier=(dlevel_tier.strip() or "auto"),
     )
     _jobs[job_id] = {"status": "running", "reporter": Reporter(), "result": None, "error": None}
     threading.Thread(target=_run_job, args=(job_id, opts, upload_paths), daemon=True).start()
