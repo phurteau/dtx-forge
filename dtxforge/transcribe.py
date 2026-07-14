@@ -242,12 +242,28 @@ def _band_envs(x, sr, bands, hop=512, win=2048):
 def _estimate_bpm(onset, fps, lo=70, hi=200):
     env = onset - onset.mean()
     ac = np.correlate(env, env, "full")[len(env)-1:]
-    best = (0, None)
-    for bpm in np.arange(lo, hi, 0.25):
+
+    def score(bpm):
         i = int(round(60.0 / bpm * fps))
-        if 1 <= i < len(ac) and ac[i] > best[0]:
-            best = (ac[i], bpm)
-    return best[1] or 120.0
+        return ac[i] if 1 <= i < len(ac) else 0.0
+
+    best = (0.0, None)
+    for bpm in np.arange(lo, hi, 0.25):
+        s = score(bpm)
+        if s > best[0]:
+            best = (s, bpm)
+    bpm = best[1] or 120.0
+
+    # Octave correction. Autocorrelation often locks onto the backbeat / half-time
+    # pulse (e.g. 95 for a real 190 BPM punk song). If the detected tempo is slow and
+    # its double is well supported by the onset envelope, prefer the faster true tempo.
+    # Only engages below 100 BPM so normal 100-180 tempos are never disturbed; a typed
+    # BPM always overrides this anyway.
+    while bpm < 100 and bpm * 2 <= 200 and score(bpm * 2) >= 0.55 * best[0]:
+        bpm *= 2
+    while bpm > 200 and score(bpm / 2) >= 0.55 * best[0]:
+        bpm /= 2
+    return bpm
 
 
 def _pick(env, fps, min_gap=0.06, thr_rel=0.06, thr_abs=0.08):
@@ -269,7 +285,7 @@ def _pick(env, fps, min_gap=0.06, thr_rel=0.06, thr_abs=0.08):
     return peaks
 
 
-def from_audio_drums(drum_wav, bpm=None, progress=None):
+def from_audio_drums(drum_wav, bpm=None, progress=None, standardize=True):
     """Transcribe an isolated drum stem by per-band onset detection: kick (low),
     snare (mid), hi-hat/cymbal (high). Bright hits are split into hat vs crash by
     decay length. Beta quality - good groove skeleton, not a note-perfect chart."""
@@ -297,22 +313,13 @@ def from_audio_drums(drum_wav, bpm=None, progress=None):
     if not hits:
         return [{}], [Fraction(1)], round(bpm, 3), 0.0
 
-    hits.sort()
-    anchor = hits[0][0] / fps                    # first hit = bar 1 downbeat (chart t=0)
-    bar_time = 4 * 60.0 / bpm
-    ev = {}
-    for p, midi in hits:
-        t = p / fps - anchor
-        if t < -1e-6:
-            continue
-        mi = int(t // bar_time)
-        pos_frac = (t - mi * bar_time) / bar_time
-        slot = int(round(pos_frac * dtx.GRID))
-        if slot >= dtx.GRID:
-            slot = dtx.GRID - 1
-        ch, lab = dtx.MAP[midi]
-        ev.setdefault(mi, {}).setdefault(ch, {}).setdefault(Fraction(slot, dtx.GRID), dtx.LABEL2SLOT[lab])
-    n_bars = (max(ev) + 1) if ev else 1
-    events = [ev.get(i, {}) for i in range(n_bars)]
-    barlens = [Fraction(1)] * n_bars
+    # Convert frame-index hits to seconds, then standardize (quantize + de-dupe + cap)
+    # so the fallback detector's onsets come out grid-locked and playable. When
+    # standardize is off, emit the raw first pass (fine 1/64 grid, no voice cap).
+    from . import standardize as _std
+    sec_hits = [(p / fps, midi) for p, midi in hits]
+    if standardize:
+        events, barlens, anchor = _std.build_events(sec_hits, bpm, max_hand_voices=2, adaptive=True)
+    else:
+        events, barlens, anchor = _std.build_events(sec_hits, bpm, grid_div=64, max_hand_voices=999)
     return events, barlens, round(bpm, 3), anchor

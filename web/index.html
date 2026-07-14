@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DTX Forge</title>
 <style>
-  :root{ --acc:#1f8a3b; --acc2:#3fbe5a; --acc-ink:#fff; --radius:12px; }
+  :root{ --acc:#025500; --acc2:#03b200; --acc-ink:#fff; --radius:12px; }
   html[data-theme="dark"]{
     --bg:#04140b; --bg2:#02100a; --panel:#0a2414; --panel2:#0e3120; --line:#1a5230;
     --txt:#e8f5ec; --dim:#8fbf9f; --glow:rgba(0,0,0,.35);
@@ -107,7 +107,7 @@
     <button class="tbtn" id="themeBtn"><span id="themeIcon">🌙</span><span id="themeLbl">Dark</span></button>
     <div class="picker"><button class="tbtn" id="pickBtn"><span class="swatch"></span>Color</button>
       <div class="pop hidden" id="pop"><h4>Accent color</h4><div class="presets" id="presets"></div>
-        <label>Custom</label><input type="color" id="colorInput" value="#1f8a3b">
+        <label>Custom</label><input type="color" id="colorInput" value="#025500">
         <button class="reset" id="resetBtn">Reset</button></div>
     </div>
   </div>
@@ -139,7 +139,7 @@
       <h2><span class="n">2</span>Audio (BGM)<span class="tagpill req">required</span></h2>
       <div class="seg" id="audseg"><button data-v="url" class="active">Audio URL</button><button data-v="upload">Upload file</button></div>
       <div id="aud-url"><label>Audio link</label><input type="text" id="yt" placeholder="YouTube · SoundCloud · Bandcamp · or a direct .mp3/.wav link">
-        <div class="hint">Paste a link from <b>YouTube, SoundCloud, Bandcamp, Vimeo</b> and 1000+ sites, or a <b>direct audio-file URL</b>. Works anonymously for most; if a site needs a login it auto-uses your browser session. Otherwise use Upload file.</div></div>
+        <div class="hint">Paste a link from <b>YouTube, SoundCloud, Bandcamp, Vimeo</b> and 1000+ sites, or a <b>direct audio-file URL</b>.</div></div>
       <div id="aud-upload" class="hidden"><label>Audio file (mp3 / wav / ogg / m4a)</label><input type="file" id="audio" accept="audio/*"></div>
 
       <label>Drums in the backing track</label>
@@ -160,7 +160,10 @@
     </div>
 
     <div class="card">
-      <h2><span class="n">4</span>Advanced - foot technique</h2>
+      <h2><span class="n">4</span>Advanced</h2>
+      <div class="adv"><div class="head">Audio-only transcription</div>
+        <div class="hint">Only applies when notation is blank (drums transcribed from the audio). <b>Standardize</b> locks the groove to a clean 1/16 grid - while keeping genuine 1/32 fills - and removes doubled / unplayable notes for a readable, playable chart. <b>Raw</b> outputs exactly what was detected - busier and closer to the audio, but harder to play.</div>
+        <div class="seg" id="stdseg" style="margin-top:10px"><button data-v="standardize" class="active">Standardize</button><button data-v="raw">Raw</button></div></div>
       <div class="adv"><div class="head">Hi-Hat Pedal</div>
         <div class="hint">Adds a <b>left-foot hi-hat “chick”</b> on the <b>2 &amp; 4 backbeat</b> - the foot-pedal pattern real DTXMania/GITADORA charts use. It only fills beats where your hands aren't already on a hi-hat/cymbal, so nothing doubles up.</div>
         <label class="chk" style="margin-top:10px"><input type="checkbox" id="hhToggle"><span><b>Add hi-hat foot pedal</b> <span class="hint" style="margin:0">- left-foot “chick” on beats 2 &amp; 4</span></span></label></div>
@@ -169,12 +172,12 @@
         <label class="chk" style="margin-top:10px"><input type="checkbox" id="dbToggle"><span><b>Enable double bass kicks</b> <span class="hint" style="margin:0">- the generator decides where it's needed</span></span></label></div>
       <div class="hint" style="margin-top:10px">A human-playability check runs at the end and auto-relaxes anything impossible for 2 hands + 2 feet.</div>
     </div>
+    <button class="go" id="genBtn">Generate DTX chart</button>
   </div>
 
-  <!-- RIGHT: action + visualizer + console -->
+  <!-- RIGHT: visualizer + console -->
   <div class="col">
     <div class="card panel">
-      <button class="go" id="genBtn">⚒  Generate DTX chart</button>
       <div class="viz">
         <div class="lbl">Pipeline</div>
         <div class="steps" id="steps"></div>
@@ -221,11 +224,14 @@ const pcp=$('#presets');PRESETS.forEach(c=>{const b=document.createElement('butt
 $('#themeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 $('#pickBtn').onclick=e=>{e.stopPropagation();$('#pop').classList.toggle('hidden');};
 document.addEventListener('click',e=>{if(!$('#pop').contains(e.target)&&e.target!==$('#pickBtn')&&!$('#pickBtn').contains(e.target))$('#pop').classList.add('hidden');});
-$('#colorInput').oninput=e=>applyAccent(e.target.value);$('#resetBtn').onclick=()=>applyAccent('#1f8a3b');
-applyTheme(localStorage.getItem('dtx_theme')||'dark');applyAccent(localStorage.getItem('dtx_accent')||'#1f8a3b');
+$('#colorInput').oninput=e=>applyAccent(e.target.value);$('#resetBtn').onclick=()=>applyAccent('#025500');
+/* one-time migration: move anyone still on the previous default green (#1f8a3b) to
+   the new darker-green default (#025500). A deliberate later pick is left untouched. */
+if(!localStorage.getItem('dtx_accent_v2')){ if(localStorage.getItem('dtx_accent')==='#1f8a3b')localStorage.removeItem('dtx_accent'); localStorage.setItem('dtx_accent_v2','1'); }
+applyTheme(localStorage.getItem('dtx_theme')||'dark');applyAccent(localStorage.getItem('dtx_accent')||'#025500');
 
 /* segmented controls */
-let tabSource="url",audSource="url",drumMode="keep";
+let tabSource="url",audSource="url",drumMode="keep",stdMode="standardize";
 function segWire(id,cb){document.querySelectorAll('#'+id+' button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('active'));b.classList.add('active');cb(b.dataset.v);};});}
 segWire('tabseg',v=>{tabSource=v;['url','file'].forEach(x=>$('#src-'+x).classList.toggle('hidden',x!==v));});
 segWire('audseg',v=>{audSource=v;['url','upload'].forEach(x=>$('#aud-'+x).classList.toggle('hidden',x!==v));});
@@ -235,6 +241,7 @@ const DH={
   remove:"<b>Remove</b> - the song's drums are <b>~90% stripped</b> from the backing track (auto-separated), so <b>your hits supply the drums</b> - true arcade feel. Your pads always make drum sounds in every mode; this just clears them out of the music. <i>(Uses drum separation - slower.)</i>"
 };
 segWire('drumseg',v=>{drumMode=v;$('#drumHint').innerHTML=DH[v];});
+segWire('stdseg',v=>{stdMode=v;});
 $('#drumHint').innerHTML=DH[drumMode];
 /* a BPM the user types is theirs - stop auto-fill from overwriting it */
 $('#bpm').addEventListener('input',()=>{$('#bpm').dataset.auto='';$('#bpmHint').textContent='(optional)';});
@@ -256,7 +263,7 @@ $('#genBtn').onclick=async()=>{
   if(tabSource==='url'&&_url)fd.append('songsterr_url',_url);
   if(tabSource==='file'&&_tabFile)fd.append('tab_file',_tabFile);
   fd.append('audio_source',audSource);fd.append('drum_mode',drumMode);
-  fd.append('auto_sync',$('#autoSync').checked);fd.append('hihat_foot',$('#hhToggle').checked?'on':'off');fd.append('double_bass',$('#dbToggle').checked);
+  fd.append('auto_sync',$('#autoSync').checked);fd.append('standardize',stdMode==='standardize'?'true':'false');fd.append('hihat_foot',$('#hhToggle').checked?'on':'off');fd.append('double_bass',$('#dbToggle').checked);
   fd.append('title',$('#title').value);fd.append('artist',$('#artist').value);fd.append('author',$('#author').value);
   fd.append('bpm',$('#bpm').value);fd.append('dlevel',$('#dlevel').value);
   { const t=$('#dtier'); const tierAuto=(t.value==='auto'||t.dataset.auto==='1'); fd.append('dlevel_tier', tierAuto?'auto':t.value); }

@@ -157,14 +157,15 @@ def run(opts, workdir, assets_dir, progress):
         # fall back to the fast built-in detector only if the models can't load.
         from . import fullkit
         stg("notation", "Full-kit transcription (inagoy + LarsNet, beta)...")
+        do_std = opts.get("standardize", True)
         try:
             events, barlens, bpm2, audio_anchor = fullkit.from_audio_fullkit(
-                drum_stem, bpm=bpm, progress=log)
+                drum_stem, bpm=bpm, progress=log, standardize=do_std)
         except Exception as e:
             log(f"Full-kit engines unavailable ({str(e)[:100]}); "
                 f"using the fast kick/snare/hat detector.")
             events, barlens, bpm2, audio_anchor = transcribe.from_audio_drums(
-                drum_stem, bpm=bpm, progress=log)
+                drum_stem, bpm=bpm, progress=log, standardize=do_std)
         bpm = bpm or bpm2
         # The transcription puts the first detected hit at chart t=0; trim the
         # backing track to start there too so chart and BGM stay in sync.
@@ -255,8 +256,11 @@ def run(opts, workdir, assets_dir, progress):
     fscore = faith.compare(original_events, events)
     log(faith.summary_line(fscore, "audio" if opts["tab_source"] == "audio" else "tab"))
 
-    # ---------- 6c. DIFFICULTY (auto-rate when the user left it blank) ----------
+    # ---------- 6c. DIFFICULTY + TIER (rate, choose tier, then simplify to match) ----------
     dlevel_in = str(opts.get("dlevel", "")).strip()
+    tier_choice = str(opts.get("dlevel_tier", "auto")).strip().lower()
+
+    # preliminary rating on the full chart -> used for auto difficulty and/or auto tier
     if dlevel_in:
         dlevel_val = normalize_dlevel(dlevel_in)
         dlevel_display = round(dlevel_val / 100.0, 2)
@@ -266,6 +270,25 @@ def run(opts, workdir, assets_dir, progress):
         dlevel_val = dscore["value"]
         dlevel_display = dscore["display"]
         dlevel_auto = True
+
+    if tier_choice in ("basic", "advanced", "extreme", "master"):
+        tier_key = tier_choice
+    else:
+        tier_key = dtx.tier_from_score(dlevel_display)
+
+    # Simplify hi-hat / ride density to the chosen tier (Basic/Advanced read sparser;
+    # Extreme keeps 16ths; Master keeps everything). Then re-rate so the shown score
+    # and #DLEVEL match the notes actually emitted.
+    from . import simplify
+    events, thinned = simplify.thin_for_tier(events, tier_key)
+    if thinned:
+        log(f"Simplified {thinned} hi-hat/ride notes to match {tier_key.title()} difficulty.")
+        if dlevel_auto:
+            dscore = difficulty.compute(events, barlens, bpm)
+            dlevel_val = dscore["value"]
+            dlevel_display = dscore["display"]
+
+    if dlevel_auto:
         fa = dscore["factors"]
         log(f"Auto-difficulty: {dlevel_display:.2f}/9.99 "
             f"(density {fa.get('nps')}/s, peak {fa.get('burst')}/s, "
@@ -273,12 +296,6 @@ def run(opts, workdir, assets_dir, progress):
             f"{fa.get('lanes')} lanes). Rated for a player with some drum skill.")
         setdata("dlevel", dlevel_display)
 
-    # ---------- 6d. DIFFICULTY TIER (Basic/Advanced/Extreme/Master -> filename) ----------
-    tier_choice = str(opts.get("dlevel_tier", "auto")).strip().lower()
-    if tier_choice in ("basic", "advanced", "extreme", "master"):
-        tier_key = tier_choice
-    else:
-        tier_key = dtx.tier_from_score(dlevel_display)
     dtx_name, tier_label, tier_slot = dtx.tier_info(tier_key)
     setdata("dlevel_tier", tier_key)
     log(f"Difficulty level: {tier_label.title()} (score {dlevel_display:.2f}) -> {dtx_name}.")

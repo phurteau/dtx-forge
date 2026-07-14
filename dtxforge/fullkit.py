@@ -195,7 +195,7 @@ def _classify_cymbal(x, sr, p_time, isolated_hat):
     return 42                           # closed hi-hat
 
 
-def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False):
+def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False, standardize=True):
     """Per-stem onset detection + sub-classification -> (events, barlens, bpm, anchor).
     Same event structure as transcribe.from_audio_drums so the pipeline is unchanged."""
     hits = []   # (time_s, GM-midi)
@@ -205,8 +205,13 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False)
         x = stems.get(stem)
         if x is None or not np.any(x):
             return
-        gaps = {"kick": 0.09, "snare": 0.08, "toms": 0.07, "hihat": 0.05, "cymbals": 0.05}
-        ons, _, _ = _onset_times(x, sr, min_gap=gaps.get(stem, 0.06))
+        # refractory gap + detection floor per stem. Toms and cymbals bleed from the
+        # louder drums, so they get a longer refractory and a higher floor to suppress
+        # phantom hits (the "impossible tom run" cause) before standardize runs.
+        gaps = {"kick": 0.09, "snare": 0.08, "toms": 0.11, "hihat": 0.05, "cymbals": 0.06}
+        thr = {"toms": (0.07, 0.10), "cymbals": (0.06, 0.09), "hihat": (0.05, 0.07)}
+        tr, ta = thr.get(stem, (0.05, 0.06))
+        ons, _, _ = _onset_times(x, sr, min_gap=gaps.get(stem, 0.06), thr_rel=tr, thr_abs=ta)
         for t, _pk in ons:
             if kind == "tom":
                 s0 = int(t * sr); seg = x[s0:s0 + int(0.06 * sr)]
@@ -246,28 +251,19 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False)
                 ref = e[0] if ref is None else ref + e[0]
         bpm = T._estimate_bpm(ref, fps) if ref is not None else 120.0
 
-    hits.sort()
-    anchor = hits[0][0]
-    bar_time = 4 * 60.0 / bpm
-    ev = {}
-    for t, midi in hits:
-        tt = t - anchor
-        if tt < -1e-6:
-            continue
-        mi = int(tt // bar_time)
-        pos_frac = (tt - mi * bar_time) / bar_time
-        slot = int(round(pos_frac * dtx.GRID))
-        if slot >= dtx.GRID:
-            slot = dtx.GRID - 1
-        ch, lab = dtx.MAP[midi]
-        ev.setdefault(mi, {}).setdefault(ch, {}).setdefault(Fraction(slot, dtx.GRID), dtx.LABEL2SLOT[lab])
-    n_bars = (max(ev) + 1) if ev else 1
-    events = [ev.get(i, {}) for i in range(n_bars)]
-    barlens = [Fraction(1)] * n_bars
+    # Standardize (default): quantize to a musical 1/16 grid, de-dupe, and cap
+    # simultaneous voices so the raw onsets become a clean, playable chart. When
+    # standardize is off, emit exactly what was heard on the fine 1/64 grid with no
+    # voice cap - the raw first-pass transcription.
+    from . import standardize as _std
+    if standardize:
+        events, barlens, anchor = _std.build_events(hits, bpm, max_hand_voices=2, adaptive=True)
+    else:
+        events, barlens, anchor = _std.build_events(hits, bpm, grid_div=64, max_hand_voices=999)
     return events, barlens, round(bpm, 3), anchor
 
 
-def from_audio_fullkit(drum_wav, bpm=None, progress=None):
+def from_audio_fullkit(drum_wav, bpm=None, progress=None, standardize=True):
     """Automatic dual-engine full-kit transcription - no user selection.
 
     Runs BOTH separators and lets each own the lanes it is strongest at, since they
@@ -316,4 +312,5 @@ def from_audio_fullkit(drum_wav, bpm=None, progress=None):
         sr = ina_sr; stems = ina; isolated_hat = False
         if progress: progress("Using inagoy only (LarsNet unavailable - no ride).")
 
-    return transcribe_stems(stems, sr, bpm=bpm, progress=progress, has_isolated_hat=isolated_hat)
+    return transcribe_stems(stems, sr, bpm=bpm, progress=progress,
+                            has_isolated_hat=isolated_hat, standardize=standardize)

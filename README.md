@@ -18,8 +18,10 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 - **Real audio from almost anywhere.** Paste a link from **YouTube, SoundCloud, Bandcamp, Vimeo** and
   1000+ sites, a **direct audio-file URL**, or upload a file. DTX Forge auto-syncs it to the chart.
 - **Full song by default.** Keep the complete track, quiet the drums, or fully remove them (arcade feel).
-- **Difficulty tiers.** Pick a level - **Basic / Advanced / Extreme / Master** - or let **Auto** derive it
-  from a 0.00–9.99 score rated against a skilled-player reference. The output `.dtx` is named by tier
+- **Difficulty tiers that actually simplify.** Pick a level - **Basic / Advanced / Extreme / Master** -
+  or let **Auto** derive it from a 0.00–9.99 score rated against a skilled-player reference. Lower tiers
+  **thin the hi-hat / ride timekeeping** to a coarser pulse (the kick/snare backbone, toms and crashes stay
+  intact) so beginners get a readable chart; Master keeps every note. The output `.dtx` is named by tier
   (`bsc` / `adv` / `ext` / `mstr`), the DTXMania / GITADORA convention.
 - **Advanced foot technique.** Optional left-foot hi-hat on the **2 & 4 backbeat**, plus **DKDK** double-bass
   that converts only the kicks too fast to play one-legged.
@@ -62,6 +64,14 @@ Fill in **Title** and **Artist** (both required), pick your sources, hit **Gener
 Unzip the downloaded `Artist - Title.zip` into your DTXMania songs folder
 (e.g. `DTXManiaNX\...\Songs\`). Launch DTXMania → it rescans → play. 🎶
 
+## Uninstall / free up space
+
+DTX Forge is portable - to remove the app, just **delete its folder**. Nothing is written to the
+registry or Program Files. The one thing left behind is the drum-separation **model weights** it
+downloads on first use (often **1 GB+**), which live in `%LOCALAPPDATA%\DTXForge`. To reclaim that
+space, run **`uninstall.cmd`** - it asks first and touches nothing else (your charts and the app
+folder are untouched).
+
 ---
 
 ## How the pieces work
@@ -81,6 +91,8 @@ Unzip the downloaded `Artist - Title.zip` into your DTXMania songs folder
 - **Difficulty** - choose a tier (Basic / Advanced / Extreme / Master) or let **Auto** map it from a
   0.00–9.99 score (note density, peak bursts, limb speed, kit variety), referenced to a player with some
   drum skill. Tier boundaries: Basic < 3.00 · Advanced 3.00–5.99 · Extreme 6.00–8.49 · Master ≥ 8.50.
+  The tier also **thins the hi-hat / ride density** (Basic → 1/4, Advanced → 1/8, Extreme → 1/16, Master →
+  everything) so lower tiers read cleaner; the score is then re-rated to match the notes actually emitted.
   The chart file is named by tier (`bsc.dtx` / `adv.dtx` / `ext.dtx` / `mstr.dtx`) in its `set.def` slot.
 - **Playability** - flags any foot/hand asked to move faster than humanly possible, and relaxes it.
 - **Package** - Shift-JIS `.dtx` + BGM + a synthesized drum kit, zipped.
@@ -120,12 +132,20 @@ Models download once to `%LOCALAPPDATA%/DTXForge` and are **not** bundled; if th
 fast built-in kick/snare/hat detector covers the basics. Toms are pitch-split into high/low-mid/floor and
 cymbals into crash/ride. See `LICENSE` for model attributions (one model's weights are CC BY-NC).
 
+**Standardize vs Raw** (in the **Advanced** card). By default the raw onsets are **standardized**: timing is
+locked to a clean **1/16 grid**, genuine **1/32 fills/rolls are preserved** where the music really is that
+fast, and doubled / jittered / physically-impossible notes are removed - a readable, playable chart. Switch
+to **Raw** to emit exactly what was detected (busier, closer to the audio, harder to play).
+
 ## Notes & limits
 
 - Songsterr tabs are often **auto-generated** - a strong approximation, not a hand-verified chart.
 - **Audio-only** transcription (no tab) is beta: the drum stem is separated into pieces, then each is
-  onset-detected. Tempo detection on raw audio can pick the wrong octave - set BPM manually if it looks
-  doubled/halved (note placement still follows the audio either way).
+  onset-detected and standardized (see above). Tempo is auto-detected with octave correction, but on some
+  songs it can still land on the wrong multiple - set BPM manually if it looks doubled/halved (note
+  placement follows the audio either way).
+- **Spotify links aren't supported** (the audio is DRM-protected and can't be downloaded). Use a YouTube /
+  SoundCloud / Bandcamp link, a direct audio-file URL, or **Upload file**.
 - Auto-sync assumes the upload is the same tempo as the song; disable it for nightcore/sped-up rips.
 
 ## Layout
@@ -133,13 +153,14 @@ cymbals into crash/ride. See `LICENSE` for model attributions (one model's weigh
 ```
 dtx-forge/
   app.py  desktop.py           server + native window
-  DTX Forge.cmd  run.cmd  setup.cmd
+  DTX Forge.cmd  run.cmd  setup.cmd  uninstall.cmd
   dtxforge/
     songsterr.py  audio.py  autosync.py   fetch, download, align
     transcribe.py  dtx.py  humanize.py     notes, emit, foot technique
     playability.py  notes.py  report.py    checks, helpers, stage events
     difficulty.py  faithfulness.py         auto-rating, tab fidelity
     fullkit.py  larsnet_engine.py          audio-only full-kit separation
+    standardize.py  simplify.py            grid-quantize + difficulty thinning
     vendor/larsnet_unet.py                 vendored model architecture
     drumkit.py  pipeline.py                samples, orchestration
   web/index.html                           UI (themes, picker, visualizer)
