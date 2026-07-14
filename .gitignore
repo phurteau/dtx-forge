@@ -32,3 +32,9 @@ _*.py
 *.tmp
 *.wav
 !assets/drumkit/*.wav
+
+# ---- ML model weights (fetched at runtime to %LOCALAPPDATA%, never committed) ----
+*.pth
+*.th
+*.ckpt
+*.onnx

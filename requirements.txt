@@ -9,6 +9,13 @@ mido                ; MIDI drum-tab parsing
 PyGuitarPro         ; Guitar Pro (.gp/.gp5/.gpx) parsing
 pywebview           ; native desktop window (optional; app runs in browser without it)
 
-# Drum removal (option C) - heavy (~2 GB, pulls in torch). Optional:
+# Drum removal (option C) + audio-only transcription - heavy (~2 GB, pulls in torch).
+# Optional:
 #   pip install demucs soundfile
-# The app runs fine without it if you leave "Remove drums" unchecked.
+# The app runs fine without it if you leave "Remove drums" unchecked and always
+# provide notation.
+
+# Full-kit audio-only engines (optional):
+#   gdown            ; downloads the LarsNet "Full kit+" model on first use
+# The inagoy "Full kit" engine reuses demucs (above); LarsNet additionally needs gdown.
+gdown                 ; LarsNet model download (Full kit+ engine)

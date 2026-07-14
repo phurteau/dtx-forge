@@ -19,8 +19,18 @@ hiddenimports += ["dtxforge", "dtxforge.songsterr", "dtxforge.audio",
                   "dtxforge.transcribe", "dtxforge.dtx", "dtxforge.drumkit",
                   "dtxforge.pipeline", "dtxforge.report", "dtxforge.notes",
                   "dtxforge.humanize", "dtxforge.playability", "dtxforge.autosync",
-                  "dtxforge.sources", "dtxforge.faithfulness", "guitarpro", "attr", "attrs",
+                  "dtxforge.sources", "dtxforge.faithfulness", "dtxforge.difficulty",
+                  "dtxforge.fullkit", "dtxforge.larsnet_engine",
+                  "dtxforge.vendor", "dtxforge.vendor.larsnet_unet",
+                  "guitarpro", "attr", "attrs",
                   "app", "anyio", "mido", "clr", "webview.platforms.winforms"]
+
+# gdown (LarsNet weights fetch) - optional; only needed for the Full kit+ engine
+try:
+    d, b, h = collect_all("gdown")
+    datas += d; binaries += b; hiddenimports += h
+except Exception:
+    pass
 
 # app data files
 datas += [("web", "web"), ("assets", "assets")]

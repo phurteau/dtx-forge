@@ -1,6 +1,7 @@
 """Humanize: add realistic left-foot technique to a chart.
 
-hi-hat foot  -> adds left-pedal (LP) 'chick' notes around hi-hat play (1:1/medium/basic)
+hi-hat foot  -> when enabled, adds a left-pedal (LP) 'chick' on the 2 & 4 backbeat
+                (the foot pattern real DTXMania/GITADORA charts use)
 double bass  -> ON/OFF toggle. When ON, the engine detects kicks that are too fast to
                 play one-legged and converts those (and only those) to a DOUBLE KICK:
                 the run alternates right-foot kick (BD, lane 13) and left-foot kick
@@ -26,13 +27,13 @@ def _measure_positions(barlen, per_whole):
     return [Fraction(i, slots) for i in range(slots)]
 
 
-def apply_hihat_foot(events, barlens, level):
-    """Add left-foot pedal (LP) notes to simulate hi-hat pedal work.
-    1to1: foot on every quarter where no hand hat/cymbal already sits + a 'chick'
-          right after each open hat (to close it).
-    medium: foot on beats 2 & 4 (backbeat) only.
-    off: nothing added (the drummer's left foot stays free)."""
-    if level not in ("1to1", "medium"):
+def apply_hihat_foot(events, barlens, enabled):
+    """When enabled, add a left-foot hi-hat pedal 'chick' on the 2 & 4 backbeat -
+    the foot-pedal pattern real DTXMania/GITADORA charts use. A note is added only
+    on a beat where the left pedal isn't already busy (e.g. a double-bass left kick)
+    and the hands aren't already on a hi-hat/cymbal, so nothing doubles up. The 2 & 4
+    backbeat is comfortably playable at any musical tempo, so no tempo limit applies."""
+    if not enabled:
         return events
     for mi, chan in enumerate(events):
         bl = barlens[mi]
@@ -43,22 +44,10 @@ def apply_hihat_foot(events, barlens, level):
         occupied = set()
         for l in (N.HHc, N.HHo, N.CY, N.LC, N.RD):
             occupied |= set(chan.get(l, {}).keys())
-        # quarter-note grid within the bar
         quarters = _measure_positions(bl, 4)
-        if level == "1to1":
-            targets = quarters                       # foot keeps time on every beat
-        else:  # medium -> beats 2 & 4 (indices 1,3 in 4/4)
-            targets = quarters[1::2]
-        for q in targets:
+        for q in quarters[1::2]:                  # beats 2 & 4 (backbeat)
             if q not in occupied and q not in lp:
                 lp[q] = LP_FOOT
-        # foot "chick" right after each open hi-hat to close it (1to1 only)
-        if level == "1to1" and N.HHo in chan:
-            slots = max(1, round(float(bl) * 16))
-            for pos in list(chan[N.HHo].keys()):
-                nxt = pos + Fraction(1, slots)
-                if nxt < 1 and nxt not in occupied and nxt not in lp:
-                    lp[nxt] = LP_FOOT
     return events
 
 
@@ -101,8 +90,8 @@ def apply_double_bass(events, barlens, bpm, enabled):
     return events, converted
 
 
-def humanize(events, barlens, bpm, hihat_level="off", doublebass=False):
+def humanize(events, barlens, bpm, hihat_on=False, doublebass=False):
     # double bass first (claims LP for fast kicks), then hi-hat foot fills the rest
     events, converted = apply_double_bass(events, barlens, bpm, doublebass)
-    events = apply_hihat_foot(events, barlens, hihat_level)
+    events = apply_hihat_foot(events, barlens, hihat_on)
     return events, converted

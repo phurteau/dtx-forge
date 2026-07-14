@@ -17,7 +17,12 @@ class Reporter:
     def __init__(self, sink=None):
         self.sink = sink                     # optional callable(text) for streaming
         self.messages = []
+        self.data = {}                       # live key/values for the UI (e.g. detected bpm)
         self.stages = [{"id": i, "label": l, "state": "pending"} for i, l in STAGES]
+
+    # ---- live data (surfaced to the UI as soon as it's known) ----
+    def set_data(self, key, value):
+        self.data[key] = value
 
     # ---- text log ----
     def log(self, text):

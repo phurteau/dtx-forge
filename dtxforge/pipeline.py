@@ -1,7 +1,7 @@
 """End-to-end pipeline orchestration. Each run streams progress + stage events."""
 import os, re, copy, traceback
 from . import (songsterr, audio, transcribe, drumkit, dtx, humanize, playability,
-               notes, autosync, sources, faithfulness as faith)
+               notes, autosync, sources, faithfulness as faith, difficulty)
 
 def normalize_dlevel(text, default="50"):
     """Accept '0-99' (tens scale, 50->5.00) or '0.00-9.99' (literal). Emit the
@@ -29,8 +29,8 @@ def run(opts, workdir, assets_dir, progress):
       tab_source: 'songsterr' | 'midi' | 'audio'
       songsterr_query / songsterr_url  (for songsterr)
       midi_path                         (for midi)
-      audio_source: 'songsterr' | 'youtube' | 'upload' | 'none'
-      youtube_url, upload_audio_path
+      audio_source: 'songsterr' | 'url' | 'upload' | 'none'
+      audio_url, upload_audio_path
       remove_drums: bool  (option C)
       title, artist, bpm(optional), dlevel
     Returns dict(folder, zip, stats).
@@ -47,16 +47,27 @@ def run(opts, workdir, assets_dir, progress):
         if hasattr(progress, "skip"): progress.skip(sid)
     def log(msg):
         progress(msg)
+    def setdata(key, value):
+        if hasattr(progress, "set_data"): progress.set_data(key, value)
 
     title = opts.get("title") or "Untitled"
     artist = opts.get("artist") or "Unknown"
     bpm = opts.get("bpm")
     m = None
 
+    # Notation is OPTIONAL. With no tab URL/paste and no uploaded tab file, the
+    # drums are transcribed straight from the audio (which then becomes required).
+    _has_tab = bool((opts.get("songsterr_url") or "").strip() or opts.get("tab_file_path"))
+    if opts.get("tab_source") in ("songsterr", "url", "auto") and not _has_tab:
+        opts["tab_source"] = "audio"
+
     asrc = opts.get("audio_source", "none")
     drum_mode = opts.get("drum_mode", "keep")           # keep = full song (default)
-    auto_sync = bool(opts.get("auto_sync", True)) and asrc in ("youtube", "upload")
+    auto_sync = bool(opts.get("auto_sync", True)) and asrc in ("url", "upload")
     need_stem = (drum_mode in ("remove", "quiet")) or (opts["tab_source"] == "audio")
+    if opts["tab_source"] == "audio" and asrc == "none":
+        raise RuntimeError("No notation was provided, so DTX Forge needs audio to "
+                           "transcribe the drums from - add a YouTube link or upload an audio file.")
 
     # ---------- 1. NOTATION ----------
     stg("notation", "Resolving notation source...")
@@ -98,6 +109,10 @@ def run(opts, workdir, assets_dir, progress):
     else:
         raise ValueError("bad tab_source")
 
+    # surface a detected BPM to the UI as early as it's known (tab sources know it now)
+    if bpm:
+        setdata("bpm", round(float(bpm), 3))
+
     # ---------- 2. AUDIO ----------
     raw_audio = None
     if asrc == "none":
@@ -110,9 +125,9 @@ def run(opts, workdir, assets_dir, progress):
             log("Downloading tab-synced audio from Songsterr...")
             raw_audio = os.path.join(workdir, "src.opus")
             songsterr.download_synced_audio(m, raw_audio)
-        elif asrc == "youtube":
-            log("Downloading audio from YouTube...")
-            raw_audio = audio.youtube_download(opts["youtube_url"], os.path.join(workdir, "src"), progress=log)
+        elif asrc == "url":
+            log("Downloading audio from link...")
+            raw_audio = audio.download_audio_url(opts["audio_url"], os.path.join(workdir, "src"), progress=log)
         elif asrc == "upload":
             raw_audio = opts["upload_audio_path"]
             log("Using uploaded audio file.")
@@ -133,14 +148,34 @@ def run(opts, workdir, assets_dir, progress):
 
     # ---------- 3b. AUDIO-ONLY TRANSCRIBE ----------
     if opts["tab_source"] == "audio":
-        stg("notation", "Transcribing drums from audio (beta)...")
-        events, barlens, bpm2, _ = transcribe.from_audio_drums(drum_stem, bpm=bpm, progress=log)
+        if not drum_stem:
+            raise RuntimeError("Audio-only transcription needs the isolated drum track, "
+                               "but drum separation did not produce one.")
+        # Always attempt the automatic dual-engine full kit (toms + ride + hats);
+        # fall back to the fast built-in detector only if the models can't load.
+        from . import fullkit
+        stg("notation", "Full-kit transcription (inagoy + LarsNet, beta)...")
+        try:
+            events, barlens, bpm2, audio_anchor = fullkit.from_audio_fullkit(
+                drum_stem, bpm=bpm, progress=log)
+        except Exception as e:
+            log(f"Full-kit engines unavailable ({str(e)[:100]}); "
+                f"using the fast kick/snare/hat detector.")
+            events, barlens, bpm2, audio_anchor = transcribe.from_audio_drums(
+                drum_stem, bpm=bpm, progress=log)
         bpm = bpm or bpm2
+        # The transcription puts the first detected hit at chart t=0; trim the
+        # backing track to start there too so chart and BGM stay in sync.
+        if audio_anchor and audio_anchor > 0.05:
+            log(f"Aligning backing track to first drum hit (trim {audio_anchor:.2f}s).")
+            full_wav = audio.trim_start(full_wav, os.path.join(workdir, "full_trim.wav"), audio_anchor)
+            drum_stem = audio.trim_start(drum_stem, os.path.join(workdir, "drums_trim.wav"), audio_anchor)
 
     if events is None:
         raise RuntimeError("No notation was produced.")
     if not bpm:
         bpm = 120
+    setdata("bpm", round(float(bpm), 3))    # final detected/effective BPM (audio-only path)
 
     # snapshot the faithful transcription - the baseline for the faithfulness score
     original_events = copy.deepcopy(events)
@@ -192,12 +227,12 @@ def run(opts, workdir, assets_dir, progress):
         audio.to_ogg(bgm_wav, bgm_file)
 
     # ---------- 5. HUMANIZE ----------
-    hh_lvl = opts.get("hihat_foot", "off")
+    hh_on = (str(opts.get("hihat_foot", "off")).strip().lower() == "on")
     db_on = bool(opts.get("double_bass", False))
     db_converted = 0
-    if hh_lvl != "off" or db_on:
-        stg("humanize", f"Advanced technique (hi-hat foot: {hh_lvl}, double bass: {'on' if db_on else 'off'})...")
-        events, db_converted = humanize.humanize(events, barlens, bpm, hihat_level=hh_lvl, doublebass=db_on)
+    if hh_on or db_on:
+        stg("humanize", f"Advanced technique (hi-hat foot: {'on' if hh_on else 'off'}, double bass: {'on' if db_on else 'off'})...")
+        events, db_converted = humanize.humanize(events, barlens, bpm, hihat_on=hh_on, doublebass=db_on)
         if db_on:
             log(f"Double kick: converted {db_converted} too-fast kicks to left-foot.")
     else:
@@ -216,7 +251,25 @@ def run(opts, workdir, assets_dir, progress):
 
     # ---------- 6b. FAITHFULNESS (vs the original tab) ----------
     fscore = faith.compare(original_events, events)
-    log(faith.summary_line(fscore))
+    log(faith.summary_line(fscore, "audio" if opts["tab_source"] == "audio" else "tab"))
+
+    # ---------- 6c. DIFFICULTY (auto-rate when the user left it blank) ----------
+    dlevel_in = str(opts.get("dlevel", "")).strip()
+    if dlevel_in:
+        dlevel_val = normalize_dlevel(dlevel_in)
+        dlevel_display = round(dlevel_val / 100.0, 2)
+        dlevel_auto = False
+    else:
+        dscore = difficulty.compute(events, barlens, bpm)
+        dlevel_val = dscore["value"]
+        dlevel_display = dscore["display"]
+        dlevel_auto = True
+        fa = dscore["factors"]
+        log(f"Auto-difficulty: {dlevel_display:.2f}/9.99 "
+            f"(density {fa.get('nps')}/s, peak {fa.get('burst')}/s, "
+            f"foot {fa.get('foot_rate')}/s, hands {fa.get('hand_rate')}/s, "
+            f"{fa.get('lanes')} lanes). Rated for a player with some drum skill.")
+        setdata("dlevel", dlevel_display)
 
     # ---------- 7. PACKAGE ----------
     stg("package", "Building DTX chart...")
@@ -230,9 +283,9 @@ def run(opts, workdir, assets_dir, progress):
         audio.to_ogg(silent_wav, bgm_file)
 
     meta = dict(title=title, artist=artist, bpm=round(float(bpm), 3),
-                dlevel=normalize_dlevel(opts.get("dlevel", "50")),
-                comment=(f"Charted by {opts['author']}. " if opts.get("author") else "")
-                        + f"Generated by DTX Forge. Source: {opts['tab_source']}.",
+                dlevel=dlevel_val,
+                comment=(f"Charted by {opts['author']} using DTX Forge."
+                         if opts.get("author") else "Charted using DTX Forge."),
                 bgm=os.path.basename(bgm_file))
     dtx_text = dtx.emit_dtx(events, barlens, meta)
 
@@ -242,12 +295,13 @@ def run(opts, workdir, assets_dir, progress):
     stats = dict(measures=len(events), chips=dtx.count_chips(events), bpm=meta["bpm"],
                  drum_mode=drum_mode if raw_audio else "none",
                  removed_drums=bool(raw_audio and drum_mode != "keep"),
-                 hihat_foot=hh_lvl, double_bass=("on" if db_on else "off"),
+                 hihat_foot=("on" if hh_on else "off"), double_bass=("on" if db_on else "off"),
                  double_kicks=db_converted,
                  playability=play_report["verdict"], play_score=play_report["score"],
                  play_issues=play_report["issue_count"],
                  faithfulness=fscore["percent"], notes_moved=fscore["moved"],
                  notes_dropped=fscore["dropped"], notes_added=fscore["added"],
+                 dlevel=dlevel_display, dlevel_auto=dlevel_auto,
                  source=opts["tab_source"], title=title, artist=artist)
     log("Done.")
     return dict(folder=folder, zip=zpath, stats=stats, playability=play_report, faithfulness=fscore)

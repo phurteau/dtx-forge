@@ -215,78 +215,104 @@ def _read_mono(path):
         x = x.reshape(-1, 2).mean(axis=1)
     return x, sr
 
-def _onset_env(x, sr, hop=256, win=1024):
-    wnd = np.hanning(win); nfr = (len(x) - win) // hop
-    prev = None; onset = np.zeros(nfr)
+def _band_envs(x, sr, bands, hop=512, win=2048):
+    """One STFT pass -> a positive-spectral-flux onset envelope per frequency band.
+    Detecting each drum in its own band lets simultaneous hits (kick+snare+hat on the
+    same beat) all register, which a single onset+classify pass cannot do."""
+    wnd = np.hanning(win)
+    nfr = max(0, (len(x) - win) // hop)
+    freqs = np.fft.rfftfreq(win, 1 / sr)
+    masks = [(freqs >= lo) & (freqs < hi) for (lo, hi) in bands]
+    envs = [np.zeros(nfr) for _ in bands]
+    prev = [None] * len(bands)
     for i in range(nfr):
         mag = np.abs(np.fft.rfft(x[i*hop:i*hop+win] * wnd))
-        if prev is not None:
-            d = mag - prev; onset[i] = np.sum(d[d > 0])
-        prev = mag
-    onset /= (onset.max() or 1)
-    return onset, sr / hop
+        for b, mask in enumerate(masks):
+            s = mag[mask]
+            if prev[b] is not None:
+                d = s - prev[b]
+                envs[b][i] = float(d[d > 0].sum())
+            prev[b] = s
+    for b in range(len(bands)):
+        mx = envs[b].max() or 1.0
+        envs[b] /= mx
+    return envs, sr / hop
+
 
 def _estimate_bpm(onset, fps, lo=70, hi=200):
     env = onset - onset.mean()
     ac = np.correlate(env, env, "full")[len(env)-1:]
     best = (0, None)
     for bpm in np.arange(lo, hi, 0.25):
-        lag = 60.0 / bpm * fps
-        i = int(round(lag))
+        i = int(round(60.0 / bpm * fps))
         if 1 <= i < len(ac) and ac[i] > best[0]:
             best = (ac[i], bpm)
     return best[1] or 120.0
 
-def _classify(seg, sr):
-    X = np.abs(np.fft.rfft(seg * np.hanning(len(seg))))
-    freqs = np.fft.rfftfreq(len(seg), 1/sr)
-    tot = X.sum() + 1e-9
-    low = X[(freqs >= 20) & (freqs < 150)].sum() / tot
-    mid = X[(freqs >= 150) & (freqs < 2000)].sum() / tot
-    high = X[freqs >= 6000].sum() / tot
-    centroid = (freqs * X).sum() / tot
-    if low > 0.35 and centroid < 800:
-        return 36  # kick
-    if high > 0.30:
-        # bright: hat vs cymbal by decay length (approx via energy spread)
-        return 42 if mid < 0.25 else 49
-    return 38  # snare-ish default
 
-def from_audio_drums(drum_wav, bpm=None, progress=None):
-    """Detect + classify drum onsets from an isolated drum stem. Beta quality."""
-    if progress: progress("Analyzing drum stem (audio-only transcription, beta)...")
-    x, sr = _read_mono(drum_wav)
-    onset, fps = _onset_env(x, sr)
-    if bpm is None:
-        bpm = _estimate_bpm(onset, fps)
-    # peak pick
-    nfr = len(onset); gap = int(0.07 * fps)
-    mov = np.convolve(onset, np.ones(int(0.2*fps))/int(0.2*fps), mode="same")
+def _pick(env, fps, min_gap=0.06, thr_rel=0.06, thr_abs=0.08):
+    """Local-maxima peak picker over an onset envelope with a moving-average floor
+    and a refractory gap so one hit isn't counted twice."""
+    nfr = len(env)
+    if nfr < 3:
+        return []
+    win = max(1, int(0.25 * fps))
+    mov = np.convolve(env, np.ones(win) / win, mode="same")
+    gap = max(1, int(min_gap * fps))
     peaks = []; i = 1
     while i < nfr - 1:
-        if onset[i] > onset[i-1] and onset[i] >= onset[i+1] and onset[i] > mov[i]+0.04 and onset[i] > 0.06:
+        if (env[i] > env[i-1] and env[i] >= env[i+1]
+                and env[i] > mov[i] + thr_rel and env[i] > thr_abs):
             peaks.append(i); i += gap
         else:
             i += 1
+    return peaks
+
+
+def from_audio_drums(drum_wav, bpm=None, progress=None):
+    """Transcribe an isolated drum stem by per-band onset detection: kick (low),
+    snare (mid), hi-hat/cymbal (high). Bright hits are split into hat vs crash by
+    decay length. Beta quality - good groove skeleton, not a note-perfect chart."""
+    if progress: progress("Analyzing drum stem (per-band onset detection, beta)...")
+    x, sr = _read_mono(drum_wav)
+    # (lo, hi) Hz per lane: kick, snare, hats/cymbals
+    band_defs = [(30, 120), (200, 1600), (5000, sr / 2)]
+    envs, fps = _band_envs(x, sr, band_defs)
+    kick_env, snare_env, hat_env = envs
+    if bpm is None:
+        bpm = _estimate_bpm(kick_env + snare_env, fps)
+
+    hits = []   # (frame_index, GM-midi)
+    for p in _pick(kick_env, fps, min_gap=0.09, thr_rel=0.06, thr_abs=0.09):
+        hits.append((p, 36))
+    for p in _pick(snare_env, fps, min_gap=0.08, thr_rel=0.07, thr_abs=0.10):
+        hits.append((p, 38))
+    for p in _pick(hat_env, fps, min_gap=0.06, thr_rel=0.05, thr_abs=0.07):
+        # hat vs crash: a crash is loud AND keeps ringing; a hat (even open) dies faster.
+        # Bias toward hat - a chart peppered with crashes reads wrong.
+        tail = hat_env[p + int(0.06 * fps): p + int(0.36 * fps)]
+        sustained = tail.size > 0 and float(tail.mean()) > 0.17 and float(hat_env[p]) > 0.34
+        hits.append((p, 49 if sustained else 42))
+
+    if not hits:
+        return [{}], [Fraction(1)], round(bpm, 3), 0.0
+
+    hits.sort()
+    anchor = hits[0][0] / fps                    # first hit = bar 1 downbeat (chart t=0)
     bar_time = 4 * 60.0 / bpm
-    anchor = peaks[0] / fps if peaks else 0.0   # first onset = bar 1 downbeat
-    hop_n = int(0.04 * sr)
     ev = {}
-    for p in peaks:
+    for p, midi in hits:
         t = p / fps - anchor
-        if t < 0: continue
+        if t < -1e-6:
+            continue
         mi = int(t // bar_time)
         pos_frac = (t - mi * bar_time) / bar_time
         slot = int(round(pos_frac * dtx.GRID))
-        if slot >= dtx.GRID: slot = dtx.GRID - 1
-        s0 = int((p/fps) * sr)
-        seg = x[s0:s0 + hop_n]
-        if len(seg) < 32: continue
-        midi = _classify(seg, sr)
+        if slot >= dtx.GRID:
+            slot = dtx.GRID - 1
         ch, lab = dtx.MAP[midi]
         ev.setdefault(mi, {}).setdefault(ch, {}).setdefault(Fraction(slot, dtx.GRID), dtx.LABEL2SLOT[lab])
     n_bars = (max(ev) + 1) if ev else 1
     events = [ev.get(i, {}) for i in range(n_bars)]
     barlens = [Fraction(1)] * n_bars
-    # add a small lead-in bar so the first hit isn't at t=0 (BGM starts at 0)
     return events, barlens, round(bpm, 3), anchor

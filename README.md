@@ -79,15 +79,29 @@ The URL box (and file upload) auto-detect the source - you don't pick a type:
 | **Guitar Pro** | `.gp` / `.gp3` / `.gp4` / `.gp5` / `.gpx` - URL or file. Percussion track → GM drums. |
 | **MIDI** | `.mid` / `.midi` with a GM drum track (channel 10). |
 | **ASCII drum tab** | Paste text like `HH|x-x-x-x-|` (Ultimate-Guitar style), or a `.txt`/URL. |
-| **Audio only** *(beta)* | No tab at all - onset detection + frequency classification. |
+| **Audio only** *(beta)* | No tab at all - AI drum separation + onset detection. Pick an engine (below). |
 
 The dividing line isn't the website - it's whether the source has **machine-readable notes** vs. a
 picture of notes. Photos/PDFs of sheet music aren't supported (that needs optical music recognition).
 
+### Audio-only drum engines *(used only when notation is blank)*
+
+| Engine | Detects | Model download | License |
+| --- | --- | --- | --- |
+| **Fast** | kick, snare, hi-hat, crash | none (built-in) | - |
+| **Full kit** (inagoy DrumSep) | + **toms** (high/low/floor) | ~160 MB, first use | unstated (personal use) |
+| **Full kit+** (LarsNet) | + **open/closed hi-hat** & **ride** | ~515 MB, first use | **CC BY-NC** (non-commercial) |
+
+Models download once to `%LOCALAPPDATA%/DTXForge` and are **not** bundled. The full-kit engines add
+real toms/ride by separating the drum stem per-instrument, then onset-detecting each piece (toms are
+pitch-split into high/low-mid/floor; cymbals into crash/ride). See `LICENSE` for model attributions.
+
 ## Notes & limits
 
 - Songsterr tabs are often **AI-generated** - a strong approximation, not a hand-verified chart.
-- **Audio-only** transcription (no tab) is beta: onset detection + frequency-band classification.
+- **Audio-only** transcription (no tab) is beta. *Fast* finds kick/snare/hat/crash only; the *Full kit*
+  engines add toms (and, with LarsNet, ride + open hi-hat). Tempo detection on raw audio can pick the
+  wrong octave - set BPM manually if the tempo looks doubled/halved (note placement still follows the audio).
 - Auto-sync assumes the upload is the same tempo as the song; disable it for nightcore/sped-up rips.
 
 ## Layout

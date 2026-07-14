@@ -46,6 +46,8 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:0 2px 14px var(--glow)}
   .card h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin:0 0 12px;display:flex;align-items:center}
   .card h2 .n{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--acc);color:var(--acc-ink);border-radius:50%;font-size:12px;margin-right:8px}
+  .card h2 .tagpill{text-transform:none;letter-spacing:0;font-size:10px;font-weight:600;color:var(--dim);border:1px solid var(--line);border-radius:10px;padding:2px 7px;margin-left:8px}
+  .card h2 .tagpill.req{color:var(--acc2);border-color:var(--acc2)}
   label{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
   input[type=text],input[type=number],input[type=file]{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none}
   input[type=file]{padding:8px} input:focus{border-color:var(--acc2)}
@@ -87,6 +89,7 @@
   .badge.playable{background:#16401f;color:#7ee89a;border:1px solid #2f8f4a}
   .badge.tight{background:#3d3410;color:#ecd06a;border:1px solid #8a7420}
   .badge.problem{background:#451717;color:#f0938a;border:1px solid #8a3030}
+  .badge.info{background:var(--panel2);color:var(--dim);border:1px solid var(--line)}
   .stat{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:4px 8px 4px 0;font-size:14px}.stat b{color:var(--acc2)}
   .dl{display:block;text-align:center;margin-top:14px;background:var(--acc);color:var(--acc-ink);font-weight:700;text-decoration:none;padding:14px 24px;border-radius:10px;font-size:15px;flex:0 0 auto}
   .hidden{display:none}
@@ -113,46 +116,46 @@
   <!-- LEFT: inputs -->
   <div class="col">
     <div class="card">
-      <h2><span class="n">1</span>Notation source</h2>
-      <div class="seg" id="tabseg"><button data-v="url" class="active">URL / paste</button><button data-v="file">Upload file</button></div>
-      <div id="src-url"><label>Tab URL or pasted tab</label>
-        <input type="text" id="url" placeholder="Songsterr link · Guitar Pro / MIDI URL · or paste an ASCII tab">
-        <div class="hint">Auto-detects the source: <b>Songsterr</b> link, a <b>Guitar Pro</b> (.gp/.gp5) or <b>MIDI</b> URL, or a pasted plain-text drum tab. Any URL with readable drum notes works.</div></div>
-      <div id="src-file" class="hidden"><label>Tab file</label><input type="file" id="tabfile" accept=".gp,.gp3,.gp4,.gp5,.gpx,.gtp,.mid,.midi,.txt,.tab">
-        <div class="hint">Guitar Pro (.gp5, .gpx…), MIDI (.mid), or a plain-text drum tab (.txt). Type detected automatically.</div></div>
+      <h2><span class="n">1</span>Details</h2>
+      <div class="row"><div><label>Title <span class="hint">(auto if blank)</span></label><input type="text" id="title"></div>
+        <div><label>Artist</label><input type="text" id="artist"></div></div>
+      <div class="row" style="margin-top:6px"><div><label>BPM <span class="hint" id="bpmHint">(optional)</span></label><input type="number" id="bpm" step="0.001" placeholder="auto"></div>
+        <div><label>Difficulty <span class="hint" id="dlevelHint">(auto-rated if blank)</span></label><input type="text" id="dlevel" placeholder="auto"></div></div>
+      <div class="row" style="margin-top:6px"><div><label>Author</label><input type="text" id="author"></div></div>
     </div>
 
     <div class="card">
-      <h2><span class="n">2</span>Audio (BGM)</h2>
-      <div class="seg" id="audseg"><button data-v="youtube" class="active">YouTube</button><button data-v="upload">Upload file</button></div>
-      <div id="aud-youtube"><label>YouTube URL</label><input type="text" id="yt" placeholder="https://www.youtube.com/watch?v=...">
-        <div class="hint">Works anonymously for most; if blocked it auto-uses your browser's YouTube session. Otherwise use Upload file.</div></div>
+      <h2><span class="n">2</span>Audio (BGM)<span class="tagpill req">required</span></h2>
+      <div class="seg" id="audseg"><button data-v="url" class="active">Audio URL</button><button data-v="upload">Upload file</button></div>
+      <div id="aud-url"><label>Audio link</label><input type="text" id="yt" placeholder="YouTube · SoundCloud · Bandcamp · or a direct .mp3/.wav link">
+        <div class="hint">Paste a link from <b>YouTube, SoundCloud, Bandcamp, Vimeo</b> and 1000+ sites, or a <b>direct audio-file URL</b>. Works anonymously for most; if a site needs a login it auto-uses your browser session. Otherwise use Upload file.</div></div>
       <div id="aud-upload" class="hidden"><label>Audio file (mp3 / wav / ogg / m4a)</label><input type="file" id="audio" accept="audio/*"></div>
 
       <label>Drums in the backing track</label>
       <div class="seg" id="drumseg"><button data-v="keep" class="active">Keep</button><button data-v="quiet">Quiet</button><button data-v="remove">Remove</button></div>
       <div class="hint" id="drumHint">Plays the complete song, drums included.</div>
-      <label class="chk"><input type="checkbox" id="autoSync" checked><span><b>Auto-sync audio to chart</b><br><span class="hint" style="margin:0">Aligns YouTube/uploaded audio to the notes (fixes intro offset &amp; slight tempo diffs).</span></span></label>
+      <label class="chk"><input type="checkbox" id="autoSync" checked><span><b>Auto-sync audio to chart</b><br><span class="hint" style="margin:0">Aligns the downloaded/uploaded audio to the notes (fixes intro offset &amp; slight tempo diffs).</span></span></label>
     </div>
 
     <div class="card">
-      <h2><span class="n">3</span>Details</h2>
-      <div class="row"><div><label>Title <span class="hint">(auto if blank)</span></label><input type="text" id="title"></div>
-        <div><label>Artist</label><input type="text" id="artist"></div></div>
-      <div class="row" style="margin-top:6px"><div><label>Author <span class="hint">(chart creator - you)</span></label><input type="text" id="author"></div></div>
-      <div class="row" style="margin-top:6px"><div><label>BPM <span class="hint">(optional)</span></label><input type="number" id="bpm" step="0.001" placeholder="auto"></div>
-        <div><label>Difficulty <span class="hint">(0–99 or 0.00–9.99)</span></label><input type="text" id="dlevel" value="5.00"></div></div>
+      <h2><span class="n">3</span>Notation source<span class="tagpill">optional</span></h2>
+      <div class="seg" id="tabseg"><button data-v="url" class="active">URL / paste</button><button data-v="file">Upload file</button></div>
+      <div id="src-url"><label>Tab URL or pasted tab</label>
+        <input type="text" id="url" placeholder="Songsterr link · Guitar Pro / MIDI URL · or paste an ASCII tab">
+        <div class="hint">Auto-detects the source: <b>Songsterr</b> link, a <b>Guitar Pro</b> (.gp/.gp5) or <b>MIDI</b> URL, or a pasted plain-text drum tab. <b>Leave blank to transcribe the drums from the audio itself</b> (beta - always separates the drums first).</div></div>
+      <div id="src-file" class="hidden"><label>Tab file</label><input type="file" id="tabfile" accept=".gp,.gp3,.gp4,.gp5,.gpx,.gtp,.mid,.midi,.txt,.tab">
+        <div class="hint">Guitar Pro (.gp5, .gpx…), MIDI (.mid), or a plain-text drum tab (.txt). Type detected automatically.</div></div>
+      <div class="hint" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">When notation is blank, DTX Forge transcribes the drums straight from the audio - it automatically separates the drum track into individual pieces to recover a full kit: <b>kick, snare, toms, hi-hat (open/closed), ride and crash</b>. Separation models download once on first use. <i>(Beta.)</i></div>
     </div>
 
     <div class="card">
       <h2><span class="n">4</span>Advanced - foot technique</h2>
       <div class="adv"><div class="head">Hi-Hat Pedal</div>
-        <div class="hint">Layers in <b>left-foot hi-hat</b> notes (the DTX left-pedal lane) to mimic how a real drummer works the hi-hat with their foot while their hands stay busy. Pick how much to add:</div>
-        <div class="seg" id="hhseg" style="margin-top:8px"><button data-v="1to1">1:1 True</button><button data-v="medium">Medium</button><button data-v="off" class="active">Off</button></div>
-        <div class="hint" id="hhHint" style="margin-top:8px"></div></div>
+        <div class="hint">Adds a <b>left-foot hi-hat “chick”</b> on the <b>2 &amp; 4 backbeat</b> - the foot-pedal pattern real DTXMania/GITADORA charts use. It only fills beats where your hands aren't already on a hi-hat/cymbal, so nothing doubles up.</div>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="hhToggle"><span><b>Add hi-hat foot pedal</b> <span class="hint" style="margin:0">- left-foot “chick” on beats 2 &amp; 4</span></span></label></div>
       <div class="adv"><div class="head">DKDK Mode</div>
         <div class="hint">When ON, kicks too fast to play one-legged are auto-converted to a double kick - right-foot kick + left pedal (DTXMania style). Kicks slow enough for one foot stay as-is.</div>
-        <label class="chk" style="margin-top:10px"><input type="checkbox" id="dbToggle"><span><b>Enable double bass kicks</b> <span class="hint" style="margin:0">- AI decides where it's needed</span></span></label></div>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="dbToggle"><span><b>Enable double bass kicks</b> <span class="hint" style="margin:0">- the generator decides where it's needed</span></span></label></div>
       <div class="hint" style="margin-top:10px">A human-playability check runs at the end and auto-relaxes anything impossible for 2 hands + 2 feet.</div>
     </div>
   </div>
@@ -211,38 +214,41 @@ $('#colorInput').oninput=e=>applyAccent(e.target.value);$('#resetBtn').onclick=(
 applyTheme(localStorage.getItem('dtx_theme')||'dark');applyAccent(localStorage.getItem('dtx_accent')||'#1f8a3b');
 
 /* segmented controls */
-let tabSource="url",audSource="youtube",drumMode="keep",hhLevel="off";
+let tabSource="url",audSource="url",drumMode="keep";
 function segWire(id,cb){document.querySelectorAll('#'+id+' button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('active'));b.classList.add('active');cb(b.dataset.v);};});}
 segWire('tabseg',v=>{tabSource=v;['url','file'].forEach(x=>$('#src-'+x).classList.toggle('hidden',x!==v));});
-segWire('audseg',v=>{audSource=v;['youtube','upload'].forEach(x=>$('#aud-'+x).classList.toggle('hidden',x!==v));});
+segWire('audseg',v=>{audSource=v;['url','upload'].forEach(x=>$('#aud-'+x).classList.toggle('hidden',x!==v));});
 const DH={
   keep:"<b>Keep</b> - the backing track is the <b>full original song, drums included</b>. Your pads still trigger drum sounds too, so you'll hear the song's drums layered with your hits. Best for playing along to the complete track. <i>(No drum separation - fastest.)</i>",
-  quiet:"<b>Quiet</b> - the song's drums are <b>reduced ~50%</b> in the backing track (AI-separated), so they sit softly underneath while your hits carry the groove. A middle ground between Keep and Remove. <i>(Uses drum separation - slower.)</i>",
-  remove:"<b>Remove</b> - the song's drums are <b>~90% stripped</b> from the backing track (AI-separated), so <b>your hits supply the drums</b> - true arcade feel. Your pads always make drum sounds in every mode; this just clears them out of the music. <i>(Uses drum separation - slower.)</i>"
+  quiet:"<b>Quiet</b> - the song's drums are <b>reduced ~50%</b> in the backing track (auto-separated), so they sit softly underneath while your hits carry the groove. A middle ground between Keep and Remove. <i>(Uses drum separation - slower.)</i>",
+  remove:"<b>Remove</b> - the song's drums are <b>~90% stripped</b> from the backing track (auto-separated), so <b>your hits supply the drums</b> - true arcade feel. Your pads always make drum sounds in every mode; this just clears them out of the music. <i>(Uses drum separation - slower.)</i>"
 };
 segWire('drumseg',v=>{drumMode=v;$('#drumHint').innerHTML=DH[v];});
 $('#drumHint').innerHTML=DH[drumMode];
-const HH={
-  "1to1":"<b>1:1 True</b> - most authentic. Adds a left-foot pedal note on <b>every quarter beat</b> (1-2-3-4) where a hand isn't already on a hat/cymbal, <b>plus</b> a quick foot “chick” right after each <b>open</b> hi-hat to close it - exactly how a real drummer plays. Most notes, hardest.",
-  "medium":"<b>Medium</b> - adds a left-foot pedal note on <b>beats 2 &amp; 4</b> only (the backbeat). This is the most common casual foot-hat pattern: keeps a natural feel with far fewer notes than 1:1.",
-  "off":"<b>Off</b> - no left-foot pedal notes are added; the chart uses only what's in the tab. Considered “off” because your hi-hat foot stays free - nothing extra to play. Choose Medium or 1:1 True to layer in foot-pedal realism."
-};
-segWire('hhseg',v=>{hhLevel=v;$('#hhHint').innerHTML=HH[v];});
-$('#hhHint').innerHTML=HH[hhLevel];
+/* a BPM the user types is theirs - stop auto-fill from overwriting it */
+$('#bpm').addEventListener('input',()=>{$('#bpm').dataset.auto='';$('#bpmHint').textContent='(optional)';});
+/* same for difficulty: a typed value is respected; blank => auto-rated */
+$('#dlevel').addEventListener('input',()=>{$('#dlevel').dataset.auto='';$('#dlevelHint').textContent='(auto-rated if blank)';});
 
 /* generate */
 $('#genBtn').onclick=async()=>{
   const fd=new FormData();
-  fd.append('tab_source',tabSource==='file'?'url':tabSource);fd.append('audio_source',audSource);fd.append('drum_mode',drumMode);
-  fd.append('auto_sync',$('#autoSync').checked);fd.append('hihat_foot',hhLevel);fd.append('double_bass',$('#dbToggle').checked);
+  // Notation is OPTIONAL. If it's blank, transcribe the drums from the audio itself.
+  const _url=$('#url').value.trim(), _tabFile=$('#tabfile').files[0];
+  const hasNotation=(tabSource==='url'&&_url)||(tabSource==='file'&&_tabFile);
+  fd.append('tab_source',hasNotation?'url':'audio');
+  if(tabSource==='url'&&_url)fd.append('songsterr_url',_url);
+  if(tabSource==='file'&&_tabFile)fd.append('tab_file',_tabFile);
+  fd.append('audio_source',audSource);fd.append('drum_mode',drumMode);
+  fd.append('auto_sync',$('#autoSync').checked);fd.append('hihat_foot',$('#hhToggle').checked?'on':'off');fd.append('double_bass',$('#dbToggle').checked);
   fd.append('title',$('#title').value);fd.append('artist',$('#artist').value);fd.append('author',$('#author').value);
   fd.append('bpm',$('#bpm').value);fd.append('dlevel',$('#dlevel').value);
-  if(tabSource==='url'){if(!$('#url').value.trim()){alert('Paste a tab URL or an ASCII drum tab.');return;}fd.append('songsterr_url',$('#url').value.trim());}
-  if(tabSource==='file'){if(!$('#tabfile').files[0]){alert('Choose a tab file (Guitar Pro, MIDI, or .txt).');return;}fd.append('tab_file',$('#tabfile').files[0]);}
-  if(audSource==='youtube'){if(!$('#yt').value.trim()){alert('Paste a YouTube URL (or switch to Upload file).');return;}fd.append('youtube_url',$('#yt').value.trim());}
-  if(audSource==='upload'){if(!$('#audio').files[0]){alert('Choose an audio file.');return;}fd.append('audio_file',$('#audio').files[0]);}
+  // Audio is REQUIRED.
+  if(audSource==='url'){if(!$('#yt').value.trim()){alert('Audio is required - paste an audio link, or switch to Upload file.');return;}fd.append('audio_url',$('#yt').value.trim());}
+  if(audSource==='upload'){if(!$('#audio').files[0]){alert('Audio is required - choose an audio file.');return;}fd.append('audio_file',$('#audio').files[0]);}
   $('#genBtn').disabled=true;$('#done').classList.add('hidden');renderSteps([]);
   $('#outh').innerHTML='<span class="spin"></span>Working…';$('#log').innerHTML='';lastN=0;
+  if(!hasNotation)logline('No notation given - transcribing drums from the audio (beta).');
   try{const r=await fetch('/api/generate',{method:'POST',body:fd});const j=await r.json();if(j.error)throw new Error(j.error);poll(j.job_id);}
   catch(e){logline('ERROR: '+e);$('#genBtn').disabled=false;$('#outh').textContent='Failed';}
 };
@@ -251,17 +257,33 @@ let lastN=0;
 async function poll(id){
   try{const r=await fetch('/api/job/'+id);const j=await r.json();
     renderSteps(j.stages);
+    // auto-fill BPM the moment the pipeline detects it (only if the user left it blank)
+    if(j.data&&j.data.bpm){const el=$('#bpm');
+      if(!el.value.trim()||el.dataset.auto==='1'){el.value=j.data.bpm;el.dataset.auto='1';$('#bpmHint').textContent='(auto-detected)';}}
+    // auto-fill Difficulty once the chart is rated (only if the user left it blank)
+    if(j.data&&j.data.dlevel){const el=$('#dlevel');
+      if(!el.value.trim()||el.dataset.auto==='1'){el.value=j.data.dlevel.toFixed(2);el.dataset.auto='1';$('#dlevelHint').textContent='(auto-rated)';}}
     (j.messages||[]).slice(lastN).forEach(logline);lastN=(j.messages||[]).length;
     if(j.status==='done'){$('#outh').textContent='✓ Complete';$('#genBtn').disabled=false;const s=j.stats;
       const pv=s.playability||'',pc=pv==='playable'?'playable':(pv==='tight'?'tight':'problem');
       const f=s.faithfulness; const fc=f>=100?'playable':(f>=97?'tight':'problem');
+      const isAudio=s.source==='audio';
       const chg=[]; if(s.notes_moved)chg.push(s.notes_moved+' moved to left foot'); if(s.notes_dropped)chg.push(s.notes_dropped+' dropped'); if(s.notes_added)chg.push(s.notes_added+' foot notes added');
-      const ftitle=f>=100?'✓ 100% faithful to tab':('Tab faithfulness '+f+'%');
+      let fbadge;
+      if(isAudio){
+        // audio-only: no faithfulness % - there is no reference chart to compare against
+        fbadge='<span class="badge info" title="Drums were detected directly from the audio (beta). No faithfulness % applies - there is no reference chart to compare against.">🎧 Transcribed from audio (beta)</span>';
+      }else{
+        const ftitle=f>=100?'✓ 100% faithful to tab':('Tab faithfulness '+f+'%');
+        const ftip=chg.length?chg.join('; '):'tab untouched';
+        fbadge=`<span class="badge ${fc}" title="${ftip}">🎯 ${ftitle}</span>`;
+      }
       $('#stats').innerHTML=
-        `<span class="badge ${fc}" title="${chg.length?chg.join('; '):'tab untouched'}">🎯 ${ftitle}</span>`+
+        fbadge+
         `<span class="badge ${pc}">${pv==='playable'?'✓ Human-playable':(pv==='tight'?'△ Tight but playable':'⚠ Hard spots')} · ${s.play_score}/100</span>`+
-        (chg.length?`<div class="hint" style="margin:8px 0 0">Changes from the tab: ${chg.join(' · ')}. Everything else is exactly as charted.</div>`:`<div class="hint" style="margin:8px 0 0">The tab was transcribed exactly - no notes changed.</div>`)+
+        (chg.length?`<div class="hint" style="margin:8px 0 0">Changes from the ${isAudio?'transcription':'tab'}: ${chg.join(' · ')}. Everything else is exactly as charted.</div>`:`<div class="hint" style="margin:8px 0 0">${isAudio?'No changes after transcription - notes are exactly as detected.':'The tab was transcribed exactly - no notes changed.'}</div>`)+
         `<div style="margin-top:6px"><span class="stat"><b>${s.chips}</b> notes</span><span class="stat"><b>${s.measures}</b> bars</span><span class="stat"><b>${s.bpm}</b> BPM</span>`+
+        `<span class="stat">difficulty: <b>${s.dlevel!=null?s.dlevel.toFixed(2):'-'}</b>${s.dlevel_auto?' (auto)':''}</span>`+
         `<span class="stat">drums: <b>${s.drum_mode}</b></span><span class="stat">hi-hat foot: <b>${s.hihat_foot}</b></span><span class="stat">double kick: <b>${s.double_bass}${s.double_bass==='on'&&s.double_kicks?' ('+s.double_kicks+')':''}</b></span></div>`;
       $('#dl').href=j.download;$('#done').classList.remove('hidden');return;}
     if(j.status==='error'){$('#outh').textContent='✗ Failed';$('#genBtn').disabled=false;return;}

@@ -22,13 +22,14 @@ def to_ogg(src, dst, q=5):
     return dst
 
 
-def youtube_download(url, out_base, progress=None):
-    """Tiered YouTube download for good app usability:
-      1) anonymous (works for most users / IPs)
-      2) auto browser cookies (Firefox/Chrome/Edge/Brave) - uses the user's
-         existing YouTube session, snapshotting the DB to dodge file-locks
+def download_audio_url(url, out_base, progress=None):
+    """Download audio from ANY yt-dlp-supported URL (YouTube, SoundCloud, Bandcamp,
+    Vimeo, X/Twitter, a direct .mp3/.wav/.m4a link, and 1000+ more sites), tiered:
+      1) anonymous (works for most users / IPs / sites)
+      2) auto browser cookies (Firefox/Chrome/Edge/Brave) - reuses the user's
+         existing site session, snapshotting the DB to dodge file-locks
       3) raise a friendly error suggesting Upload file
-    Requires a JS runtime (deno) + EJS solver, enabled here automatically."""
+    Requires a JS runtime (deno) + EJS solver for sites (e.g. YouTube) that need it."""
     import yt_dlp
 
     common = {
@@ -71,8 +72,9 @@ def youtube_download(url, out_base, progress=None):
             return got
 
     raise RuntimeError(
-        "YouTube blocked this download. Make sure you're signed into YouTube in "
-        "your browser, or use the 'Upload file' option to add the audio directly.")
+        "Couldn't download audio from that link. If it's a site that needs a login "
+        "(e.g. YouTube), make sure you're signed in to it in your browser, or use the "
+        "'Upload file' option to add the audio directly.")
 
 
 def _snapshot_cookiefile(browser):
@@ -206,4 +208,19 @@ def build_bgm(full_wav, drums_wav, out_wav, k):
     with wave.open(out_wav, "w") as w:
         w.setnchannels(mix.shape[1]); w.setsampwidth(2); w.setframerate(sr)
         w.writeframes(out.tobytes())
+    return out_wav
+
+
+def trim_start(in_wav, out_wav, seconds):
+    """Drop the first `seconds` from a WAV. Used by the audio-only path to slide the
+    backing track so it starts at the first detected drum hit (chart t=0)."""
+    import wave, numpy as np
+    with wave.open(in_wav, "r") as w:
+        sr = w.getframerate(); ch = w.getnchannels()
+        x = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2")
+    off = max(0, int(round(seconds * sr))) * ch
+    x = x[off:] if off < len(x) else x[:0]
+    with wave.open(out_wav, "w") as w:
+        w.setnchannels(ch); w.setsampwidth(2); w.setframerate(sr)
+        w.writeframes(x.tobytes())
     return out_wav

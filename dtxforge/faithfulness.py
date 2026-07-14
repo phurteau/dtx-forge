@@ -1,15 +1,19 @@
-"""Faithfulness metric: compare the final chart against the originally-transcribed
-tab to report how faithful the output is (100% = the tab is untouched).
+"""Faithfulness metric: compare the final chart against the notation baseline that
+was snapshotted right after transcription - the TAB when one was supplied, or what
+the audio detector HEARD in audio-only mode (100% = that baseline is untouched).
 
-A note is identified by (measure, position, lane). Relative to the original tab:
+Note: in audio-only mode this scores fidelity to the transcription, NOT how
+accurately the transcription captured the real song (which is unmeasurable here).
+
+A note is identified by (measure, position, lane). Relative to the baseline:
   * kept    - same note still on the same lane at the same spot
   * moved   - same spot, but the lane changed (e.g. a kick reassigned to the
               left foot for a double-kick: RLR/LRL)
   * dropped - the note is gone (e.g. removed by the playability relaxer)
-  * added   - a brand-new note not in the tab (e.g. hi-hat foot / left-pedal)
+  * added   - a brand-new note not in the baseline (e.g. hi-hat foot / left-pedal)
 
 percent = kept / original_notes * 100  (additions don't reduce it - they're extra,
-not a change TO what the tab specified; they're reported separately).
+not a change TO what the baseline specified; they're reported separately).
 """
 
 
@@ -48,7 +52,10 @@ def compare(original_events, final_events):
     }
 
 
-def summary_line(f):
+def summary_line(f, source="tab"):
+    """source: 'tab' or 'audio' - names the baseline the score is measured against.
+    In audio-only mode we don't present a faithfulness % (there's no reference chart
+    to be 'faithful' to) - only what the foot-technique pass changed."""
     bits = []
     if f["moved"]:
         bits.append(f"{f['moved']} moved to left foot")
@@ -56,5 +63,9 @@ def summary_line(f):
         bits.append(f"{f['dropped']} dropped")
     if f["added"]:
         bits.append(f"{f['added']} foot notes added")
+    if source == "audio":
+        if bits:
+            return "Transcribed from audio (beta) - foot-technique changes: " + "; ".join(bits) + "."
+        return "Transcribed from audio (beta) - notes exactly as detected."
     detail = ("; ".join(bits)) if bits else "tab untouched"
     return f"Tab faithfulness: {f['percent']:.1f}% ({detail})."

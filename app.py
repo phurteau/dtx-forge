@@ -65,8 +65,8 @@ async def api_generate(
     tab_source: str = Form(...),
     songsterr_query: str = Form(""),
     songsterr_url: str = Form(""),
-    audio_source: str = Form("youtube"),
-    youtube_url: str = Form(""),
+    audio_source: str = Form("url"),
+    audio_url: str = Form(""),
     drum_mode: str = Form("keep"),
     auto_sync: str = Form("true"),
     hihat_foot: str = Form("off"),
@@ -75,7 +75,7 @@ async def api_generate(
     artist: str = Form(""),
     author: str = Form(""),
     bpm: str = Form(""),
-    dlevel: str = Form("50"),
+    dlevel: str = Form(""),
     midi_file: UploadFile = File(None),
     tab_file: UploadFile = File(None),
     audio_file: UploadFile = File(None),
@@ -106,14 +106,14 @@ async def api_generate(
         songsterr_query=songsterr_query.strip(),
         songsterr_url=songsterr_url.strip(),
         audio_source=audio_source,
-        youtube_url=youtube_url.strip(),
+        audio_url=audio_url.strip(),
         drum_mode=(drum_mode.strip() or "keep"),
         auto_sync=(auto_sync.lower() == "true"),
         hihat_foot=(hihat_foot.strip() or "off"),
         double_bass=(double_bass.lower() == "true"),
         title=title.strip(), artist=artist.strip(), author=author.strip(),
         bpm=(float(bpm) if bpm.strip() else None),
-        dlevel=(dlevel.strip() or "50"),
+        dlevel=dlevel.strip(),
     )
     _jobs[job_id] = {"status": "running", "reporter": Reporter(), "result": None, "error": None}
     threading.Thread(target=_run_job, args=(job_id, opts, upload_paths), daemon=True).start()
@@ -126,7 +126,7 @@ def api_job(job_id: str):
     if not job:
         return JSONResponse({"error": "unknown job"}, status_code=404)
     rep = job["reporter"]
-    out = {"status": job["status"], "messages": rep.messages, "stages": rep.snapshot()}
+    out = {"status": job["status"], "messages": rep.messages, "stages": rep.snapshot(), "data": rep.data}
     if job["status"] == "done":
         out["stats"] = job["result"]["stats"]
         out["download"] = f"/api/download/{job_id}"
