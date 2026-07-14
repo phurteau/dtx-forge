@@ -12,18 +12,20 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 
 ## Highlights
 
-- **No notation, ever.** Paste a **Songsterr** URL, a **Guitar Pro** / **MIDI** URL, an **ASCII drum tab**,
-  or upload a Guitar Pro / MIDI / .txt file → notes are transcribed automatically. The URL box
-  auto-detects the source: as long as it has readable drum notes, DTX Forge charts it.
-- **Real audio, auto-synced.** Pull the song from YouTube or upload a file; DTX Forge aligns it to the
-  chart (fixes intro offset & length differences) using the same recording as a reference.
+- **Notation optional - audio is enough.** Paste a **Songsterr** URL, a **Guitar Pro** / **MIDI** URL,
+  an **ASCII drum tab**, or a file - or **leave notation blank** and DTX Forge transcribes the drums
+  straight from the audio into a **full kit** (kick, snare, toms, open/closed hi-hat, ride, crash).
+- **Real audio from almost anywhere.** Paste a link from **YouTube, SoundCloud, Bandcamp, Vimeo** and
+  1000+ sites, a **direct audio-file URL**, or upload a file. DTX Forge auto-syncs it to the chart.
 - **Full song by default.** Keep the complete track, quiet the drums, or fully remove them (arcade feel).
-- **Advanced foot technique.** Hi-hat left-pedal and double-bass, each at 1:1 / Medium / Basic.
+- **Auto difficulty.** Leave Difficulty blank and it's rated from a skilled-player reference, so a
+  beginner gets a realistic sense of what's coming.
+- **Advanced foot technique.** Optional left-foot hi-hat on the **2 & 4 backbeat**, plus **DKDK** double-bass
+  that converts only the kicks too fast to play one-legged.
 - **Human-playability check.** Every chart is verified against a 2-hands + 2-feet model and
   auto-relaxed if a passage is physically impossible.
-- **Faithfulness score.** Every chart reports how true it is to the tab - **100% = untouched**,
-  and below that it shows exactly what changed (notes moved to the left foot for double-kicks,
-  dropped, or foot notes added).
+- **Faithfulness score.** When charting from a tab, each chart reports how true it is to the tab -
+  **100% = untouched** - and shows exactly what changed (notes moved to the left foot, dropped, or added).
 - **Live pipeline visualizer.** Watch each stage light up as it runs.
 - **Personalize it.** Light/dark themes + an accent color picker (remembered between runs).
 
@@ -33,9 +35,10 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 
 1. Install **Python 3.10+** (tick *Add Python to PATH*).
 2. Double-click **`setup.cmd`** - installs core dependencies and offers to install
-   Demucs (only needed for *Quiet* / *Remove* drum modes, ~2 GB).
+   Demucs (needed for audio-only transcription and the *Quiet* / *Remove* drum modes, ~2 GB).
 
-*(The `.exe` build needs none of this - just unzip and run.)*
+Full-kit separation models (~160 MB + ~515 MB) download automatically the first time you
+transcribe from audio with no tab. *(The `.exe` build needs none of the Python setup - just unzip and run.)*
 
 ## Run
 
@@ -53,21 +56,28 @@ Unzip the downloaded `Artist - Title.zip` into your DTXMania songs folder
 
 ## How the pieces work
 
-- **Notation** - Songsterr's note data → true-meter, 1/64-quantized DTX (phantom AI-tab notes merged
-  so the chart stays tempo-locked).
-- **Audio** - YouTube via yt-dlp (tiered: anonymous → your browser's YouTube session → friendly
-  fallback) or a file you upload. A bundled `deno` solves YouTube's JS challenge.
+- **Notation** - Songsterr / Guitar Pro / MIDI / ASCII → true-meter, 1/64-quantized DTX (odd-meter
+  overflow notes merged so the chart stays tempo-locked). Or, with no tab, the drums are transcribed
+  from the audio (see below).
+- **Audio** - any yt-dlp-supported link (YouTube, SoundCloud, Bandcamp, Vimeo, 1000+ sites), a direct
+  audio-file URL, or a file you upload. A bundled `deno` solves the JS challenge for sites (e.g. YouTube)
+  that need it.
 - **Auto-sync** - cross-correlates your audio against the tab-synced master to find the exact offset,
   then trims to align. Tempo is trusted from the tab (same song = same tempo).
-- **Foot technique** - adds left-foot hi-hat/double-bass notes on lane 1B with correct samples.
+- **Full kit (audio-only)** - separates the drum stem into individual pieces and onset-detects each, so
+  toms and ride are recovered - not just kick/snare/hat.
+- **Foot technique** - optional left-foot hi-hat on 2 & 4 and DKDK double-bass, written to lane 1B with
+  the correct samples.
+- **Difficulty** - if left blank, rated 0.00–9.99 from note density, peak bursts, limb speed, and kit
+  variety, referenced to a player with some drum skill.
 - **Playability** - flags any foot/hand asked to move faster than humanly possible, and relaxes it.
 - **Package** - Shift-JIS `.dtx` + BGM + a synthesized drum kit, zipped.
 
-## YouTube & usability
+## Audio downloads & usability
 
-Most users download **anonymously, no login**. If YouTube bot-blocks the network, DTX Forge
-automatically borrows your browser's existing YouTube session (Firefox/Chrome/Edge/Brave) - you never
-log into DTX Forge itself. If everything is blocked, **Upload file** always works.
+Most links download **anonymously, no login**. If a site bot-blocks the network (e.g. YouTube), DTX Forge
+automatically borrows your browser's existing session for that site (Firefox/Chrome/Edge/Brave) - you
+never log into DTX Forge itself. If everything is blocked, **Upload file** always works.
 
 ## Sources it can read
 
@@ -79,29 +89,31 @@ The URL box (and file upload) auto-detect the source - you don't pick a type:
 | **Guitar Pro** | `.gp` / `.gp3` / `.gp4` / `.gp5` / `.gpx` - URL or file. Percussion track → GM drums. |
 | **MIDI** | `.mid` / `.midi` with a GM drum track (channel 10). |
 | **ASCII drum tab** | Paste text like `HH|x-x-x-x-|` (Ultimate-Guitar style), or a `.txt`/URL. |
-| **Audio only** *(beta)* | No tab at all - AI drum separation + onset detection. Pick an engine (below). |
+| **Audio only** *(beta)* | No tab at all - the drum track is separated into pieces and transcribed. Fully automatic. |
 
 The dividing line isn't the website - it's whether the source has **machine-readable notes** vs. a
 picture of notes. Photos/PDFs of sheet music aren't supported (that needs optical music recognition).
 
-### Audio-only drum engines *(used only when notation is blank)*
+### Audio-only drum detection *(automatic, when notation is blank)*
 
-| Engine | Detects | Model download | License |
-| --- | --- | --- | --- |
-| **Fast** | kick, snare, hi-hat, crash | none (built-in) | - |
-| **Full kit** (inagoy DrumSep) | + **toms** (high/low/floor) | ~160 MB, first use | unstated (personal use) |
-| **Full kit+** (LarsNet) | + **open/closed hi-hat** & **ride** | ~515 MB, first use | **CC BY-NC** (non-commercial) |
+DTX Forge runs two complementary separation models and fuses their strengths - there's **no engine to
+pick**:
 
-Models download once to `%LOCALAPPDATA%/DTXForge` and are **not** bundled. The full-kit engines add
-real toms/ride by separating the drum stem per-instrument, then onset-detecting each piece (toms are
-pitch-split into high/low-mid/floor; cymbals into crash/ride). See `LICENSE` for model attributions.
+| Piece | Recovered by |
+| --- | --- |
+| kick, snare, toms (high / low-mid / floor) | drum-body separation |
+| open & closed hi-hat, ride, crash | hat / cymbal separation |
+
+Models download once to `%LOCALAPPDATA%/DTXForge` and are **not** bundled; if they can't be fetched, a
+fast built-in kick/snare/hat detector covers the basics. Toms are pitch-split into high/low-mid/floor and
+cymbals into crash/ride. See `LICENSE` for model attributions (one model's weights are CC BY-NC).
 
 ## Notes & limits
 
-- Songsterr tabs are often **AI-generated** - a strong approximation, not a hand-verified chart.
-- **Audio-only** transcription (no tab) is beta. *Fast* finds kick/snare/hat/crash only; the *Full kit*
-  engines add toms (and, with LarsNet, ride + open hi-hat). Tempo detection on raw audio can pick the
-  wrong octave - set BPM manually if the tempo looks doubled/halved (note placement still follows the audio).
+- Songsterr tabs are often **auto-generated** - a strong approximation, not a hand-verified chart.
+- **Audio-only** transcription (no tab) is beta: the drum stem is separated into pieces, then each is
+  onset-detected. Tempo detection on raw audio can pick the wrong octave - set BPM manually if it looks
+  doubled/halved (note placement still follows the audio either way).
 - Auto-sync assumes the upload is the same tempo as the song; disable it for nightcore/sped-up rips.
 
 ## Layout
@@ -114,6 +126,9 @@ dtx-forge/
     songsterr.py  audio.py  autosync.py   fetch, download, align
     transcribe.py  dtx.py  humanize.py     notes, emit, foot technique
     playability.py  notes.py  report.py    checks, helpers, stage events
+    difficulty.py  faithfulness.py         auto-rating, tab fidelity
+    fullkit.py  larsnet_engine.py          audio-only full-kit separation
+    vendor/larsnet_unet.py                 vendored model architecture
     drumkit.py  pipeline.py                samples, orchestration
   web/index.html                           UI (themes, picker, visualizer)
   assets/drumkit/  assets/bin/deno.exe     samples + JS runtime
