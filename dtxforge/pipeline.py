@@ -3,6 +3,10 @@ import os, re, copy, traceback
 from . import (songsterr, audio, transcribe, drumkit, dtx, humanize, playability,
                notes, autosync, sources, faithfulness as faith, difficulty)
 
+
+class Cancelled(Exception):
+    """Raised at a stage boundary when the UI's Stop button requested cancellation."""
+
 def normalize_dlevel(text, default="50"):
     """Accept '0-99' (tens scale, 50->5.00) or '0.00-9.99' (literal). Emit the
     DTXManiaNX hundredths integer that displays that difficulty (5.55 -> 555)."""
@@ -40,7 +44,12 @@ def run(opts, workdir, assets_dir, progress):
     kit_files = drumkit.ensure_kit(kit_dir)
 
     # stage/log shims (progress may be a Reporter or a plain callable)
+    def ckpt():
+        # abort cleanly at stage boundaries if the user hit Stop
+        if hasattr(progress, "is_cancelled") and progress.is_cancelled():
+            raise Cancelled()
     def stg(sid, msg=None):
+        ckpt()
         if hasattr(progress, "stage"): progress.stage(sid, msg)
         elif msg: progress(msg)
     def skp(sid):
@@ -56,6 +65,15 @@ def run(opts, workdir, assets_dir, progress):
         raise RuntimeError("Title and Artist are required.")
     bpm = opts.get("bpm")
     m = None
+
+    # Audio-only transcription style: 'raw' (as heard) | 'standardize' (grid + clean).
+    # Back-compat: honor the old `standardize` bool when `style` is absent.
+    style = str(opts.get("style") or
+                ("standardize" if opts.get("standardize", True) else "raw")).lower()
+    notes_style = str(opts.get("notes_style", "transcribed")).strip().lower()
+    # DTXMania regularization needs a clean, grid-locked base to work from, so it always
+    # transcribes audio with Standardize regardless of the Raw/Standardize toggle.
+    do_std_audio = (style != "raw") or (notes_style == "dtxmania")
 
     # Notation is OPTIONAL. With no tab URL/paste and no uploaded tab file, the
     # drums are transcribed straight from the audio (which then becomes required).
@@ -157,7 +175,7 @@ def run(opts, workdir, assets_dir, progress):
         # fall back to the fast built-in detector only if the models can't load.
         from . import fullkit
         stg("notation", "Full-kit transcription (inagoy + LarsNet, beta)...")
-        do_std = opts.get("standardize", True)
+        do_std = do_std_audio
         try:
             events, barlens, bpm2, audio_anchor = fullkit.from_audio_fullkit(
                 drum_stem, bpm=bpm, progress=log, standardize=do_std)
@@ -229,11 +247,16 @@ def run(opts, workdir, assets_dir, progress):
         log("Encoding BGM...")
         audio.to_ogg(bgm_wav, bgm_file)
 
-    # ---------- 5. HUMANIZE ----------
+    # ---------- 5. HUMANIZE (manual foot technique - Transcribed style only) ----------
+    # DTXMania style applies foot technique automatically and tier-gated in section 6c
+    # (after the hands are regularized), so the manual toggles are ignored in that mode.
     hh_on = (str(opts.get("hihat_foot", "off")).strip().lower() == "on")
     db_on = bool(opts.get("double_bass", False))
     db_converted = 0
-    if hh_on or db_on:
+    if notes_style == "dtxmania":
+        hh_on = db_on = False                # manual toggles ignored; feet are auto (6c)
+        skp("humanize")
+    elif hh_on or db_on:
         stg("humanize", f"Advanced technique (hi-hat foot: {'on' if hh_on else 'off'}, double bass: {'on' if db_on else 'off'})...")
         events, db_converted = humanize.humanize(events, barlens, bpm, hihat_on=hh_on, doublebass=db_on)
         if db_on:
@@ -252,21 +275,16 @@ def run(opts, workdir, assets_dir, progress):
         play_report = relax["after"]
         log(f"After relax: {play_report['verdict']} (score {play_report['score']}/100, {play_report['issue_count']} tight spots).")
 
-    # ---------- 6b. FAITHFULNESS (vs the original tab) ----------
-    fscore = faith.compare(original_events, events)
-    log(faith.summary_line(fscore, "audio" if opts["tab_source"] == "audio" else "tab"))
-
-    # ---------- 6c. DIFFICULTY + TIER (rate, choose tier, then simplify to match) ----------
+    # ---------- 6b. DIFFICULTY TIER (choose it first; needed by DTXMania + thinning) ----------
     dlevel_in = str(opts.get("dlevel", "")).strip()
     tier_choice = str(opts.get("dlevel_tier", "auto")).strip().lower()
 
-    # preliminary rating on the full chart -> used for auto difficulty and/or auto tier
     if dlevel_in:
         dlevel_val = normalize_dlevel(dlevel_in)
         dlevel_display = round(dlevel_val / 100.0, 2)
         dlevel_auto = False
     else:
-        dscore = difficulty.compute(events, barlens, bpm)
+        dscore = difficulty.compute(events, barlens, bpm)   # preliminary, for auto tier
         dlevel_val = dscore["value"]
         dlevel_display = dscore["display"]
         dlevel_auto = True
@@ -276,25 +294,43 @@ def run(opts, workdir, assets_dir, progress):
     else:
         tier_key = dtx.tier_from_score(dlevel_display)
 
-    # Simplify hi-hat / ride density to the chosen tier (Basic/Advanced read sparser;
-    # Extreme keeps 16ths; Master keeps everything). Then re-rate so the shown score
-    # and #DLEVEL match the notes actually emitted.
+    # ---------- 6c. NOTES STYLE (DTXMania regularization - any source, tab or audio) ----------
+    if notes_style == "dtxmania":
+        from . import dtxmania_style
+        events, nchg = dtxmania_style.apply(events, barlens, bpm, tier_key)
+        log(f"DTXMania style: regularized timekeeping to idiomatic patterns, kept all "
+            f"crashes ({nchg} edits).")
+        # Authentic charts add left-foot technique, tier-gated (real data: Basic/Advanced
+        # ~none, Extreme double bass, Master hi-hat chick + double bass). Feet fill the
+        # gaps now that the hands are regularized, so no manual toggle is needed.
+        events, hh_on, db_on, db_converted = dtxmania_style.auto_foot(events, barlens, bpm, tier_key)
+        if hh_on or db_on:
+            bits = []
+            if hh_on: bits.append("hi-hat foot on 2 & 4")
+            if db_on: bits.append(f"double bass ({db_converted} fast kicks split)")
+            log(f"DTXMania foot technique for {tier_key.title()}: {', '.join(bits)}.")
+
+    # ---------- 6d. SIMPLIFY hi-hat / ride density to the chosen tier ----------
     from . import simplify
     events, thinned = simplify.thin_for_tier(events, tier_key)
     if thinned:
         log(f"Simplified {thinned} hi-hat/ride notes to match {tier_key.title()} difficulty.")
-        if dlevel_auto:
-            dscore = difficulty.compute(events, barlens, bpm)
-            dlevel_val = dscore["value"]
-            dlevel_display = dscore["display"]
 
+    # Re-rate after style + thinning so the shown score and #DLEVEL match the emitted notes.
     if dlevel_auto:
+        dscore = difficulty.compute(events, barlens, bpm)
+        dlevel_val = dscore["value"]
+        dlevel_display = dscore["display"]
         fa = dscore["factors"]
         log(f"Auto-difficulty: {dlevel_display:.2f}/9.99 "
             f"(density {fa.get('nps')}/s, peak {fa.get('burst')}/s, "
             f"foot {fa.get('foot_rate')}/s, hands {fa.get('hand_rate')}/s, "
             f"{fa.get('lanes')} lanes). Rated for a player with some drum skill.")
         setdata("dlevel", dlevel_display)
+
+    # ---------- 6e. FAITHFULNESS (final chart vs the original source) ----------
+    fscore = faith.compare(original_events, events)
+    log(faith.summary_line(fscore, "audio" if opts["tab_source"] == "audio" else "tab"))
 
     dtx_name, tier_label, tier_slot = dtx.tier_info(tier_key)
     setdata("dlevel_tier", tier_key)

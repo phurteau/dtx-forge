@@ -5,9 +5,9 @@ function logs a message, so old `progress("text")` calls still work."""
 STAGES = [
     ("notation",    "Notation"),
     ("audio",       "Audio"),
-    ("separate",    "Drum separation"),
+    ("separate",    "Drum Separation"),
     ("align",       "Auto-sync"),
-    ("humanize",    "Foot technique"),
+    ("humanize",    "Foot Technique"),
     ("playability", "Playability"),
     ("package",     "Package"),
 ]
@@ -19,6 +19,14 @@ class Reporter:
         self.messages = []
         self.data = {}                       # live key/values for the UI (e.g. detected bpm)
         self.stages = [{"id": i, "label": l, "state": "pending"} for i, l in STAGES]
+        self._cancel = False                 # set by the UI's Stop button
+
+    # ---- cancellation (checked at pipeline stage boundaries) ----
+    def request_cancel(self):
+        self._cancel = True
+
+    def is_cancelled(self):
+        return self._cancel
 
     # ---- live data (surfaced to the UI as soon as it's known) ----
     def set_data(self, key, value):

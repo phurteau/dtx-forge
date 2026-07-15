@@ -20,17 +20,46 @@ _METAL = {"11", "18", "19"}     # closed hi-hat, open hi-hat, ride
 TIER_METAL_GRID = {"basic": 4, "advanced": 8, "extreme": 16, "master": None}
 
 
-def thin_for_tier(events, tier):
-    """Drop metal (hi-hat/ride) notes finer than the tier's grid.
+# Timekeeping metals that shouldn't sound simultaneously (you play hi-hat OR ride).
+_HAT = "11"      # closed hi-hat
+_RIDE = "19"     # ride
 
-    e.g. Advanced keeps metal down to 1/8, so a continuous 16th hi-hat becomes a clean
-    8th pulse (roughly half the notes). Kick/snare/toms/crash are untouched. Mutates and
-    returns ``events`` plus the number of notes removed.
+
+def deconflict_metals(events, min_hits=3):
+    """Per bar, if BOTH closed hi-hat and ride act as timekeeping (each has several
+    hits), keep only the denser one and drop the other. Real drummers play hi-hat OR
+    ride at a time, not both, so removing the redundant second timekeeper both halves
+    the metal density and reads far more idiomatically. Isolated ride accents (a single
+    crash-of-ride hit) are left alone -- they only collide when ride is a full pattern.
     """
-    maxden = TIER_METAL_GRID.get(str(tier).lower())
-    if maxden is None:
-        return events, 0
     removed = 0
+    for bar in events:
+        hh, rd = bar.get(_HAT), bar.get(_RIDE)
+        if hh and rd and len(hh) >= min_hits and len(rd) >= min_hits:
+            drop = _RIDE if len(hh) >= len(rd) else _HAT
+            removed += len(bar[drop])
+            del bar[drop]
+    return events, removed
+
+
+def thin_for_tier(events, tier):
+    """Simplify hi-hat / ride density for a difficulty tier.
+
+    Two steps: (1) de-conflict the timekeeping metals (drop the redundant hi-hat/ride
+    when both play a full pattern in a bar) for every tier except Master; (2) drop metal
+    notes finer than the tier's grid, so e.g. Advanced turns a continuous 16th hi-hat
+    into a clean 8th pulse. Kick/snare/toms/crash are untouched. Mutates and returns
+    ``events`` plus the number of notes removed.
+    """
+    tier = str(tier).lower()
+    removed = 0
+    # Master keeps the full, faithful kit (both metals); lower tiers de-conflict.
+    if tier != "master":
+        events, r = deconflict_metals(events)
+        removed += r
+    maxden = TIER_METAL_GRID.get(tier)
+    if maxden is None:
+        return events, removed
     for bar in events:
         for ch in list(bar.keys()):
             if ch not in _METAL:

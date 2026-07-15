@@ -147,7 +147,9 @@ def _assemble(placed, max_hand_voices):
     events = [{} for _ in range(n_bars)]
     for (bar, pos), cell in grid.items():
         for ch, lab in cell.items():
-            events[bar].setdefault(ch, {})[pos] = lab
+            # store the DTX WAV slot (e.g. "03"), NOT the label ("sd"): note cells are
+            # references to #WAV definitions, so a raw label plays no sound in DTXMania.
+            events[bar].setdefault(ch, {})[pos] = dtx.LABEL2SLOT[lab]
     barlens = [Fraction(1)] * n_bars
     return events, barlens
 

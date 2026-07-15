@@ -24,7 +24,9 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
   intact) so beginners get a readable chart; Master keeps every note. The output `.dtx` is named by tier
   (`bsc` / `adv` / `ext` / `mstr`), the DTXMania / GITADORA convention.
 - **Advanced foot technique.** Optional left-foot hi-hat on the **2 & 4 backbeat**, plus **DKDK** double-bass
-  that converts only the kicks too fast to play one-legged.
+  that converts only the kicks too fast to play one-legged. In **DTXMania** style it's applied automatically,
+  gated by difficulty (Master gets the hi-hat foot **and** double bass; lower tiers little or none) to match
+  real GITADORA charts.
 - **Human-playability check.** Every chart is verified against a 2-hands + 2-feet model and
   auto-relaxed if a passage is physically impossible.
 - **Faithfulness score.** When charting from a tab, each chart reports how true it is to the tab -
@@ -86,8 +88,9 @@ folder are untouched).
   then trims to align. Tempo is trusted from the tab (same song = same tempo).
 - **Full kit (audio-only)** - separates the drum stem into individual pieces and onset-detects each, so
   toms and ride are recovered - not just kick/snare/hat.
-- **Foot technique** - optional left-foot hi-hat on 2 & 4 and DKDK double-bass, written to lane 1B with
-  the correct samples.
+- **Foot technique** - left-foot hi-hat on 2 & 4 and DKDK double-bass, written to lane 1B with the correct
+  samples. Manual in Transcribed style; in DTXMania style it's automatic and tier-gated (and the left foot
+  never plays a hi-hat chick and a double kick on the same tick).
 - **Difficulty** - choose a tier (Basic / Advanced / Extreme / Master) or let **Auto** map it from a
   0.00–9.99 score (note density, peak bursts, limb speed, kit variety), referenced to a player with some
   drum skill. Tier boundaries: Basic < 3.00 · Advanced 3.00–5.99 · Extreme 6.00–8.49 · Master ≥ 8.50.
@@ -132,10 +135,19 @@ Models download once to `%LOCALAPPDATA%/DTXForge` and are **not** bundled; if th
 fast built-in kick/snare/hat detector covers the basics. Toms are pitch-split into high/low-mid/floor and
 cymbals into crash/ride. See `LICENSE` for model attributions (one model's weights are CC BY-NC).
 
-**Standardize vs Raw** (in the **Advanced** card). By default the raw onsets are **standardized**: timing is
-locked to a clean **1/16 grid**, genuine **1/32 fills/rolls are preserved** where the music really is that
-fast, and doubled / jittered / physically-impossible notes are removed - a readable, playable chart. Switch
-to **Raw** to emit exactly what was detected (busier, closer to the audio, harder to play).
+**Audio-only style - Raw · Standardize** (in the **Advanced** card, only when notation is blank).
+**Raw** emits exactly what was detected (busiest, closest to the audio). **Standardize** (default)
+locks the groove to a clean **1/16 grid**, preserves genuine **1/32 fills/rolls**, and removes
+doubled / jittered / physically-impossible notes.
+
+**Notes style - Transcribed · DTXMania** (in the **Advanced** card, works for *both* a supplied tab
+and audio transcription). **Transcribed** keeps the chart as generated from your source. **DTXMania**
+regularizes it into idiomatic patterns - steady, evenly-spaced timekeeping at the difficulty's resolution
+and one timekeeper (hi-hat *or* ride) per section - and adds authentic left-foot technique automatically by
+difficulty, so it reads like a real DTXMania / GITADORA chart. These conventions were tuned against an
+analysis of **2,000 published GITADORA charts** (crashes stack freely with kick/snare as in real charts; the
+left foot plays a hi-hat chick *or* a double kick, never both at once). When DTXMania is selected, the
+Audio-only and Foot Technique controls are handled for you.
 
 ## Notes & limits
 
@@ -161,6 +173,7 @@ dtx-forge/
     difficulty.py  faithfulness.py         auto-rating, tab fidelity
     fullkit.py  larsnet_engine.py          audio-only full-kit separation
     standardize.py  simplify.py            grid-quantize + difficulty thinning
+    dtxmania_style.py                      idiomatic-pattern regularizer
     vendor/larsnet_unet.py                 vendored model architecture
     drumkit.py  pipeline.py                samples, orchestration
   web/index.html                           UI (themes, picker, visualizer)

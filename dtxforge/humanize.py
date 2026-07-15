@@ -9,7 +9,14 @@ double bass  -> ON/OFF toggle. When ON, the engine detects kicks that are too fa
                 foot are left untouched.
 
 Both hi-hat-foot and double-bass write to lane 1B (left pedal); double-bass chips use
-the kick sample so the left pedal actually sounds like a bass drum."""
+the kick sample so the left pedal actually sounds like a bass drum.
+
+HARD CONSTRAINT (from 2000 real GITADORA charts): the left foot is ONE resource -- a
+hi-hat chick and a double-bass kick NEVER share a tick (0 co-occurrences in 188k bars).
+Both techniques can appear in the same song, but not the same instant. Because both
+write to the single lane 1B, this is enforced structurally (one chip per tick); on a
+contested tick the double-bass kick wins during a fast run and the hi-hat chick takes
+the isolated backbeat -- the split real charts show."""
 from fractions import Fraction
 from . import notes as N
 
@@ -91,7 +98,10 @@ def apply_double_bass(events, barlens, bpm, enabled):
 
 
 def humanize(events, barlens, bpm, hihat_on=False, doublebass=False):
-    # double bass first (claims LP for fast kicks), then hi-hat foot fills the rest
+    # Order enforces the one-left-foot rule: double bass claims lane 1B on fast-run
+    # ticks first, then the hi-hat foot only fills 2 & 4 backbeats that are still free,
+    # so a chick and a left kick can never land on the same tick (fast run -> kick,
+    # isolated backbeat -> chick), matching real GITADORA charts.
     events, converted = apply_double_bass(events, barlens, bpm, doublebass)
     events = apply_hihat_foot(events, barlens, hihat_on)
     return events, converted

@@ -52,6 +52,9 @@ def _run_job(job_id, opts, upload_paths):
                            assets_dir=ASSETS, progress=rep)
         job["result"] = res
         job["status"] = "done"
+    except pipeline.Cancelled:
+        job["status"] = "cancelled"
+        rep.log("Generation stopped.")
     except Exception as e:
         job["error"] = str(e)
         job["trace"] = traceback.format_exc()
@@ -70,6 +73,8 @@ async def api_generate(
     drum_mode: str = Form("keep"),
     auto_sync: str = Form("true"),
     standardize: str = Form("true"),
+    style: str = Form(""),
+    notes_style: str = Form("transcribed"),
     hihat_foot: str = Form("off"),
     double_bass: str = Form("false"),
     title: str = Form(""),
@@ -112,6 +117,8 @@ async def api_generate(
         drum_mode=(drum_mode.strip() or "keep"),
         auto_sync=(auto_sync.lower() == "true"),
         standardize=(standardize.lower() != "false"),
+        style=(style.strip().lower() or None),
+        notes_style=(notes_style.strip().lower() or "transcribed"),
         hihat_foot=(hihat_foot.strip() or "off"),
         double_bass=(double_bass.lower() == "true"),
         title=title.strip(), artist=artist.strip(), author=author.strip(),
@@ -137,6 +144,15 @@ def api_job(job_id: str):
     if job["status"] == "error":
         out["error"] = job["error"]
     return out
+
+
+@app.post("/api/cancel/{job_id}")
+def api_cancel(job_id: str):
+    job = _jobs.get(job_id)
+    if not job:
+        return JSONResponse({"error": "unknown job"}, status_code=404)
+    job["reporter"].request_cancel()
+    return {"status": "cancelling"}
 
 
 @app.get("/api/download/{job_id}")

@@ -62,9 +62,16 @@
   .chk input{width:18px;height:18px;accent-color:var(--acc);margin-top:1px}.chk b{color:var(--txt)}
   .adv{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel2)}
   .adv+.adv{margin-top:12px}.adv .head{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:4px}.adv .ic{font-size:18px}
+  .adv.locked{opacity:.5}.adv.locked .seg,.adv.locked .chk{pointer-events:none}
 
   .go{width:100%;padding:16px;font-size:16px;font-weight:700;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--acc-ink);border:none;border-radius:10px;cursor:pointer;letter-spacing:.5px;flex:0 0 auto}
   .go:disabled{opacity:.5;cursor:not-allowed}
+  .gorow{display:flex;gap:10px;flex:0 0 auto}
+  .gorow .go{flex:3;width:auto}
+  .stop{flex:1;padding:16px 8px;font-size:15px;font-weight:700;background:#c0392b;color:#fff;border:none;border-radius:10px;cursor:pointer;letter-spacing:.5px}
+  .stop:disabled{opacity:.4;cursor:not-allowed}
+  .stop:hover:not(:disabled){background:#e04434}
+  header .ver{font-size:11px;color:var(--dim);letter-spacing:1px;align-self:flex-start;margin:3px 0 0 -4px}
   .panel{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
   /* visualizer */
   .viz{margin-top:16px;flex:0 0 auto}
@@ -101,7 +108,7 @@
 </head>
 <body>
 <header>
-  <span class="logo">🥁</span><h1>DTX&nbsp;FORGE</h1>
+  <span class="logo">🥁</span><h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.4.0</span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="tbtn" id="themeBtn"><span id="themeIcon">🌙</span><span id="themeLbl">Dark</span></button>
@@ -153,26 +160,33 @@
       <div class="seg" id="tabseg"><button data-v="url" class="active">URL / paste</button><button data-v="file">Upload file</button></div>
       <div id="src-url"><label>Tab URL or pasted tab</label>
         <input type="text" id="url" placeholder="Songsterr link · Guitar Pro / MIDI URL · or paste an ASCII tab">
-        <div class="hint">Auto-detects the source: <b>Songsterr</b> link, a <b>Guitar Pro</b> (.gp/.gp5) or <b>MIDI</b> URL, or a pasted plain-text drum tab. <b>Leave blank to transcribe the drums from the audio itself</b> (beta - always separates the drums first).</div></div>
+        <div class="hint">Auto-detects the source - <b>Songsterr</b>, <b>Guitar Pro</b>, <b>MIDI</b>, or a pasted drum tab.</div></div>
       <div id="src-file" class="hidden"><label>Tab file</label><input type="file" id="tabfile" accept=".gp,.gp3,.gp4,.gp5,.gpx,.gtp,.mid,.midi,.txt,.tab">
-        <div class="hint">Guitar Pro (.gp5, .gpx…), MIDI (.mid), or a plain-text drum tab (.txt). Type detected automatically.</div></div>
-      <div class="hint" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">When notation is blank, DTX Forge transcribes the drums straight from the audio - it automatically separates the drum track into individual pieces to recover a full kit: <b>kick, snare, toms, hi-hat (open/closed), ride and crash</b>. Separation models download once on first use. <i>(Beta.)</i></div>
+        <div class="hint">Guitar Pro, MIDI, or a plain-text drum tab.</div></div>
+      <div class="hint" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><b>Leave notation blank to transcribe the drums from the audio</b> - it separates the track into a full kit (kick, snare, toms, hi-hat, ride, crash). Models download once on first use. <i>(Beta.)</i></div>
     </div>
 
     <div class="card">
       <h2><span class="n">4</span>Advanced</h2>
-      <div class="adv"><div class="head">Audio-only transcription</div>
-        <div class="hint">Only applies when notation is blank (drums transcribed from the audio). <b>Standardize</b> locks the groove to a clean 1/16 grid - while keeping genuine 1/32 fills - and removes doubled / unplayable notes for a readable, playable chart. <b>Raw</b> outputs exactly what was detected - busier and closer to the audio, but harder to play.</div>
-        <div class="seg" id="stdseg" style="margin-top:10px"><button data-v="standardize" class="active">Standardize</button><button data-v="raw">Raw</button></div></div>
-      <div class="adv"><div class="head">Hi-Hat Pedal</div>
-        <div class="hint">Adds a <b>left-foot hi-hat “chick”</b> on the <b>2 &amp; 4 backbeat</b> - the foot-pedal pattern real DTXMania/GITADORA charts use. It only fills beats where your hands aren't already on a hi-hat/cymbal, so nothing doubles up.</div>
-        <label class="chk" style="margin-top:10px"><input type="checkbox" id="hhToggle"><span><b>Add hi-hat foot pedal</b> <span class="hint" style="margin:0">- left-foot “chick” on beats 2 &amp; 4</span></span></label></div>
-      <div class="adv"><div class="head">DKDK Mode</div>
-        <div class="hint">When ON, kicks too fast to play one-legged are auto-converted to a double kick - right-foot kick + left pedal (DTXMania style). Kicks slow enough for one foot stay as-is.</div>
-        <label class="chk" style="margin-top:10px"><input type="checkbox" id="dbToggle"><span><b>Enable double bass kicks</b> <span class="hint" style="margin:0">- the generator decides where it's needed</span></span></label></div>
+      <div class="adv"><div class="head">Notes Style</div>
+        <div class="hint">How the charted notes are shaped - works for both a supplied tab and audio transcription. <b>Transcribed</b> keeps the chart as generated from your source. <b>DTXMania</b> regularizes it into idiomatic patterns - steady even timekeeping, one timekeeper (hi-hat <i>or</i> ride) per section, and left-foot technique added automatically by difficulty - so it reads like a real DTXMania/GITADORA chart.</div>
+        <div class="seg" id="noteseg" style="margin-top:10px"><button data-v="transcribed" class="active">Transcribed</button><button data-v="dtxmania">DTXMania</button></div></div>
+      <div class="adv" id="audstyle"><div class="head">Audio-only Transcription</div>
+        <div class="hint">Only applies when notation is blank (drums transcribed from the audio). <b>Raw</b> outputs exactly what was detected - busiest, closest to the audio. <b>Standardize</b> locks the groove to a clean 1/16 grid - keeping genuine 1/32 fills - and removes doubled / unplayable notes.</div>
+        <div class="seg" id="stdseg" style="margin-top:10px"><button data-v="raw">Raw</button><button data-v="standardize" class="active">Standardize</button></div>
+        <div class="hint" id="stdLock" style="margin-top:8px;display:none"><b>DTXMania</b> style is selected above - it always uses the standardized base, so this setting doesn't apply.</div></div>
+      <div class="adv" id="foottech"><div class="head">Foot Technique</div>
+        <div style="font-weight:600;margin-top:4px">LFHH</div>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="hhToggle"><span><b>Enable left hi-hat foot pedal</b> <span class="hint" style="margin:0">- left-foot “chick” on the 2 &amp; 4 backbeat to simulate opening/closing the hi-hat.</span></span></label>
+        <div style="font-weight:600;margin-top:14px">DKDK</div>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="dbToggle"><span><b>Enable double bass kicks</b> <span class="hint" style="margin:0">- kicks too fast to play one-legged become a right-foot kick + left pedal (the generator decides where); slower kicks stay single-foot.</span></span></label>
+        <div class="hint" id="footLock" style="margin-top:8px;display:none"><b>DTXMania</b> style is selected above - it adds foot technique automatically, gated by difficulty (Extreme adds double bass; Master adds the hi-hat foot too), so these toggles don't apply.</div></div>
       <div class="hint" style="margin-top:10px">A human-playability check runs at the end and auto-relaxes anything impossible for 2 hands + 2 feet.</div>
     </div>
-    <button class="go" id="genBtn">Generate DTX chart</button>
+    <div class="gorow">
+      <button class="go" id="genBtn">Generate DTX chart</button>
+      <button class="stop" id="stopBtn" disabled>Stop</button>
+    </div>
   </div>
 
   <!-- RIGHT: visualizer + console -->
@@ -194,7 +208,7 @@
 
 <script>
 const $=s=>document.querySelector(s);
-const STAGES=[["notation","Notation"],["audio","Audio"],["separate","Drum separation"],["align","Auto-sync"],["humanize","Foot technique"],["playability","Playability"],["package","Package"]];
+const STAGES=[["notation","Notation"],["audio","Audio"],["separate","Drum Separation"],["align","Auto-sync"],["humanize","Foot Technique"],["playability","Playability"],["package","Package"]];
 const ICON={pending:"",active:"",done:"✓",skipped:"–",error:"✕"};
 function renderSteps(stages){
   const map={}; (stages||[]).forEach(s=>map[s.id]=s.state);
@@ -231,7 +245,7 @@ if(!localStorage.getItem('dtx_accent_v2')){ if(localStorage.getItem('dtx_accent'
 applyTheme(localStorage.getItem('dtx_theme')||'dark');applyAccent(localStorage.getItem('dtx_accent')||'#025500');
 
 /* segmented controls */
-let tabSource="url",audSource="url",drumMode="keep",stdMode="standardize";
+let tabSource="url",audSource="url",drumMode="keep",stdMode="standardize",noteStyle="transcribed";
 function segWire(id,cb){document.querySelectorAll('#'+id+' button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('active'));b.classList.add('active');cb(b.dataset.v);};});}
 segWire('tabseg',v=>{tabSource=v;['url','file'].forEach(x=>$('#src-'+x).classList.toggle('hidden',x!==v));});
 segWire('audseg',v=>{audSource=v;['url','upload'].forEach(x=>$('#aud-'+x).classList.toggle('hidden',x!==v));});
@@ -242,6 +256,13 @@ const DH={
 };
 segWire('drumseg',v=>{drumMode=v;$('#drumHint').innerHTML=DH[v];});
 segWire('stdseg',v=>{stdMode=v;});
+segWire('noteseg',v=>{noteStyle=v;syncAudLock();});
+/* DTXMania always uses the standardized base and adds foot technique automatically,
+   so dim the Raw/Standardize toggle AND the Foot Technique box when it's selected */
+function syncAudLock(){const dtxm=noteStyle==='dtxmania';
+  $('#audstyle').classList.toggle('locked',dtxm);$('#stdLock').style.display=dtxm?'block':'none';
+  $('#foottech').classList.toggle('locked',dtxm);$('#footLock').style.display=dtxm?'block':'none';}
+syncAudLock();
 $('#drumHint').innerHTML=DH[drumMode];
 /* a BPM the user types is theirs - stop auto-fill from overwriting it */
 $('#bpm').addEventListener('input',()=>{$('#bpm').dataset.auto='';$('#bpmHint').textContent='(optional)';});
@@ -250,7 +271,15 @@ $('#dlevel').addEventListener('input',()=>{$('#dlevel').dataset.auto='';$('#dlev
 /* a manually-chosen difficulty level sticks; "Auto" lets the score decide */
 $('#dtier').addEventListener('change',()=>{$('#dtier').dataset.auto='';});
 
-/* generate */
+/* generate + stop */
+let curJob=null,stopped=false;
+$('#stopBtn').onclick=async()=>{
+  if(!curJob)return;
+  stopped=true;
+  $('#stopBtn').disabled=true;$('#genBtn').disabled=false;
+  try{await fetch('/api/cancel/'+curJob,{method:'POST'});}catch(e){}
+  $('#outh').textContent='Stopped';logline('Stopped - change settings and generate again.');
+};
 $('#genBtn').onclick=async()=>{
   const fd=new FormData();
   // Title and Artist are required.
@@ -263,22 +292,23 @@ $('#genBtn').onclick=async()=>{
   if(tabSource==='url'&&_url)fd.append('songsterr_url',_url);
   if(tabSource==='file'&&_tabFile)fd.append('tab_file',_tabFile);
   fd.append('audio_source',audSource);fd.append('drum_mode',drumMode);
-  fd.append('auto_sync',$('#autoSync').checked);fd.append('standardize',stdMode==='standardize'?'true':'false');fd.append('hihat_foot',$('#hhToggle').checked?'on':'off');fd.append('double_bass',$('#dbToggle').checked);
+  fd.append('auto_sync',$('#autoSync').checked);fd.append('style',stdMode);fd.append('standardize',stdMode==='raw'?'false':'true');fd.append('notes_style',noteStyle);fd.append('hihat_foot',$('#hhToggle').checked?'on':'off');fd.append('double_bass',$('#dbToggle').checked);
   fd.append('title',$('#title').value);fd.append('artist',$('#artist').value);fd.append('author',$('#author').value);
   fd.append('bpm',$('#bpm').value);fd.append('dlevel',$('#dlevel').value);
   { const t=$('#dtier'); const tierAuto=(t.value==='auto'||t.dataset.auto==='1'); fd.append('dlevel_tier', tierAuto?'auto':t.value); }
   // Audio is REQUIRED.
   if(audSource==='url'){if(!$('#yt').value.trim()){alert('Audio is required - paste an audio link, or switch to Upload file.');return;}fd.append('audio_url',$('#yt').value.trim());}
   if(audSource==='upload'){if(!$('#audio').files[0]){alert('Audio is required - choose an audio file.');return;}fd.append('audio_file',$('#audio').files[0]);}
-  $('#genBtn').disabled=true;$('#done').classList.add('hidden');renderSteps([]);
+  $('#genBtn').disabled=true;$('#stopBtn').disabled=false;stopped=false;$('#done').classList.add('hidden');renderSteps([]);
   $('#outh').innerHTML='<span class="spin"></span>Working…';$('#log').innerHTML='';lastN=0;
   if(!hasNotation)logline('No notation given - transcribing drums from the audio (beta).');
-  try{const r=await fetch('/api/generate',{method:'POST',body:fd});const j=await r.json();if(j.error)throw new Error(j.error);poll(j.job_id);}
-  catch(e){logline('ERROR: '+e);$('#genBtn').disabled=false;$('#outh').textContent='Failed';}
+  try{const r=await fetch('/api/generate',{method:'POST',body:fd});const j=await r.json();if(j.error)throw new Error(j.error);curJob=j.job_id;poll(j.job_id);}
+  catch(e){logline('ERROR: '+e);$('#genBtn').disabled=false;$('#stopBtn').disabled=true;$('#outh').textContent='Failed';}
 };
 function logline(t){const d=document.createElement('div');d.className='m';d.textContent='› '+t;$('#log').appendChild(d);$('#log').scrollTop=1e9;}
 let lastN=0;
 async function poll(id){
+  if(stopped)return;
   try{const r=await fetch('/api/job/'+id);const j=await r.json();
     renderSteps(j.stages);
     // auto-fill BPM the moment the pipeline detects it (only if the user left it blank)
@@ -291,7 +321,7 @@ async function poll(id){
     if(j.data&&j.data.dlevel_tier){const el=$('#dtier');
       if(el.value==='auto'||el.dataset.auto==='1'){el.value=j.data.dlevel_tier;el.dataset.auto='1';}}
     (j.messages||[]).slice(lastN).forEach(logline);lastN=(j.messages||[]).length;
-    if(j.status==='done'){$('#outh').textContent='✓ Complete';$('#genBtn').disabled=false;const s=j.stats;
+    if(j.status==='done'){$('#outh').textContent='✓ Complete';$('#genBtn').disabled=false;$('#stopBtn').disabled=true;const s=j.stats;
       const pv=s.playability||'',pc=pv==='playable'?'playable':(pv==='tight'?'tight':'problem');
       const f=s.faithfulness; const fc=f>=100?'playable':(f>=97?'tight':'problem');
       const isAudio=s.source==='audio';
@@ -315,7 +345,8 @@ async function poll(id){
         `<span class="stat">file: <b>${s.dtx_file||'-'}</b></span>`+
         `<span class="stat">drums: <b>${s.drum_mode}</b></span><span class="stat">hi-hat foot: <b>${s.hihat_foot}</b></span><span class="stat">double kick: <b>${s.double_bass}${s.double_bass==='on'&&s.double_kicks?' ('+s.double_kicks+')':''}</b></span></div>`;
       $('#dl').href=j.download;$('#done').classList.remove('hidden');return;}
-    if(j.status==='error'){$('#outh').textContent='✗ Failed';$('#genBtn').disabled=false;return;}
+    if(j.status==='error'){$('#outh').textContent='✗ Failed';$('#genBtn').disabled=false;$('#stopBtn').disabled=true;return;}
+    if(j.status==='cancelled'){$('#outh').textContent='Stopped';$('#genBtn').disabled=false;$('#stopBtn').disabled=true;return;}
     setTimeout(()=>poll(id),1200);
   }catch(e){logline('poll error: '+e);setTimeout(()=>poll(id),2000);}
 }
