@@ -298,8 +298,8 @@ def run(opts, workdir, assets_dir, progress):
     if notes_style == "dtxmania":
         from . import dtxmania_style
         events, nchg = dtxmania_style.apply(events, barlens, bpm, tier_key)
-        log(f"DTXMania style: regularized timekeeping to idiomatic patterns, kept all "
-            f"crashes ({nchg} edits).")
+        log(f"DTXMania style: one timekeeper per section + jitter cleanup, density and "
+            f"crashes preserved ({nchg} edits).")
         # Authentic charts add left-foot technique, tier-gated (real data: Basic/Advanced
         # ~none, Extreme double bass, Master hi-hat chick + double bass). Feet fill the
         # gaps now that the hands are regularized, so no manual toggle is needed.
@@ -310,11 +310,13 @@ def run(opts, workdir, assets_dir, progress):
             if db_on: bits.append(f"double bass ({db_converted} fast kicks split)")
             log(f"DTXMania foot technique for {tier_key.title()}: {', '.join(bits)}.")
 
-    # ---------- 6d. SIMPLIFY hi-hat / ride density to the chosen tier ----------
+    # ---------- 6d. DE-CONFLICT a redundant second timekeeper (hi-hat AND ride) ----------
+    # Note values are NOT capped by tier -- the chart keeps its real 16th/32nd content at
+    # any difficulty; only a redundant simultaneous timekeeper is dropped.
     from . import simplify
     events, thinned = simplify.thin_for_tier(events, tier_key)
     if thinned:
-        log(f"Simplified {thinned} hi-hat/ride notes to match {tier_key.title()} difficulty.")
+        log(f"Removed {thinned} redundant timekeeper notes (hi-hat/ride played together).")
 
     # Re-rate after style + thinning so the shown score and #DLEVEL match the emitted notes.
     if dlevel_auto:

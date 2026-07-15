@@ -17,15 +17,17 @@ What the data CONFIRMED and this module keeps:
   1. One timekeeper at a time -- hi-hat and ride coexist in only ~0.1% of bars, so a
      redundant second timekeeper is dropped. Chosen once per SECTION (a run of bars),
      not per bar, so the timekeeper doesn't flip hi-hat/ride/hi-hat between neighbours.
-  2. Steady timekeeping -- 80% of multi-hit hi-hat bars are perfectly evenly spaced, so
-     a bar that already carries a timekeeping pattern is rewritten as a clean pulse
-     (1/8, or 1/16 when dense) at the tier's resolution.
+  2. Jitter cleanup only -- a timekeeping line is snapped to the bar's OWN subdivision to
+     remove timing jitter, but its note count is PRESERVED. It is never inflated to a
+     per-tier grid: real charts of every difficulty are mostly quarter + 8th with 16th a
+     minority (Extreme is only ~7% 16th) and mix note values freely bar to bar, so the
+     density detected from the song is what the chart keeps.
   3. Closed hi-hat + crash on the same tick is a transcription artifact (3 in 160k real
      bars) -- the closed hi-hat is dropped there so the crash reads as the accent. (Open
      hi-hat under a crash is a real, if rare, technique and is left intact.)
 
 Kick, snare, toms and crashes (the groove, fills and accents) are left as transcribed
--- only the hi-hat / ride timekeeping layer is regularized.
+-- only the hi-hat / ride timekeeping layer is de-conflicted and de-jittered.
 """
 from fractions import Fraction
 from . import humanize
@@ -36,9 +38,11 @@ _RIDE = "19"          # ride
 _CRASH = ("16", "1A")  # crash, left crash
 SECTION = 4           # bars per timekeeping section
 
-# Steady timekeeping resolution per difficulty tier (notes per bar): Basic reads as a
-# 1/4 pulse, Advanced 1/8, Extreme/Master 1/16 -- so the density follows the tier.
-TIER_GRID = {"basic": 4, "advanced": 8, "extreme": 16, "master": 16}
+# Candidate subdivisions a timekeeping line may sit on: straight (quarter/8th/16th/32nd)
+# plus triplets. Used ONLY to snap jitter to a line -- never to inflate a bar's density.
+# Real GITADORA charts of every tier mix note values freely, so timekeeping is preserved
+# at whatever subdivision the bar actually plays, not forced to a per-tier grid.
+_TK_GRIDS = [4, 8, 12, 16, 24, 32]
 
 # Tier-gated left-foot technique for an authentic DTXMania/GITADORA chart, from the
 # 2000-chart analysis: Basic/Advanced use the left foot almost never; Extreme adds
@@ -78,18 +82,34 @@ def _deconflict_sectional(events, section=SECTION, min_hits=2):
     return events, removed
 
 
-def _regularize_timekeeping(bar, grid):
-    """Rewrite the bar's timekeeping metal as a clean, evenly-spaced pulse at ``grid``
-    notes per bar (the steady DTXMania look). Only bars that already have a timekeeping
-    pattern (>=3 hits) are regularized; sparser bars are left alone. Verified against
-    real charts: 80% of multi-hit hi-hat bars are perfectly evenly spaced."""
+def _line_grid(positions):
+    """Coarsest subdivision on which all of a timekeeping line's hits already sit (within
+    tolerance) -- the bar's OWN resolution, so snapping to it never changes note count."""
+    for g in _TK_GRIDS:
+        if all(abs(float(p) * g - round(float(p) * g)) <= 0.2 for p in positions):
+            return g
+    return _TK_GRIDS[-1]
+
+
+def _regularize_timekeeping(bar):
+    """Remove timing JITTER from a steady hi-hat / ride line by snapping each hit to the
+    bar's OWN natural subdivision -- NOT a fixed per-tier grid. The number of hits is
+    preserved, so per-bar density stays faithful to the song: a bar of 8ths stays 8ths,
+    a 16th run stays 16ths, a sparse bar stays sparse. For an already-clean bar (audio is
+    pre-quantized, tabs are exact) this is a no-op."""
+    changed = 0
     for ch in (_HAT, _RIDE):
         sm = bar.get(ch)
-        if sm and len(sm) >= 3:
-            slot = next(iter(sm.values()))                    # keep its WAV slot
-            bar[ch] = {Fraction(i, grid): slot for i in range(grid)}
-            return 1
-    return 0
+        if not sm or len(sm) < 3:
+            continue
+        g = _line_grid(list(sm))
+        new = {}
+        for p, slot in sm.items():
+            new[Fraction(round(float(p) * g), g)] = slot
+        if new != sm:
+            bar[ch] = new
+            changed = 1
+    return changed
 
 
 def _declutter_hh_crash(bar):
@@ -113,14 +133,15 @@ def _declutter_hh_crash(bar):
 
 
 def apply(events, barlens, bpm, tier="advanced"):
-    """Regularize a chart toward idiomatic DTXMania patterns. Mutates and returns
-    (events, changed_count). Timekeeping density follows the difficulty ``tier``."""
-    grid = TIER_GRID.get(str(tier).lower(), 8)
+    """Regularize a chart toward idiomatic DTXMania patterns WITHOUT falsifying density.
+    Mutates and returns (events, changed_count). ``tier`` is accepted for signature
+    stability but no longer imposes a timekeeping grid -- note values are preserved from
+    the source, because real GITADORA charts of every difficulty mix subdivisions."""
     # 1. one timekeeper (hi-hat OR ride) at a time, chosen consistently per section.
     events, changed = _deconflict_sectional(events)
     for bar in events:
-        # 2. steady, evenly-spaced timekeeping at the tier's resolution.
-        changed += _regularize_timekeeping(bar, grid)
+        # 2. clean timing jitter only -- snap to each bar's OWN subdivision, never inflate.
+        changed += _regularize_timekeeping(bar)
         # 3. a closed hi-hat sharing a crash's tick is an artifact -> let the crash speak.
         changed += _declutter_hh_crash(bar)
     # Crashes are preserved exactly as transcribed: real charts stack them with kick,

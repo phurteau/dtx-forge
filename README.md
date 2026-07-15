@@ -18,11 +18,12 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 - **Real audio from almost anywhere.** Paste a link from **YouTube, SoundCloud, Bandcamp, Vimeo** and
   1000+ sites, a **direct audio-file URL**, or upload a file. DTX Forge auto-syncs it to the chart.
 - **Full song by default.** Keep the complete track, quiet the drums, or fully remove them (arcade feel).
-- **Difficulty tiers that actually simplify.** Pick a level - **Basic / Advanced / Extreme / Master** -
-  or let **Auto** derive it from a 0.00–9.99 score rated against a skilled-player reference. Lower tiers
-  **thin the hi-hat / ride timekeeping** to a coarser pulse (the kick/snare backbone, toms and crashes stay
-  intact) so beginners get a readable chart; Master keeps every note. The output `.dtx` is named by tier
-  (`bsc` / `adv` / `ext` / `mstr`), the DTXMania / GITADORA convention.
+- **Difficulty tiers that rate, not restrict.** Pick a level - **Basic / Advanced / Extreme / Master** -
+  or let **Auto** derive it from a 0.00–9.99 score rated against a skilled-player reference. The tier is a
+  **rating of density and complexity, not a note-value ceiling**: a chart of any difficulty keeps whatever
+  quarter / 8th / 16th / triplet / 32nd notes the song actually plays (real GITADORA charts of every tier
+  mix note values freely). The output `.dtx` is named by tier (`bsc` / `adv` / `ext` / `mstr`), the
+  DTXMania / GITADORA convention.
 - **Advanced foot technique.** Optional left-foot hi-hat on the **2 & 4 backbeat**, plus **DKDK** double-bass
   that converts only the kicks too fast to play one-legged. In **DTXMania** style it's applied automatically,
   gated by difficulty (Master gets the hi-hat foot **and** double bass; lower tiers little or none) to match
@@ -93,10 +94,11 @@ folder are untouched).
   never plays a hi-hat chick and a double kick on the same tick).
 - **Difficulty** - choose a tier (Basic / Advanced / Extreme / Master) or let **Auto** map it from a
   0.00–9.99 score (note density, peak bursts, limb speed, kit variety), referenced to a player with some
-  drum skill. Tier boundaries: Basic < 3.00 · Advanced 3.00–5.99 · Extreme 6.00–8.49 · Master ≥ 8.50.
-  The tier also **thins the hi-hat / ride density** (Basic → 1/4, Advanced → 1/8, Extreme → 1/16, Master →
-  everything) so lower tiers read cleaner; the score is then re-rated to match the notes actually emitted.
-  The chart file is named by tier (`bsc.dtx` / `adv.dtx` / `ext.dtx` / `mstr.dtx`) in its `set.def` slot.
+  drum skill. Tier boundaries: Basic < 3.00 · Advanced 3.00–5.99 · Extreme 6.00–8.49 · Master ≥ 8.50. The
+  tier is a **rating only - it never caps note values**: the chart keeps the song's real 16th / triplet /
+  32nd content at any difficulty (grounded in 4,700+ real GITADORA charts, where even Basic charts contain
+  16ths and triplets). The chart file is named by tier (`bsc.dtx` / `adv.dtx` / `ext.dtx` / `mstr.dtx`) in
+  its `set.def` slot.
 - **Playability** - flags any foot/hand asked to move faster than humanly possible, and relaxes it.
 - **Package** - Shift-JIS `.dtx` + BGM + a synthesized drum kit, zipped.
 
@@ -137,8 +139,9 @@ cymbals into crash/ride. See `LICENSE` for model attributions (one model's weigh
 
 **Audio-only style - Raw · Standardize** (in the **Advanced** card, only when notation is blank).
 **Raw** emits exactly what was detected (busiest, closest to the audio). **Standardize** (default)
-locks the groove to a clean **1/16 grid**, preserves genuine **1/32 fills/rolls**, and removes
-doubled / jittered / physically-impossible notes.
+quantizes **each bar to its own natural subdivision** - quarter, 8th, 16th, 32nd or triplet, whichever
+that bar actually plays - so a sparse bar stays sparse and a fast fill stays fast, then removes doubled /
+jittered / physically-impossible notes. Per-bar density mirrors the song.
 
 **Notes style - Transcribed · DTXMania** (in the **Advanced** card, works for *both* a supplied tab
 and audio transcription). **Transcribed** keeps the chart as generated from your source. **DTXMania**

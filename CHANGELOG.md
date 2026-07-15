@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.4.1
+
+Fidelity fix - the chart now mirrors the song's actual per-bar note values, at every
+difficulty. Grounded in an analysis of **4,700+ real GITADORA/DrumMania charts**, which
+showed that charts of *every* tier mix note values freely (even Basic charts contain
+16ths and triplets) and that 16th notes are a minority even at Extreme (~11%).
+
+- **Per-bar fidelity (audio "Standardize").** Each bar is now quantized to its **own
+  natural subdivision** - quarter, 8th, 16th, 32nd *or* triplet, whichever that bar
+  actually plays - instead of a fixed 1/16 grid. A sparse bar stays sparse; the next bar
+  with a 16th run or a 32nd fill keeps its density. Triplets are preserved.
+- **Difficulty no longer caps note values.** Tiers previously thinned timekeeping to a
+  per-tier grid (Basic → 1/4, Advanced → 1/8, Extreme → 1/16). That's removed: a chart of
+  **any** difficulty keeps the song's real 16th / triplet / 32nd content. The tier is a
+  *rating* of density and complexity, not a note-value ceiling.
+- **DTXMania style no longer inflates density.** Its timekeeping pass now only removes
+  timing *jitter* (snapping to each bar's own subdivision) and never rewrites a bar to a
+  fixed tier grid, so an 8th-note bar stays 8th and a sparse bar stays sparse.
+- No new features; generation output is more faithful to the source.
+
 ## v1.4.0
 
 DTXMania **Notes style** matured into an empirically-grounded chart generator, a critical

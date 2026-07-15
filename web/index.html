@@ -108,7 +108,7 @@
 </head>
 <body>
 <header>
-  <span class="logo">🥁</span><h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.4.0</span>
+  <span class="logo">🥁</span><h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.4.1</span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="tbtn" id="themeBtn"><span id="themeIcon">🌙</span><span id="themeLbl">Dark</span></button>
@@ -172,7 +172,7 @@
         <div class="hint">How the charted notes are shaped - works for both a supplied tab and audio transcription. <b>Transcribed</b> keeps the chart as generated from your source. <b>DTXMania</b> regularizes it into idiomatic patterns - steady even timekeeping, one timekeeper (hi-hat <i>or</i> ride) per section, and left-foot technique added automatically by difficulty - so it reads like a real DTXMania/GITADORA chart.</div>
         <div class="seg" id="noteseg" style="margin-top:10px"><button data-v="transcribed" class="active">Transcribed</button><button data-v="dtxmania">DTXMania</button></div></div>
       <div class="adv" id="audstyle"><div class="head">Audio-only Transcription</div>
-        <div class="hint">Only applies when notation is blank (drums transcribed from the audio). <b>Raw</b> outputs exactly what was detected - busiest, closest to the audio. <b>Standardize</b> locks the groove to a clean 1/16 grid - keeping genuine 1/32 fills - and removes doubled / unplayable notes.</div>
+        <div class="hint">Only applies when notation is blank (drums transcribed from the audio). <b>Raw</b> outputs exactly what was detected - busiest, closest to the audio. <b>Standardize</b> quantizes each bar to its <i>own</i> natural subdivision (quarter, 8th, 16th, 32nd or triplet - whatever that bar actually plays) and removes doubled / unplayable notes, so per-bar density mirrors the song.</div>
         <div class="seg" id="stdseg" style="margin-top:10px"><button data-v="raw">Raw</button><button data-v="standardize" class="active">Standardize</button></div>
         <div class="hint" id="stdLock" style="margin-top:8px;display:none"><b>DTXMania</b> style is selected above - it always uses the standardized base, so this setting doesn't apply.</div></div>
       <div class="adv" id="foottech"><div class="head">Foot Technique</div>
