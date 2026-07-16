@@ -268,10 +268,20 @@ def snap(events, barlens, bpm, tier="advanced", aggressive=False):
 # the SAME groove to every plain bar in the section. Fills, crashes, open hat and feet are
 # untouched (the fill/accent layer).
 SECTION_TOL = 5      # (retained for reference) Hamming tolerance when grouping raw bars
-WINDOW = 5           # sliding-window radius (plain bars) for the consistency mode filter.
-# Tuned on First Date vs a 120-chart Extreme corpus sample: W=5 lands the groove BACKBONE
-# (kick+snare+closed-hat) at 15% adjacent-identical, matching the corpus's 16% -- i.e. as
-# repetitive/neat as real charts without over-flattening genuine section changes.
+WINDOW = 5           # sliding-window radius (plain bars): how many neighbours to judge a
+# hi-hat/ride timekeeping hit against when deciding if it's a recurring part of the pattern or a
+# one-off bleed ghost.
+
+# A hi-hat/ride slot survives the timekeeping consensus if it appears in MORE than KEEP_PCT% of
+# the window -- applied EQUALLY to on-beat and off-beat slots (off-beat timekeeping is real
+# drumming, never penalised for sitting off the beat). The threshold is TIER-AWARE, grounded in
+# the full 6,621-chart corpus (docs/drum-corpus-facts.md): drumming complexity scales hard with
+# difficulty -- off-beat hats run 18% (Basic) -> 29% (Advanced) -> 47% (Extreme) -> 55% (Master),
+# and density 3.9 -> 13.5 notes/bar. So a Basic chart is simple and tolerates firmer cleanup, while
+# a Master chart is almost all intentional playing and must be cleaned GENTLY. Higher tier =>
+# lower threshold => keep more. Kick and snare are never subject to this -- always kept verbatim.
+KEEP_PCT_BY_TIER = {"basic": 50, "advanced": 45, "extreme": 38, "master": 32}
+KEEP_PCT = 40        # fallback when the tier is unknown
 MATCH_TEMPLATE = False   # emit the voted consensus directly (True re-maps it to the nearest
 # real template, which can re-add rotated 16th jitter -- the consensus is already clean).
 
@@ -319,6 +329,7 @@ def snap_sections(events, barlens, bpm, tier="advanced"):
     Fills, crashes, open hat and feet are untouched. Mutates ``events``; returns
     (events, changed_bar_count)."""
     tier = str(tier).lower()
+    keep_pct = KEEP_PCT_BY_TIER.get(tier, KEEP_PCT)   # tier-aware cleanup strength
     plain = []                                        # (index, raw q16 masks)
     for i, bar in enumerate(events):
         bl = barlens[i] if i < len(barlens) else Fraction(1)
@@ -340,91 +351,69 @@ def snap_sections(events, barlens, bpm, tier="advanced"):
     if not plain:
         return events, 0
 
-    # ---- B. windowed per-SLOT consensus, then simplify-match ----
-    # For each plain bar, vote every groove grid-slot across a window of neighbouring plain
-    # bars: a slot survives only if it fires in more than half the window. Overlapping windows
-    # give adjacent bars a near-identical consensus (so the phrase repeats = neat), and a slot
-    # that only appears sporadically (a bleed ghost) is voted out (so a quarter-note hat stays
-    # 4, not an inflated 6-8). The clean consensus is then snapped to the nearest real template.
-    masks_list = [m for _, m in plain]
+    # ---- clean the TIMEKEEPING only (hat/ride); never touch kick or snare ----
+    # v1.5.0's mistake was voting all four groove lanes to a consensus -- that deleted ~28% of the
+    # chart, including real kick/snare syncopation. But the "random noisy hi-hats / haphazard" feel
+    # lives entirely in the bleed-prone HAT/RIDE timekeeping layer. So we regularize ONLY hat(11)
+    # and ride(19): a windowed per-slot consensus removes flickering bleed and, via a section pass,
+    # makes the timekeeping repeat per phrase (neat like a real chart); a genuine sustained 16th run
+    # survives. Kick(13), snare(12), toms, crashes and every fill are left EXACTLY as played, so the
+    # real groove and its movement are preserved.
+    masks_list = [m for _, m in plain]                # each: (k, s, h, r) q16 masks
     n = len(masks_list)
-    assigned = []
-    for p in range(n):
-        lo = max(0, p - WINDOW)
-        hi = min(n, p + WINDOW + 1)
-        w = hi - lo
-        cons = []
-        for lane in range(4):
+
+    def _consensus(lane):
+        out = []
+        for p in range(n):
+            lo = max(0, p - WINDOW); hi = min(n, p + WINDOW + 1); w = hi - lo
             cnt = [0] * GRID
             for q in range(lo, hi):
-                m = masks_list[q][lane]
-                b = 0
-                while m:
-                    if m & 1:
+                mm = masks_list[q][lane]; b = 0
+                while mm:
+                    if mm & 1:
                         cnt[b] += 1
-                    m >>= 1
-                    b += 1
+                    mm >>= 1; b += 1
             mask = 0
-            timekeeper = lane in (2, 3)               # closed hat / ride
             for b in range(GRID):
-                # A 16th-grid off-beat hi-hat/ride slot (odd index) is the most jitter-prone,
-                # so it must clear a STRONG majority (>=75%) to survive; the quarter/8th slots
-                # (even index) keep a simple majority. This collapses jittery 16th clusters to
-                # clean 8ths/quarters (the "simplify") while a genuinely sustained 16th hat run
-                # -- present in nearly every window bar -- still passes. Kick/snare keep their
-                # syncopation (simple majority on every slot).
-                if timekeeper and (b % 2 == 1):
-                    keep = cnt[b] * 4 >= w * 3
-                else:
-                    keep = cnt[b] * 2 > w
-                if keep:
+                # Judge EVERY slot by the same rule -- is this hit a recurring part of the
+                # pattern? -- with no on-beat/off-beat bias. A slot survives if it appears in
+                # more than KEEP_PCT% of the window; a genuine off-beat groove (disco "&" hats,
+                # funk 16ths, an off-beat ride or a varied e/a pattern) recurs and is kept, while
+                # only a sporadic bleed ghost (a hat that flickers in a couple of bars) is
+                # removed. Off-beat timekeeping is real drumming, not noise, so it is NOT
+                # penalised for sitting off the beat.
+                if cnt[b] * 100 > w * keep_pct:
                     mask |= (1 << b)
-            cons.append(mask)
-        cons = tuple(cons)
-        if sum(_popcount(m) for m in cons) == 0:
-            cons = masks_list[p]                      # window emptied it -> keep the bar itself
-        assigned.append(cons)
+            if mask == 0 and masks_list[p][lane]:
+                mask = masks_list[p][lane]            # don't let it empty a real timekeeping bar
+            out.append(mask)
+        return out
 
-    # ---- C. section pass: collapse each phrase to ONE groove ----
-    # The sliding window still flickers at boundaries (a lone bar between two identical ones
-    # can differ). Now that the consensus masks are CLEAN they cluster tightly, so segment the
-    # plain bars into sections of near-identical consensus and force every bar in a section to
-    # the section's MODE groove. This is what makes a phrase actually repeat, like a real chart.
-    def _dist4(a, b):
-        return sum(_hamming(a[l], b[l]) for l in range(4))
+    hat_c, ride_c = _consensus(2), _consensus(3)
 
-    sections = []
-    cur = [0]
-    for p in range(1, len(assigned)):
-        if _dist4(assigned[p], assigned[cur[0]]) <= SECTION_TOL:
+    # section pass: repeat the dominant timekeeping across a phrase of similar bars
+    keys = [(hat_c[p], ride_c[p]) for p in range(n)]
+    sections, cur = [], [0]
+    for p in range(1, n):
+        d = _hamming(keys[p][0], keys[cur[0]][0]) + _hamming(keys[p][1], keys[cur[0]][1])
+        if d <= SECTION_TOL:
             cur.append(p)
         else:
-            sections.append(cur)
-            cur = [p]
+            sections.append(cur); cur = [p]
     if cur:
         sections.append(cur)
     for sec in sections:
         if len(sec) < 2:
             continue
-        mode = Counter(assigned[p] for p in sec).most_common(1)[0][0]
+        mode = Counter(keys[p] for p in sec).most_common(1)[0][0]
         for p in sec:
-            assigned[p] = mode
+            keys[p] = mode
 
-    # ---- D. optional idiom snap + emit ----
+    # emit ONLY hat(11) + ride(19); kick(13) and snare(12) keep the bar's own notes
     changed = 0
-    cache = {}
-    for (i, _), cons in zip(plain, assigned):
-        k, s, h, r = cons
-        if r and not h:
-            tmpl = cons                               # ride-timekeeper -> keep (templates are hat-based)
-        elif MATCH_TEMPLATE:
-            if cons not in cache:
-                best, _bd = _match_simplest(cons, tier)
-                cache[cons] = best if best is not None else cons
-            tmpl = cache[cons]
-        else:
-            tmpl = cons                               # emit the clean voted consensus directly
-        for ch, mask in zip(GROOVE, tmpl):
+    for p, (i, _) in enumerate(plain):
+        h, r = keys[p]
+        for ch, mask in (("11", h), ("19", r)):
             if mask:
                 events[i][ch] = {Fraction(b, GRID): _CANON[ch] for b in _bits(mask)}
             else:

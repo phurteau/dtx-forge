@@ -1,0 +1,859 @@
+{
+  "unique_charts": 6621,
+  "deduped": 100,
+  "overall": {
+    "charts": 6621,
+    "bars": 538262,
+    "notes_per_bar": 8.66,
+    "subdivision_pct": {
+      "kick": {
+        "quarter+": 59.3,
+        "8th": 28.1,
+        "16th": 6.7,
+        "triplet": 4.0,
+        "32nd": 0.1,
+        "64th+": 0.3,
+        "other": 1.6
+      },
+      "snare": {
+        "quarter+": 59.0,
+        "8th": 21.2,
+        "16th": 11.5,
+        "triplet": 5.3,
+        "32nd": 0.3,
+        "64th+": 0.6,
+        "other": 2.0
+      },
+      "hi-tom": {
+        "quarter+": 35.3,
+        "8th": 26.9,
+        "16th": 19.2,
+        "triplet": 12.3,
+        "32nd": 0.9,
+        "64th+": 2.2,
+        "other": 3.3
+      },
+      "crash": {
+        "quarter+": 67.4,
+        "8th": 20.7,
+        "16th": 3.3,
+        "triplet": 5.2,
+        "32nd": 0.0,
+        "64th+": 0.6,
+        "other": 2.8
+      },
+      "closed-hat": {
+        "quarter+": 58.4,
+        "8th": 30.1,
+        "16th": 5.8,
+        "triplet": 3.7,
+        "32nd": 0.0,
+        "64th+": 0.4,
+        "other": 1.5
+      },
+      "left-crash": {
+        "quarter+": 70.6,
+        "8th": 19.8,
+        "16th": 4.7,
+        "triplet": 2.9,
+        "32nd": 0.1,
+        "64th+": 0.5,
+        "other": 1.5
+      },
+      "low-tom": {
+        "quarter+": 34.3,
+        "8th": 30.0,
+        "16th": 16.3,
+        "triplet": 13.4,
+        "32nd": 0.6,
+        "64th+": 2.6,
+        "other": 2.8
+      },
+      "floor-tom": {
+        "quarter+": 44.3,
+        "8th": 32.4,
+        "16th": 9.6,
+        "triplet": 9.4,
+        "32nd": 0.3,
+        "64th+": 1.3,
+        "other": 2.6
+      },
+      "left-pedal": {
+        "quarter+": 75.3,
+        "8th": 16.1,
+        "16th": 1.1,
+        "triplet": 4.7,
+        "32nd": 0.1,
+        "64th+": 0.2,
+        "other": 2.4
+      },
+      "left-bass": {
+        "quarter+": 4.7,
+        "8th": 14.6,
+        "16th": 63.7,
+        "triplet": 11.3,
+        "32nd": 2.7,
+        "64th+": 0.6,
+        "other": 2.4
+      },
+      "open-hat": {
+        "quarter+": 64.8,
+        "8th": 32.0,
+        "16th": 1.2,
+        "triplet": 1.4,
+        "64th+": 0.0,
+        "other": 0.6
+      },
+      "ride": {
+        "quarter+": 67.7,
+        "8th": 24.0,
+        "16th": 2.3,
+        "triplet": 5.2,
+        "32nd": 0.0,
+        "64th+": 0.1,
+        "other": 0.6
+      }
+    },
+    "offbeat_pct": {
+      "kick": 40.7,
+      "snare": 41.0,
+      "hi-tom": 64.7,
+      "crash": 32.6,
+      "closed-hat": 41.6,
+      "left-crash": 29.4,
+      "low-tom": 65.7,
+      "floor-tom": 55.7,
+      "left-pedal": 24.7,
+      "left-bass": 95.3,
+      "open-hat": 35.2,
+      "ride": 32.3
+    },
+    "triplet_bar_pct": 11.3,
+    "odd_meter_pct": 1.3,
+    "hat_repeat_pct": 9.3,
+    "flam_under70ms_pct": {
+      "snare": 1.9,
+      "kick": 0.1,
+      "crash": 0.4,
+      "left-crash": 0.2,
+      "hi-tom": 6.5,
+      "low-tom": 5.1,
+      "floor-tom": 2.0,
+      "closed-hat": 0.4,
+      "left-pedal": 0.0,
+      "left-bass": 0.4,
+      "open-hat": 0.0,
+      "ride": 0.4
+    }
+  },
+  "by_tier": {
+    "basic": {
+      "charts": 1673,
+      "bars": 135118,
+      "notes_per_bar": 3.94,
+      "subdivision_pct": {
+        "snare": {
+          "quarter+": 79.6,
+          "8th": 13.5,
+          "16th": 1.7,
+          "triplet": 2.8,
+          "32nd": 0.0,
+          "64th+": 0.3,
+          "other": 2.0
+        },
+        "hi-tom": {
+          "quarter+": 62.2,
+          "8th": 22.4,
+          "16th": 3.9,
+          "triplet": 7.3,
+          "32nd": 0.1,
+          "64th+": 1.2,
+          "other": 2.7
+        },
+        "crash": {
+          "quarter+": 76.2,
+          "8th": 14.5,
+          "16th": 2.4,
+          "triplet": 4.1,
+          "32nd": 0.0,
+          "64th+": 0.4,
+          "other": 2.3
+        },
+        "left-crash": {
+          "quarter+": 72.2,
+          "8th": 19.5,
+          "16th": 4.1,
+          "triplet": 2.4,
+          "32nd": 0.0,
+          "64th+": 0.4,
+          "other": 1.3
+        },
+        "low-tom": {
+          "quarter+": 63.8,
+          "8th": 20.8,
+          "16th": 3.1,
+          "triplet": 8.3,
+          "32nd": 0.1,
+          "64th+": 1.2,
+          "other": 2.7
+        },
+        "floor-tom": {
+          "quarter+": 73.7,
+          "8th": 15.8,
+          "16th": 1.7,
+          "triplet": 5.7,
+          "32nd": 0.0,
+          "64th+": 0.8,
+          "other": 2.4
+        },
+        "kick": {
+          "quarter+": 83.6,
+          "8th": 11.6,
+          "16th": 2.1,
+          "triplet": 1.5,
+          "32nd": 0.0,
+          "64th+": 0.2,
+          "other": 0.9
+        },
+        "closed-hat": {
+          "quarter+": 82.2,
+          "8th": 11.3,
+          "16th": 1.2,
+          "triplet": 3.2,
+          "32nd": 0.0,
+          "64th+": 0.2,
+          "other": 1.9
+        },
+        "left-pedal": {
+          "quarter+": 89.3,
+          "triplet": 10.7
+        },
+        "left-bass": {
+          "quarter+": 48.6,
+          "16th": 45.9,
+          "32nd": 5.4
+        },
+        "open-hat": {
+          "quarter+": 81.6,
+          "8th": 15.4,
+          "16th": 0.8,
+          "triplet": 1.3,
+          "64th+": 0.0,
+          "other": 0.9
+        },
+        "ride": {
+          "quarter+": 88.6,
+          "8th": 8.5,
+          "16th": 0.4,
+          "triplet": 2.1,
+          "32nd": 0.0,
+          "64th+": 0.1,
+          "other": 0.4
+        }
+      },
+      "offbeat_pct": {
+        "snare": 20.4,
+        "hi-tom": 37.8,
+        "crash": 23.8,
+        "left-crash": 27.8,
+        "low-tom": 36.2,
+        "floor-tom": 26.3,
+        "kick": 16.4,
+        "closed-hat": 17.8,
+        "left-pedal": 10.7,
+        "left-bass": 51.4,
+        "open-hat": 18.4,
+        "ride": 11.4
+      },
+      "triplet_bar_pct": 5.6,
+      "odd_meter_pct": 1.2,
+      "hat_repeat_pct": 7.7,
+      "flam_under70ms_pct": {
+        "snare": 0.1,
+        "crash": 0.0,
+        "left-crash": 0.0,
+        "hi-tom": 0.3,
+        "low-tom": 0.3,
+        "floor-tom": 0.2,
+        "kick": 0.0,
+        "closed-hat": 0.0,
+        "left-pedal": 0.0,
+        "left-bass": 0.0,
+        "open-hat": 0.0,
+        "ride": 0.0
+      }
+    },
+    "advanced": {
+      "charts": 1659,
+      "bars": 135008,
+      "notes_per_bar": 7.35,
+      "subdivision_pct": {
+        "kick": {
+          "quarter+": 72.3,
+          "8th": 20.4,
+          "16th": 3.3,
+          "triplet": 2.4,
+          "32nd": 0.0,
+          "64th+": 0.2,
+          "other": 1.3
+        },
+        "snare": {
+          "quarter+": 64.4,
+          "8th": 23.6,
+          "16th": 5.4,
+          "triplet": 4.2,
+          "32nd": 0.0,
+          "64th+": 0.5,
+          "other": 1.9
+        },
+        "hi-tom": {
+          "quarter+": 41.5,
+          "8th": 33.1,
+          "16th": 10.0,
+          "triplet": 10.0,
+          "32nd": 0.3,
+          "64th+": 2.1,
+          "other": 3.1
+        },
+        "crash": {
+          "quarter+": 72.4,
+          "8th": 17.6,
+          "16th": 2.6,
+          "triplet": 4.6,
+          "32nd": 0.0,
+          "64th+": 0.4,
+          "other": 2.4
+        },
+        "closed-hat": {
+          "quarter+": 71.0,
+          "8th": 22.6,
+          "16th": 1.9,
+          "triplet": 2.9,
+          "32nd": 0.0,
+          "64th+": 0.2,
+          "other": 1.4
+        },
+        "left-crash": {
+          "quarter+": 72.3,
+          "8th": 19.0,
+          "16th": 4.3,
+          "triplet": 2.7,
+          "32nd": 0.0,
+          "64th+": 0.5,
+          "other": 1.3
+        },
+        "low-tom": {
+          "quarter+": 40.1,
+          "8th": 36.7,
+          "16th": 7.5,
+          "triplet": 10.7,
+          "32nd": 0.2,
+          "64th+": 2.1,
+          "other": 2.7
+        },
+        "floor-tom": {
+          "quarter+": 52.9,
+          "8th": 32.2,
+          "16th": 3.8,
+          "triplet": 7.3,
+          "32nd": 0.2,
+          "64th+": 1.3,
+          "other": 2.3
+        },
+        "left-pedal": {
+          "quarter+": 91.6,
+          "8th": 2.4,
+          "16th": 0.5,
+          "triplet": 3.3,
+          "64th+": 0.1,
+          "other": 2.2
+        },
+        "left-bass": {
+          "quarter+": 6.3,
+          "8th": 36.9,
+          "16th": 39.6,
+          "triplet": 13.5,
+          "32nd": 0.8,
+          "64th+": 1.1,
+          "other": 1.7
+        },
+        "open-hat": {
+          "quarter+": 72.9,
+          "8th": 24.5,
+          "16th": 0.6,
+          "triplet": 1.5,
+          "64th+": 0.0,
+          "other": 0.5
+        },
+        "ride": {
+          "quarter+": 82.3,
+          "8th": 12.0,
+          "16th": 0.7,
+          "triplet": 4.4,
+          "32nd": 0.0,
+          "64th+": 0.1,
+          "other": 0.5
+        }
+      },
+      "offbeat_pct": {
+        "kick": 27.7,
+        "snare": 35.6,
+        "hi-tom": 58.5,
+        "crash": 27.6,
+        "closed-hat": 29.0,
+        "left-crash": 27.7,
+        "low-tom": 59.9,
+        "floor-tom": 47.1,
+        "left-pedal": 8.4,
+        "left-bass": 93.7,
+        "open-hat": 27.1,
+        "ride": 17.7
+      },
+      "triplet_bar_pct": 9.4,
+      "odd_meter_pct": 1.3,
+      "hat_repeat_pct": 10.3,
+      "flam_under70ms_pct": {
+        "snare": 0.4,
+        "kick": 0.0,
+        "crash": 0.1,
+        "left-crash": 0.0,
+        "hi-tom": 1.3,
+        "low-tom": 1.0,
+        "floor-tom": 0.3,
+        "closed-hat": 0.0,
+        "left-pedal": 0.0,
+        "left-bass": 0.0,
+        "open-hat": 0.0,
+        "ride": 0.0
+      }
+    },
+    "extreme": {
+      "charts": 1660,
+      "bars": 135404,
+      "notes_per_bar": 11.06,
+      "subdivision_pct": {
+        "kick": {
+          "quarter+": 55.6,
+          "8th": 31.5,
+          "16th": 7.0,
+          "triplet": 3.9,
+          "32nd": 0.0,
+          "64th+": 0.4,
+          "other": 1.5
+        },
+        "snare": {
+          "quarter+": 53.4,
+          "8th": 22.9,
+          "16th": 14.9,
+          "triplet": 6.0,
+          "32nd": 0.3,
+          "64th+": 0.7,
+          "other": 1.9
+        },
+        "hi-tom": {
+          "quarter+": 30.0,
+          "8th": 27.6,
+          "16th": 23.4,
+          "triplet": 13.0,
+          "32nd": 0.8,
+          "64th+": 2.3,
+          "other": 2.9
+        },
+        "crash": {
+          "quarter+": 64.1,
+          "8th": 23.8,
+          "16th": 3.5,
+          "triplet": 5.3,
+          "32nd": 0.0,
+          "64th+": 0.6,
+          "other": 2.6
+        },
+        "closed-hat": {
+          "quarter+": 52.6,
+          "8th": 35.9,
+          "16th": 6.1,
+          "triplet": 3.5,
+          "32nd": 0.0,
+          "64th+": 0.5,
+          "other": 1.5
+        },
+        "left-crash": {
+          "quarter+": 69.9,
+          "8th": 20.2,
+          "16th": 4.8,
+          "triplet": 3.1,
+          "32nd": 0.0,
+          "64th+": 0.5,
+          "other": 1.4
+        },
+        "left-pedal": {
+          "quarter+": 75.1,
+          "8th": 17.7,
+          "16th": 1.2,
+          "triplet": 3.3,
+          "32nd": 0.1,
+          "64th+": 0.3,
+          "other": 2.4
+        },
+        "low-tom": {
+          "quarter+": 29.0,
+          "8th": 31.0,
+          "16th": 20.0,
+          "triplet": 14.0,
+          "32nd": 0.6,
+          "64th+": 3.0,
+          "other": 2.5
+        },
+        "floor-tom": {
+          "quarter+": 39.8,
+          "8th": 36.1,
+          "16th": 10.5,
+          "triplet": 9.5,
+          "32nd": 0.3,
+          "64th+": 1.4,
+          "other": 2.4
+        },
+        "left-bass": {
+          "quarter+": 3.8,
+          "8th": 20.4,
+          "16th": 62.0,
+          "triplet": 9.6,
+          "32nd": 1.0,
+          "64th+": 0.5,
+          "other": 2.7
+        },
+        "open-hat": {
+          "quarter+": 64.1,
+          "8th": 33.2,
+          "16th": 0.8,
+          "triplet": 1.4,
+          "64th+": 0.0,
+          "other": 0.5
+        },
+        "ride": {
+          "quarter+": 65.1,
+          "8th": 27.0,
+          "16th": 1.6,
+          "triplet": 5.6,
+          "32nd": 0.0,
+          "64th+": 0.1,
+          "other": 0.6
+        }
+      },
+      "offbeat_pct": {
+        "kick": 44.4,
+        "snare": 46.6,
+        "hi-tom": 70.0,
+        "crash": 35.9,
+        "closed-hat": 47.4,
+        "left-crash": 30.1,
+        "left-pedal": 24.9,
+        "low-tom": 71.0,
+        "floor-tom": 60.2,
+        "left-bass": 96.2,
+        "open-hat": 35.9,
+        "ride": 34.9
+      },
+      "triplet_bar_pct": 14.4,
+      "odd_meter_pct": 1.3,
+      "hat_repeat_pct": 10.0,
+      "flam_under70ms_pct": {
+        "snare": 1.7,
+        "crash": 0.3,
+        "kick": 0.1,
+        "left-crash": 0.1,
+        "closed-hat": 0.3,
+        "hi-tom": 5.4,
+        "low-tom": 4.4,
+        "floor-tom": 1.5,
+        "left-pedal": 0.2,
+        "left-bass": 0.1,
+        "open-hat": 0.0,
+        "ride": 0.2
+      }
+    },
+    "master": {
+      "charts": 1173,
+      "bars": 100394,
+      "notes_per_bar": 13.48,
+      "subdivision_pct": {
+        "closed-hat": {
+          "quarter+": 45.4,
+          "8th": 36.7,
+          "16th": 10.5,
+          "triplet": 5.1,
+          "32nd": 0.1,
+          "64th+": 0.5,
+          "other": 1.7
+        },
+        "kick": {
+          "quarter+": 51.1,
+          "8th": 31.5,
+          "16th": 9.5,
+          "triplet": 5.5,
+          "32nd": 0.1,
+          "64th+": 0.4,
+          "other": 1.9
+        },
+        "snare": {
+          "quarter+": 47.4,
+          "8th": 21.9,
+          "16th": 19.5,
+          "triplet": 7.5,
+          "32nd": 0.7,
+          "64th+": 0.9,
+          "other": 2.2
+        },
+        "low-tom": {
+          "quarter+": 25.6,
+          "8th": 27.2,
+          "16th": 23.3,
+          "triplet": 16.4,
+          "32nd": 1.1,
+          "64th+": 3.2,
+          "other": 3.1
+        },
+        "crash": {
+          "quarter+": 60.5,
+          "8th": 23.6,
+          "16th": 5.0,
+          "triplet": 6.3,
+          "32nd": 0.0,
+          "64th+": 1.0,
+          "other": 3.5
+        },
+        "left-crash": {
+          "quarter+": 68.8,
+          "8th": 19.5,
+          "16th": 5.8,
+          "triplet": 3.5,
+          "32nd": 0.3,
+          "64th+": 0.5,
+          "other": 1.7
+        },
+        "left-pedal": {
+          "quarter+": 75.3,
+          "8th": 16.0,
+          "16th": 1.0,
+          "triplet": 5.1,
+          "32nd": 0.1,
+          "64th+": 0.3,
+          "other": 2.2
+        },
+        "hi-tom": {
+          "quarter+": 25.1,
+          "8th": 23.2,
+          "16th": 27.6,
+          "triplet": 15.5,
+          "32nd": 1.9,
+          "64th+": 2.7,
+          "other": 4.0
+        },
+        "floor-tom": {
+          "quarter+": 35.2,
+          "8th": 33.7,
+          "16th": 14.4,
+          "triplet": 11.9,
+          "32nd": 0.6,
+          "64th+": 1.5,
+          "other": 2.8
+        },
+        "left-bass": {
+          "quarter+": 5.1,
+          "8th": 11.9,
+          "16th": 64.2,
+          "triplet": 12.2,
+          "32nd": 3.6,
+          "64th+": 0.5,
+          "other": 2.3
+        },
+        "open-hat": {
+          "quarter+": 55.5,
+          "8th": 40.4,
+          "16th": 2.1,
+          "triplet": 1.4,
+          "64th+": 0.0,
+          "other": 0.6
+        },
+        "ride": {
+          "quarter+": 55.6,
+          "8th": 32.8,
+          "16th": 4.2,
+          "triplet": 6.4,
+          "32nd": 0.1,
+          "64th+": 0.2,
+          "other": 0.7
+        }
+      },
+      "offbeat_pct": {
+        "closed-hat": 54.6,
+        "kick": 48.9,
+        "snare": 52.6,
+        "low-tom": 74.4,
+        "crash": 39.5,
+        "left-crash": 31.2,
+        "left-pedal": 24.7,
+        "hi-tom": 74.9,
+        "floor-tom": 64.8,
+        "left-bass": 94.9,
+        "open-hat": 44.5,
+        "ride": 44.4
+      },
+      "triplet_bar_pct": 17.8,
+      "odd_meter_pct": 1.5,
+      "hat_repeat_pct": 7.8,
+      "flam_under70ms_pct": {
+        "closed-hat": 0.8,
+        "kick": 0.2,
+        "snare": 4.1,
+        "crash": 0.9,
+        "left-pedal": 0.0,
+        "hi-tom": 12.2,
+        "left-crash": 0.6,
+        "low-tom": 9.2,
+        "floor-tom": 3.8,
+        "left-bass": 0.6,
+        "open-hat": 0.0,
+        "ride": 0.7
+      }
+    },
+    "other": {
+      "charts": 456,
+      "bars": 32338,
+      "notes_per_bar": 8.91,
+      "subdivision_pct": {
+        "kick": {
+          "quarter+": 55.0,
+          "8th": 32.7,
+          "16th": 6.0,
+          "triplet": 4.0,
+          "32nd": 0.0,
+          "64th+": 0.2,
+          "other": 2.0
+        },
+        "floor-tom": {
+          "quarter+": 44.8,
+          "8th": 31.6,
+          "16th": 10.1,
+          "triplet": 9.0,
+          "32nd": 0.2,
+          "64th+": 1.2,
+          "other": 3.1
+        },
+        "crash": {
+          "quarter+": 66.9,
+          "8th": 22.0,
+          "16th": 1.7,
+          "triplet": 5.0,
+          "32nd": 0.0,
+          "64th+": 0.3,
+          "other": 4.1
+        },
+        "snare": {
+          "quarter+": 61.2,
+          "8th": 20.6,
+          "16th": 11.1,
+          "triplet": 4.3,
+          "32nd": 0.3,
+          "64th+": 0.3,
+          "other": 2.3
+        },
+        "closed-hat": {
+          "quarter+": 62.7,
+          "8th": 27.5,
+          "16th": 5.8,
+          "triplet": 2.7,
+          "32nd": 0.1,
+          "64th+": 0.1,
+          "other": 1.2
+        },
+        "left-crash": {
+          "quarter+": 68.7,
+          "8th": 22.4,
+          "16th": 3.6,
+          "triplet": 2.7,
+          "32nd": 0.0,
+          "64th+": 0.7,
+          "other": 2.0
+        },
+        "low-tom": {
+          "quarter+": 33.0,
+          "8th": 29.8,
+          "16th": 17.6,
+          "triplet": 14.0,
+          "32nd": 0.6,
+          "64th+": 1.3,
+          "other": 3.7
+        },
+        "hi-tom": {
+          "quarter+": 33.5,
+          "8th": 27.0,
+          "16th": 21.6,
+          "triplet": 12.1,
+          "32nd": 1.0,
+          "64th+": 1.1,
+          "other": 3.7
+        },
+        "left-bass": {
+          "quarter+": 4.0,
+          "8th": 14.3,
+          "16th": 68.0,
+          "triplet": 9.2,
+          "32nd": 1.0,
+          "64th+": 0.9,
+          "other": 2.6
+        },
+        "left-pedal": {
+          "quarter+": 71.7,
+          "8th": 16.1,
+          "16th": 1.8,
+          "triplet": 5.2,
+          "32nd": 0.0,
+          "64th+": 0.1,
+          "other": 5.0
+        },
+        "open-hat": {
+          "quarter+": 79.9,
+          "8th": 20.1
+        },
+        "ride": {
+          "quarter+": 42.1,
+          "8th": 39.0,
+          "16th": 13.9,
+          "triplet": 5.0
+        }
+      },
+      "offbeat_pct": {
+        "kick": 45.0,
+        "floor-tom": 55.2,
+        "crash": 33.1,
+        "snare": 38.8,
+        "closed-hat": 37.3,
+        "left-crash": 31.3,
+        "low-tom": 67.0,
+        "hi-tom": 66.5,
+        "left-bass": 96.0,
+        "left-pedal": 28.3,
+        "open-hat": 20.1,
+        "ride": 57.9
+      },
+      "triplet_bar_pct": 8.7,
+      "odd_meter_pct": 1.9,
+      "hat_repeat_pct": 13.3,
+      "flam_under70ms_pct": {
+        "floor-tom": 2.0,
+        "crash": 0.4,
+        "kick": 0.0,
+        "closed-hat": 0.4,
+        "snare": 1.9,
+        "left-crash": 0.3,
+        "low-tom": 4.4,
+        "hi-tom": 6.9,
+        "left-bass": 0.0,
+        "left-pedal": 0.0,
+        "ride": 5.8,
+        "open-hat": 0.0
+      }
+    }
+  }
+}

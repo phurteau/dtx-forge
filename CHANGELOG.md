@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.5.1
+
+Note-preservation fix and a much deeper grounding in real charts.
+
+- **Keeps the notes that belong there.** v1.5.0's DTXMania cleanup was too aggressive - it voted
+  the whole groove (including kick and snare) toward a "consensus" and deleted real playing. Now the
+  regularization only cleans the bleed-prone **hi-hat / ride timekeeping**; **kick and snare are
+  preserved exactly as played**, so fast double-kicks, ghost snares and syncopation all survive.
+- **Off-beat timekeeping is respected.** Off-beats are ~40% of every lane's hits in real charts (up
+  to 55% at Master), so the cleanup no longer treats an off-beat hi-hat as suspect - disco/funk/ska
+  off-beat hats, off-beat ride and varied 16th patterns are kept; only sporadic bleed is removed.
+- **Genre-safe.** Jazz swing (triplet ride), shuffle, odd meters (5/4, 7/8, waltz), blast beats,
+  double bass, polyrhythm and ghost notes are all left intact - verified by a genre test suite.
+- **Tier-aware cleanup.** Grounded in the full corpus (see below), difficulty scales hard - a Master
+  chart is 3.5× denser than Basic and off-beat over half the time - so the cleanup is now gentler at
+  higher difficulties (where there's more intentional playing) and firmer at lower ones.
+- **Grounded in 6,621 real charts.** Every threshold (de-flam window, keep strength, per-lane note
+  grids) is now calibrated from the whole deduplicated corpus across both sets and documented in
+  `docs/drum-corpus-facts.md` (+ machine-readable `docs/drum_facts*.json`), not assumed.
+
 ## v1.5.0
 
 A built-in chart editor, a big step up in charting quality, and a smoother finish flow.

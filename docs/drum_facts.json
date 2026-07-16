@@ -1,0 +1,122 @@
+{
+  "charts": 4729,
+  "subdivision_pct_by_lane": {
+    "kick": {
+      "quarter+": 58.1,
+      "8th": 27.1,
+      "16th": 7.6,
+      "triplet": 4.6,
+      "32nd": 0.1,
+      "64th+": 0.5,
+      "other": 2.1
+    },
+    "snare": {
+      "quarter+": 56.4,
+      "8th": 21.7,
+      "16th": 11.8,
+      "triplet": 6.4,
+      "32nd": 0.3,
+      "64th+": 0.8,
+      "other": 2.6
+    },
+    "hi-tom": {
+      "quarter+": 35.4,
+      "8th": 26.5,
+      "16th": 19.1,
+      "triplet": 13.0,
+      "32nd": 0.9,
+      "64th+": 2.0,
+      "other": 3.1
+    },
+    "crash": {
+      "quarter+": 64.0,
+      "8th": 22.0,
+      "16th": 3.7,
+      "triplet": 6.1,
+      "32nd": 0.0,
+      "64th+": 0.7,
+      "other": 3.4
+    },
+    "closed-hat": {
+      "quarter+": 58.9,
+      "8th": 29.8,
+      "16th": 5.4,
+      "triplet": 3.8,
+      "32nd": 0.0,
+      "64th+": 0.4,
+      "other": 1.7
+    },
+    "left-crash": {
+      "quarter+": 70.3,
+      "8th": 19.0,
+      "16th": 5.0,
+      "triplet": 3.3,
+      "32nd": 0.0,
+      "64th+": 0.6,
+      "other": 1.9
+    },
+    "low-tom": {
+      "quarter+": 33.1,
+      "8th": 29.5,
+      "16th": 16.9,
+      "triplet": 14.4,
+      "32nd": 0.6,
+      "64th+": 2.3,
+      "other": 3.2
+    },
+    "floor-tom": {
+      "quarter+": 41.5,
+      "8th": 32.1,
+      "16th": 10.7,
+      "triplet": 11.0,
+      "32nd": 0.4,
+      "64th+": 1.9,
+      "other": 2.4
+    },
+    "left-pedal": {
+      "quarter+": 69.5,
+      "8th": 19.2,
+      "16th": 1.4,
+      "triplet": 6.2,
+      "32nd": 0.1,
+      "64th+": 0.4,
+      "other": 3.3
+    },
+    "left-bass": {
+      "quarter+": 4.7,
+      "8th": 11.5,
+      "16th": 66.4,
+      "triplet": 11.5,
+      "32nd": 2.0,
+      "64th+": 0.8,
+      "other": 3.1
+    }
+  },
+  "offbeat_pct_by_lane": {
+    "kick": 41.9,
+    "snare": 43.6,
+    "hi-tom": 64.6,
+    "crash": 36.0,
+    "closed-hat": 41.1,
+    "left-crash": 29.7,
+    "low-tom": 66.9,
+    "floor-tom": 58.5,
+    "left-pedal": 30.5,
+    "left-bass": 95.3
+  },
+  "triplet_bar_pct": 13.0,
+  "odd_meter_bar_pct": 1.6,
+  "hat_adjacent_repeat_pct": 11.6,
+  "max_subdivision_by_lane": {
+    "kick": 6,
+    "snare": 6,
+    "hi-tom": 6,
+    "crash": 6,
+    "closed-hat": 6,
+    "left-crash": 6,
+    "low-tom": 6,
+    "floor-tom": 6,
+    "left-pedal": 6,
+    "left-bass": 6
+  }
+}

@@ -57,11 +57,14 @@ _TK_GRIDS = [4, 8, 12, 16, 24, 32]
 
 # Cymbal / hi-hat lanes are bleed-prone: a hard hit's decay or mic bleed spawns a second
 # onset a few ms later, which quantizes into a FLAM (two same-lane hits jammed together).
-# Real GITADORA charts essentially never place two hits of the SAME cymbal that close --
-# across 4,729 charts, same-lane spacing under 50 ms is 0.0% for hi-hat and 0.2% for
-# crash -- so collapsing sub-threshold same-lane cymbal pairs removes bleed artifacts
-# without touching real playing. Toms, snare and kick are deliberately NOT de-flammed:
-# real fills, drags and double-bass genuinely play fast there.
+# Real GITADORA charts essentially never place two hits of the SAME cymbal that close. Mined
+# across 4,729 corpus charts at their header BPM (docs/drum-corpus-facts.md), the share of
+# same-lane consecutive hits under 70 ms is: closed-hat 0.26%, crash 0.45%, left-crash 0.18%
+# -- i.e. bleed. Over the SAME 70 ms window the toms jump to 5-6% (hi-tom 6.2%, low-tom 5.0%)
+# and snare 1.9% -- genuine fast fills/rolls. 70 ms sits in the valley between the two, so
+# collapsing sub-threshold same-lane CYMBAL pairs removes bleed without touching real playing.
+# Toms, snare and kick are deliberately NOT de-flammed: real fills, drags and double-bass
+# genuinely play fast there.
 _CYMBAL_LANES = ("11", "18", "16", "1A", "19")   # closed hat, open hat, crash, Lcrash, ride
 FLAM_MS = 70.0                                    # same-lane cymbal hits closer than this = bleed
 
