@@ -41,8 +41,29 @@
   .pop input[type=color]{width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);cursor:pointer}
   .pop .reset{width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;cursor:pointer;font-size:13px}
 
-  main{flex:1 1 auto;min-height:0;display:grid;gap:20px;padding:22px;grid-template-columns:minmax(0,1.1fr) minmax(360px,.9fr);grid-template-rows:1fr;max-width:1750px;width:100%;margin:0 auto}
-  .col{min-height:0;display:flex;flex-direction:column;gap:18px;overflow:auto;padding-right:4px}
+  /* 3-column workspace: Details | Editor | Console (resizable) */
+  .workspace{flex:1 1 auto;min-height:0;display:flex;overflow:hidden;padding:12px}
+  .wcol{min-height:0;display:flex;flex-direction:column}
+  .wcol.details{flex:0 0 25%;min-width:220px;overflow:auto;gap:16px;padding-right:8px}
+  .wcol.editor{flex:1 1 0;min-width:320px;overflow:hidden;padding:0 2px}
+  .wcol.console{flex:0 0 25%;min-width:210px;overflow:auto;padding-left:8px}
+  .wdiv{flex:0 0 11px;cursor:col-resize;position:relative;align-self:stretch}
+  .wdiv::before{content:"";position:absolute;left:4px;top:0;bottom:0;width:2px;background:var(--line);border-radius:2px;transition:background .15s,width .15s}
+  .wdiv:hover::before,.wdiv.drag::before{background:var(--acc2);width:3px;left:4px}
+  .editnote{margin-top:14px;display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--acc2) 15%,var(--panel2)),var(--panel2));border:1px solid color-mix(in srgb,var(--acc2) 42%,var(--line));box-shadow:0 2px 14px color-mix(in srgb,var(--acc2) 14%,transparent)}
+  .editnote-txt{flex:1;font-size:13px;line-height:1.5;color:var(--txt);letter-spacing:.1px}
+  .hdrreset{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:20px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600}
+  .hdrreset:hover{border-color:var(--acc2)}
+  /* editor placeholder (shown until a chart is generated) */
+  .edplaceholder{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--dim);text-align:center;border:1.5px dashed var(--line);border-radius:14px;margin:2px;padding:24px}
+  .edplaceholder .big{font-size:44px;opacity:.6}
+  .edplaceholder b{color:var(--txt)}
+  /* live editing ticker in the console */
+  .ticker{display:flex;align-items:flex-start;gap:9px;margin-top:12px;padding:11px 13px;border-radius:10px;background:color-mix(in srgb,var(--acc2) 10%,var(--panel2));border:1px solid color-mix(in srgb,var(--acc2) 35%,var(--line));font-size:12.5px;line-height:1.5;color:var(--txt)}
+  .ticker .dot{flex:0 0 auto;margin-top:4px;width:9px;height:9px;border-radius:50%;background:var(--acc2);animation:tickPulse 1.3s ease-in-out infinite}
+  @keyframes tickPulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+
+  .col{min-height:0;display:flex;flex-direction:column;gap:18px}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:0 2px 14px var(--glow)}
   .card h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin:0 0 12px;display:flex;align-items:center}
   .card h2 .n{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--acc);color:var(--acc-ink);border-radius:50%;font-size:12px;margin-right:8px}
@@ -88,11 +109,20 @@
   .step.active .nm{color:var(--txt);font-weight:600}
   .step.skipped .dot{opacity:.5}.step.skipped .nm{opacity:.5;text-decoration:line-through}
   .step.error .dot{background:#8a2f2f;border-color:#c05050;color:#fff}
+  .step.editing{background:color-mix(in srgb,#ffd24a 12%,transparent)}
+  .step.editing .dot{border-color:#ffd24a;background:#ffd24a;color:#3a2f00;animation:editGlow 1.3s ease-in-out infinite}
+  .step.editing .nm{color:var(--txt);font-weight:600}
+  @keyframes editGlow{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,#ffd24a 70%,transparent)}50%{box-shadow:0 0 0 7px transparent}}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--acc2) 55%,transparent)}50%{box-shadow:0 0 0 6px transparent}}
 
   .panel h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);margin:16px 0 8px;flex:0 0 auto}
   #log{flex:1 1 auto;min-height:90px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:12px;font-family:Consolas,monospace;font-size:13px;line-height:1.6;overflow:auto;white-space:pre-wrap}
   #log .m{color:var(--dim)} #log .m:last-child{color:var(--txt)} #log .ready{color:var(--dim);opacity:.75}
+  #log .ready .cur,#log .m:last-child::after{content:'';display:inline-block;width:7px;height:1em;background:var(--acc2);margin-left:3px;vertical-align:text-bottom;animation:blink 1.1s step-end infinite}
+  #log.pkgdone .m:last-child::after{display:none}
+  #log:has(.m) .ready .cur{display:none}   /* only one caret: if there's log output, drop the Ready caret */
+  @keyframes blink{0%,50%{opacity:1}50.01%,100%{opacity:0}}
+  .sig{position:fixed;right:12px;bottom:3px;font-size:8px;line-height:1;color:var(--dim);opacity:.4;letter-spacing:.5px;font-family:Consolas,monospace;pointer-events:none;z-index:9}
   .badge{display:inline-block;padding:8px 14px;border-radius:8px;margin:4px 8px 4px 0;font-size:14px;font-weight:600}
   .badge.playable{background:#16401f;color:#7ee89a;border:1px solid #2f8f4a}
   .badge.tight{background:#3d3410;color:#ecd06a;border:1px solid #8a7420}
@@ -100,17 +130,56 @@
   .badge.info{background:var(--panel2);color:var(--dim);border:1px solid var(--line)}
   .stat{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:4px 8px 4px 0;font-size:14px}.stat b{color:var(--acc2)}
   .dl{display:block;text-align:center;margin-top:14px;background:var(--acc);color:var(--acc-ink);font-weight:700;text-decoration:none;padding:14px 24px;border-radius:10px;font-size:15px;flex:0 0 auto}
+  .dl2{display:block;width:100%;text-align:center;margin-top:10px;background:var(--panel2);color:var(--txt);font-weight:600;padding:11px 24px;border:1px solid var(--line);border-radius:10px;font-size:14px;cursor:pointer}
   .hidden{display:none}
   .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--acc2);border-radius:50%;animation:s .8s linear infinite;vertical-align:middle;margin-right:8px}
   @keyframes s{to{transform:rotate(360deg)}}
-  @media (max-width:900px){ body{overflow:auto} main{grid-template-columns:1fr;grid-template-rows:auto;max-width:720px} .col{overflow:visible} #log{min-height:160px} }
+  /* ---- chart editor (Tab 2 panel, not a modal) ---- */
+  .edbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 6px 20px var(--glow)}
+  .edbox.hidden{display:none}
+  .edhead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .edhead h3{margin:0;font-size:15px;flex:1;min-width:120px}
+  .edhead .barnav{display:flex;align-items:center;gap:6px}
+  .edhead button{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:6px 10px;cursor:pointer;font-size:13px}
+  .edhead button:disabled{opacity:.4;cursor:default}
+  .edhead .barlbl{font-size:13px;min-width:96px;text-align:center;font-weight:600}
+  .edtools{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;font-size:12px;color:var(--muted)}
+  .edtools .seg{display:inline-flex}
+  .edtools .seg button{padding:4px 8px;font-size:12px}
+  .edtools .seg button.active{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+  .edtools .tbtnx{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer}
+  .edtools .tbtnx:hover:not(:disabled){border-color:var(--acc2)}
+  .edtools .tbtnx:disabled{opacity:.4;cursor:not-allowed}
+  .edcanvas-wrap{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
+  .edmini-wrap{position:relative;flex:0 0 auto;margin:2px 16px 6px;border:1px solid var(--line);border-radius:8px;background:#0d1016;overflow:hidden}
+  .edmini-wrap canvas{display:block;width:100%;height:94px;cursor:pointer}
+  .edmini-lbl{position:absolute;top:3px;left:7px;font-size:10px;color:var(--dim);pointer-events:none;letter-spacing:.5px;text-transform:uppercase;text-shadow:0 1px 2px #000}
+  .edmini-wrap .miniplay{position:absolute;top:5px;right:6px;z-index:2;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--acc-ink);border:none;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:filter .15s}
+  .edmini-wrap .miniplay:hover{filter:brightness(1.12)}
+  .edmini-wrap .miniplay.on{background:#c0392b;color:#fff}
+  .edmini-wrap .miniplay:disabled{opacity:.4;cursor:not-allowed;background:var(--panel2);color:var(--dim)}
+  .edcanvas-wrap canvas{position:absolute;top:8px;left:12px;right:12px;bottom:8px;background:#0d1016;border-radius:8px;cursor:crosshair;touch-action:none}
+  .edvscroll{position:absolute;top:8px;bottom:8px;right:2px;width:9px;border-radius:5px;background:rgba(127,140,160,0.10);z-index:3}
+  .edvthumb{position:absolute;left:0;right:0;top:0;height:40px;border-radius:5px;background:var(--panel2);border:1px solid var(--line);cursor:grab}
+  .edvthumb:hover{border-color:var(--acc2)}
+  .edvthumb.grab{cursor:grabbing;border-color:var(--acc2)}
+  .edvscroll.off{opacity:.35}
+  .edvscroll.off .edvthumb{cursor:default}
+  .edfoot{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
+  .edfoot .save{flex:2;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--acc-ink);font-weight:700;border:none;border-radius:9px;padding:11px;cursor:pointer;font-size:14px}
+  .edfoot .dlz{flex:1;background:var(--acc);color:var(--acc-ink);font-weight:700;border:none;border-radius:9px;padding:11px;cursor:pointer;font-size:14px}
+  .edmenu{position:fixed;z-index:110;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden;font-size:13px}
+  .edmenu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--txt);padding:9px 16px;cursor:pointer}
+  .edmenu button:hover{background:var(--panel2)}
+  @media (max-width:1000px){ body{overflow:auto} .workspace{flex-direction:column;overflow:visible} .wcol,.wcol.details,.wcol.editor,.wcol.console{flex:1 1 auto;width:100%;min-width:0} .wcol.editor{height:70vh} .wdiv{display:none} #log{min-height:140px} }
 </style>
 </head>
 <body>
 <header>
-  <span class="logo">🥁</span><h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.4.1</span>
+  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.5.0</span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
+    <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
     <button class="tbtn" id="themeBtn"><span id="themeIcon">🌙</span><span id="themeLbl">Dark</span></button>
     <div class="picker"><button class="tbtn" id="pickBtn"><span class="swatch"></span>Color</button>
       <div class="pop hidden" id="pop"><h4>Accent color</h4><div class="presets" id="presets"></div>
@@ -120,9 +189,9 @@
   </div>
 </header>
 
-<main>
-  <!-- LEFT: inputs -->
-  <div class="col">
+<main class="workspace">
+  <!-- DETAILS -->
+  <section class="wcol details" id="wcol-details">
     <div class="card">
       <h2><span class="n">1</span>Details<span class="tagpill req">required</span></h2>
       <div class="row"><div><label>Title <span class="hint">(required)</span></label><input type="text" id="title"></div>
@@ -144,79 +213,133 @@
 
     <div class="card">
       <h2><span class="n">2</span>Audio (BGM)<span class="tagpill req">required</span></h2>
-      <div class="seg" id="audseg"><button data-v="url" class="active">Audio URL</button><button data-v="upload">Upload file</button></div>
+      <div class="seg" id="audseg"><button data-v="url" class="active">Audio URL</button><button data-v="upload">Upload File</button></div>
       <div id="aud-url"><label>Audio link</label><input type="text" id="yt" placeholder="YouTube · SoundCloud · Bandcamp · or a direct .mp3/.wav link">
         <div class="hint">Paste a link from <b>YouTube, SoundCloud, Bandcamp, Vimeo</b> and 1000+ sites, or a <b>direct audio-file URL</b>.</div></div>
       <div id="aud-upload" class="hidden"><label>Audio file (mp3 / wav / ogg / m4a)</label><input type="file" id="audio" accept="audio/*"></div>
 
       <label>Drums in the backing track</label>
-      <div class="seg" id="drumseg"><button data-v="keep" class="active">Keep</button><button data-v="quiet">Quiet</button><button data-v="remove">Remove</button></div>
-      <div class="hint" id="drumHint">Plays the complete song, drums included.</div>
+      <div class="seg" id="drumseg"><button data-v="keep">Keep</button><button data-v="quiet" class="active">Quiet</button><button data-v="remove">Remove</button></div>
       <label class="chk"><input type="checkbox" id="autoSync" checked><span><b>Auto-sync audio to chart</b><br><span class="hint" style="margin:0">Aligns the downloaded/uploaded audio to the notes (fixes intro offset &amp; slight tempo diffs).</span></span></label>
     </div>
 
     <div class="card">
       <h2><span class="n">3</span>Notation source<span class="tagpill">optional</span></h2>
-      <div class="seg" id="tabseg"><button data-v="url" class="active">URL / paste</button><button data-v="file">Upload file</button></div>
+      <div class="seg" id="tabseg"><button data-v="url" class="active">URL / Paste</button><button data-v="file">Upload File</button></div>
       <div id="src-url"><label>Tab URL or pasted tab</label>
-        <input type="text" id="url" placeholder="Songsterr link · Guitar Pro / MIDI URL · or paste an ASCII tab">
-        <div class="hint">Auto-detects the source - <b>Songsterr</b>, <b>Guitar Pro</b>, <b>MIDI</b>, or a pasted drum tab.</div></div>
+        <input type="text" id="url" placeholder="Songsterr link · Guitar Pro / MIDI URL · or paste an ASCII tab"></div>
       <div id="src-file" class="hidden"><label>Tab file</label><input type="file" id="tabfile" accept=".gp,.gp3,.gp4,.gp5,.gpx,.gtp,.mid,.midi,.txt,.tab">
         <div class="hint">Guitar Pro, MIDI, or a plain-text drum tab.</div></div>
-      <div class="hint" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><b>Leave notation blank to transcribe the drums from the audio</b> - it separates the track into a full kit (kick, snare, toms, hi-hat, ride, crash). Models download once on first use. <i>(Beta.)</i></div>
+      <div class="hint" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><b>Leave notation blank to transcribe the drums from the audio</b> - it separates the track into a full kit. Models download once on first use. <i>(Beta.)</i></div>
     </div>
 
     <div class="card">
       <h2><span class="n">4</span>Advanced</h2>
-      <div class="adv"><div class="head">Notes Style</div>
-        <div class="hint">How the charted notes are shaped - works for both a supplied tab and audio transcription. <b>Transcribed</b> keeps the chart as generated from your source. <b>DTXMania</b> regularizes it into idiomatic patterns - steady even timekeeping, one timekeeper (hi-hat <i>or</i> ride) per section, and left-foot technique added automatically by difficulty - so it reads like a real DTXMania/GITADORA chart.</div>
+      <div class="adv"><div class="head">Chart Style</div>
+        <div class="hint" id="styleHint"></div>
         <div class="seg" id="noteseg" style="margin-top:10px"><button data-v="transcribed" class="active">Transcribed</button><button data-v="dtxmania">DTXMania</button></div></div>
       <div class="adv" id="audstyle"><div class="head">Audio-only Transcription</div>
-        <div class="hint">Only applies when notation is blank (drums transcribed from the audio). <b>Raw</b> outputs exactly what was detected - busiest, closest to the audio. <b>Standardize</b> quantizes each bar to its <i>own</i> natural subdivision (quarter, 8th, 16th, 32nd or triplet - whatever that bar actually plays) and removes doubled / unplayable notes, so per-bar density mirrors the song.</div>
+        <div class="hint" id="stdHint"></div>
         <div class="seg" id="stdseg" style="margin-top:10px"><button data-v="raw">Raw</button><button data-v="standardize" class="active">Standardize</button></div>
         <div class="hint" id="stdLock" style="margin-top:8px;display:none"><b>DTXMania</b> style is selected above - it always uses the standardized base, so this setting doesn't apply.</div></div>
       <div class="adv" id="foottech"><div class="head">Foot Technique</div>
         <div style="font-weight:600;margin-top:4px">LFHH</div>
-        <label class="chk" style="margin-top:6px"><input type="checkbox" id="hhToggle"><span><b>Enable left hi-hat foot pedal</b> <span class="hint" style="margin:0">- left-foot “chick” on the 2 &amp; 4 backbeat to simulate opening/closing the hi-hat.</span></span></label>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="hhToggle"><span><b>Enable left hi-hat foot pedal</b> <span class="hint" style="margin:0">- left-foot chick on the 2 &amp; 4 backbeat.</span></span></label>
         <div style="font-weight:600;margin-top:14px">DKDK</div>
-        <label class="chk" style="margin-top:6px"><input type="checkbox" id="dbToggle"><span><b>Enable double bass kicks</b> <span class="hint" style="margin:0">- kicks too fast to play one-legged become a right-foot kick + left pedal (the generator decides where); slower kicks stay single-foot.</span></span></label>
-        <div class="hint" id="footLock" style="margin-top:8px;display:none"><b>DTXMania</b> style is selected above - it adds foot technique automatically, gated by difficulty (Extreme adds double bass; Master adds the hi-hat foot too), so these toggles don't apply.</div></div>
-      <div class="hint" style="margin-top:10px">A human-playability check runs at the end and auto-relaxes anything impossible for 2 hands + 2 feet.</div>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="dbToggle"><span><b>Enable double bass kicks</b> <span class="hint" style="margin:0">- fast kicks use a left-pedal assist.</span></span></label>
+        <div class="hint" id="footLock" style="margin-top:8px;display:none">Disabled when DTXMania is chosen.</div></div>
+      <div class="adv" id="dtxopts" style="display:none"><div class="head">DTXMania Chart Options</div>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="ohLpToggle"><span><b>Open hi-hat to LP</b> <span class="hint" style="margin:0">- moves open hi-hats to the left-foot pedal. Rare, but some players prefer it.</span></span></label>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="groupCymToggle" checked><span><b>Group cymbals together</b> <span class="hint" style="margin:0">- folds the ride into the right cymbal, like most DTXMania kits. The left crash stays separate.</span></span></label></div>
     </div>
     <div class="gorow">
-      <button class="go" id="genBtn">Generate DTX chart</button>
+      <button class="go" id="genBtn">Generate</button>
       <button class="stop" id="stopBtn" disabled>Stop</button>
     </div>
-  </div>
+  </section>
+  <div class="wdiv" id="wdiv0"></div>
 
-  <!-- RIGHT: visualizer + console -->
-  <div class="col">
+  <!-- EDITOR (middle) -->
+  <section class="wcol editor" id="wcol-editor">
+    <div class="edplaceholder" id="edPlaceholder"><div><b>Your chart appears here.</b><br>Fill in the details on the left and hit <b>Generate</b> - then edit notes, clean them up, and play it back.</div></div>
+    <div class="edbox hidden" id="edBox">
+      <div class="edhead">
+        <h3 id="edTitle">Edit notes</h3>
+        <div class="barnav">
+          <button id="edPrev" title="Previous bar">◀</button>
+          <span class="barlbl" id="edBarLbl">Bar 1 / 1</span>
+          <button id="edNext" title="Next bar">▶</button>
+        </div>
+      </div>
+      <div class="edmini-wrap"><span class="edmini-lbl">Overview · click a bar to edit it</span><button id="edPlaySong" class="miniplay" title="Play the whole song">▶ Play song</button><canvas id="edMini" height="94"></canvas></div>
+      <div class="edtools">
+        <span>Grid</span>
+        <span class="seg" id="edGrid">
+          <button data-g="4">¼</button><button data-g="8">8th</button><button data-g="12">⅓</button><button data-g="16" class="active">16th</button><button data-g="24">24</button><button data-g="32">32nd</button>
+        </span>
+        <span style="margin-left:14px">Zoom</span>
+        <span class="seg" id="edZoomSeg"><button id="edZoomOut" title="Zoom out">−</button><button id="edZoomLbl" title="Reset zoom" style="min-width:50px">100%</button><button id="edZoomIn" title="Zoom in">+</button></span>
+        <button id="edUndo" class="tbtnx" title="Undo (Ctrl+Z)" style="margin-left:auto" disabled>↶ Undo</button>
+      </div>
+      <div class="edtools" id="edPlayRow">
+        <button id="edPlay" title="Play this bar">▶ Play bar</button>
+        <button id="edSlow" title="Slower">🐢 Slow</button>
+        <span class="barlbl" id="edRate" style="min-width:44px">1.0×</span>
+        <button id="edFast" title="Faster">🐇 Fast</button>
+        <label class="chk" style="margin:0 0 0 6px;font-size:12px"><input type="checkbox" id="edLoop"> loop</label>
+        <label class="chk" style="margin:0 0 0 6px;font-size:12px" title="Play the charted drum sounds (kick, snare, hi-hat…) along with the track during playback"><input type="checkbox" id="edChip" checked> drum sounds</label>
+        <span style="margin-left:10px">Speed</span>
+        <span class="seg" id="edSpeedSeg"><button id="edSpeedDn" title="Slower fall">−</button><button id="edSpeedLbl" title="Reset scroll speed" style="min-width:42px">2.0×</button><button id="edSpeedUp" title="Faster fall">+</button></span>
+        <span style="margin-left:auto;color:var(--dim);font-size:11px">click add · drag move · right-click delete · scroll pan</span>
+        <span id="edNoAudio" class="hidden" style="margin-left:8px;color:var(--muted)">No audio</span>
+      </div>
+      <div class="edcanvas-wrap"><canvas id="edCanvas" width="540" height="600"></canvas><div class="edvscroll" id="edVScroll"><div class="edvthumb" id="edVThumb"></div></div></div>
+      <div class="edfoot">
+        <button class="save" id="edSave">Save changes</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONSOLE (right) -->
+  <div class="wdiv" id="wdiv1"></div>
+  <section class="wcol console" id="wcol-console">
     <div class="card panel">
       <div class="viz">
         <div class="lbl">Pipeline</div>
         <div class="steps" id="steps"></div>
       </div>
       <h3 id="outh">Console</h3>
-      <div id="log"><div class="ready">Ready - configure on the left, then hit Generate.</div></div>
+      <div id="log"><div class="ready">Ready <span class="cur"></span></div></div>
       <div id="done" class="hidden">
         <div id="stats" style="margin-top:14px"></div>
-        <a id="dl" class="dl" href="#">⬇  Download chart .zip</a>
+        <div class="ticker hidden" id="editTicker"><span id="editTickerTxt"></span></div>
+        <button id="dlBtn" class="dl" type="button" style="border:none;cursor:pointer;width:100%">⬇  Download chart .zip</button>
+        <a id="dl" class="hidden" href="#"></a>
+        <div id="savedPath" class="hidden" style="margin-top:8px;font-size:12px;color:var(--acc2);word-break:break-all"></div>
+        <button id="makeAnother" class="dl2" type="button">↻  Make another chart</button>
       </div>
     </div>
-  </div>
+  </section>
 </main>
+<div class="sig">phurteau</div>
 
 <script>
 const $=s=>document.querySelector(s);
-const STAGES=[["notation","Notation"],["audio","Audio"],["separate","Drum Separation"],["align","Auto-sync"],["humanize","Foot Technique"],["playability","Playability"],["package","Package"]];
-const ICON={pending:"",active:"",done:"✓",skipped:"–",error:"✕"};
+const STAGES=[["notation","Notation"],["audio","Audio"],["separate","Drum Separation"],["align","Auto-sync"],["humanize","Foot Technique"],["playability","Playability"],["editing","Editing"],["package","Package"]];
+const ICON={pending:"",active:"",done:"✓",skipped:"–",error:"✕",editing:"✎"};
+let pkgState='',lastStages=[];
 function renderSteps(stages){
-  const map={}; (stages||[]).forEach(s=>map[s.id]=s.state);
+  if(stages!==undefined)lastStages=stages||[];
+  const map={}; (lastStages||[]).forEach(s=>map[s.id]=s.state);
+  if(pkgState==='editing'){map['editing']='editing';map['package']='pending';}
+  else if(pkgState==='packaging'){map['editing']='done';map['package']='active';}
+  else if(pkgState==='done'){map['editing']='done';map['package']='done';}
   $('#steps').innerHTML=STAGES.map(([id,nm])=>{
     const st=map[id]||'pending';
     const inner = st==='active' ? '<span class="spin" style="margin:0"></span>' : (ICON[st]||'');
     return `<div class="step ${st}"><div class="dot">${inner}</div><div class="nm">${nm}</div></div>`;
   }).join('');
+  const lg=$('#log');if(lg)lg.classList.toggle('pkgdone',pkgState==='done');   // cursor blinks until package done
 }
 renderSteps([]);
 
@@ -245,25 +368,33 @@ if(!localStorage.getItem('dtx_accent_v2')){ if(localStorage.getItem('dtx_accent'
 applyTheme(localStorage.getItem('dtx_theme')||'dark');applyAccent(localStorage.getItem('dtx_accent')||'#025500');
 
 /* segmented controls */
-let tabSource="url",audSource="url",drumMode="keep",stdMode="standardize",noteStyle="transcribed";
+let tabSource="url",audSource="url",drumMode="quiet",stdMode="standardize",noteStyle="transcribed";
 function segWire(id,cb){document.querySelectorAll('#'+id+' button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('active'));b.classList.add('active');cb(b.dataset.v);};});}
 segWire('tabseg',v=>{tabSource=v;['url','file'].forEach(x=>$('#src-'+x).classList.toggle('hidden',x!==v));});
 segWire('audseg',v=>{audSource=v;['url','upload'].forEach(x=>$('#aud-'+x).classList.toggle('hidden',x!==v));});
-const DH={
-  keep:"<b>Keep</b> - the backing track is the <b>full original song, drums included</b>. Your pads still trigger drum sounds too, so you'll hear the song's drums layered with your hits. Best for playing along to the complete track. <i>(No drum separation - fastest.)</i>",
-  quiet:"<b>Quiet</b> - the song's drums are <b>reduced ~50%</b> in the backing track (auto-separated), so they sit softly underneath while your hits carry the groove. A middle ground between Keep and Remove. <i>(Uses drum separation - slower.)</i>",
-  remove:"<b>Remove</b> - the song's drums are <b>~90% stripped</b> from the backing track (auto-separated), so <b>your hits supply the drums</b> - true arcade feel. Your pads always make drum sounds in every mode; this just clears them out of the music. <i>(Uses drum separation - slower.)</i>"
+segWire('drumseg',v=>{drumMode=v;});
+segWire('stdseg',v=>{stdMode=v;syncStdHint();});
+segWire('noteseg',v=>{noteStyle=v;syncStyleHint();syncAudLock();});
+const STYLE_HINT={
+  transcribed:"Keeps the notes exactly as generated from your notation source.",
+  dtxmania:"Cleans the notes into the steady, idiomatic patterns real DTXMania/GITADORA charts use."
 };
-segWire('drumseg',v=>{drumMode=v;$('#drumHint').innerHTML=DH[v];});
-segWire('stdseg',v=>{stdMode=v;});
-segWire('noteseg',v=>{noteStyle=v;syncAudLock();});
+function syncStyleHint(){$('#styleHint').innerHTML=STYLE_HINT[noteStyle];}
+syncStyleHint();
+const STD_HINT={
+  raw:"Exactly what was detected.",
+  standardize:"Cleaned up, per-bar faithful."
+};
+function syncStdHint(){$('#stdHint').innerHTML=STD_HINT[stdMode];}
+syncStdHint();
 /* DTXMania always uses the standardized base and adds foot technique automatically,
-   so dim the Raw/Standardize toggle AND the Foot Technique box when it's selected */
+   so dim the Raw/Standardize toggle AND the Foot Technique box when it's selected.
+   The DTXMania Chart Options box only applies to DTXMania, so it's shown only then. */
 function syncAudLock(){const dtxm=noteStyle==='dtxmania';
   $('#audstyle').classList.toggle('locked',dtxm);$('#stdLock').style.display=dtxm?'block':'none';
-  $('#foottech').classList.toggle('locked',dtxm);$('#footLock').style.display=dtxm?'block':'none';}
+  $('#foottech').classList.toggle('locked',dtxm);$('#footLock').style.display=dtxm?'block':'none';
+  $('#dtxopts').style.display=dtxm?'block':'none';}
 syncAudLock();
-$('#drumHint').innerHTML=DH[drumMode];
 /* a BPM the user types is theirs - stop auto-fill from overwriting it */
 $('#bpm').addEventListener('input',()=>{$('#bpm').dataset.auto='';$('#bpmHint').textContent='(optional)';});
 /* same for difficulty: a typed value is respected; blank => auto-rated */
@@ -272,7 +403,64 @@ $('#dlevel').addEventListener('input',()=>{$('#dlevel').dataset.auto='';$('#dlev
 $('#dtier').addEventListener('change',()=>{$('#dtier').dataset.auto='';});
 
 /* generate + stop */
-let curJob=null,stopped=false;
+let curJob=null,stopped=false,edModelJob=null;
+/* reset the page after a download so the user can chart another song */
+function resetView(){
+  // restore the 25-50-25 pane layout: clear the inline flex the dividers wrote
+  const det=$('#wcol-details'),cons=$('#wcol-console');
+  if(det)det.style.flex='';
+  if(cons)cons.style.flex='';
+  // editor view controls back to defaults (zoom 100%, no scroll, 16th grid)
+  edZoom=1;edScrollPx=0;edGridN=16;
+  const zl=$('#edZoomLbl');if(zl)zl.textContent='100%';
+  document.querySelectorAll('#edGrid button').forEach(b=>b.classList.toggle('active',b.dataset.g==='16'));
+}
+function resetPage(){
+  ['#title','#artist','#author','#dlevel','#bpm','#yt','#url','#audio','#tabfile'].forEach(s=>{const e=$(s);if(e)e.value='';});
+  $('#dtier').value='auto';
+  ['#bpm','#dlevel','#dtier'].forEach(s=>{const e=$(s);if(e)e.dataset.auto='';});
+  $('#bpmHint').textContent='(optional)';$('#dlevelHint').textContent='(auto-rated if blank)';
+  $('#done').classList.add('hidden');
+  $('#outh').textContent='Console';
+  $('#log').innerHTML='<div class="ready">Ready <span class="cur"></span></div>';
+  renderSteps([]);
+  $('#genBtn').disabled=false;$('#stopBtn').disabled=true;curJob=null;stopped=false;
+  edModel=null;edModelJob=null;edDirty=false;edStopSong();edShowPlaceholder();pkgState='';renderSteps([]);
+  resetView();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+$('#makeAnother').onclick=resetPage;
+/* Always-visible Reset (tab bar): clear the form + start over; confirm only if a chart/edits exist. */
+async function resetForm(){
+  if((curJob||edDirty)&&!confirm('Start over? This clears the form and discards the current chart.'))return;
+  if(curJob){stopped=true;try{await fetch('/api/cancel/'+curJob,{method:'POST'});}catch(e){}}
+  resetPage();
+}
+$('#resetForm').onclick=resetForm;
+/* Download packages the (possibly edited) chart ONCE, then saves the zip. */
+let chartPackaged=false;
+async function downloadChart(btn){
+  if(!curJob)return;
+  btn=btn||$('#dlBtn');const old=btn.textContent;btn.disabled=true;btn.textContent='Packaging…';
+  pkgState='packaging';renderSteps();
+  try{
+    if(edDirty){await saveEdits(true);}            // fold in any unsaved editor changes first
+    const r=await fetch('/api/package/'+curJob,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})});
+    const j=await r.json();if(j.error)throw new Error(j.error);
+    chartPackaged=true;pkgState='done';renderSteps();   // Editing ✓ · Package ✓
+    if(j.saved){
+      // backend saved it straight to Downloads (reliable in the packaged app)
+      const sp=$('#savedPath');if(sp){sp.textContent='✓ Saved to '+j.saved;sp.classList.remove('hidden');}
+      btn.textContent='✓ Saved to Downloads';
+    }else{
+      // fallback: let the browser download it (works in browser-fallback mode)
+      const a=$('#dl');a.href=j.download+'?t='+Date.now();a.setAttribute('download','');a.click();
+      btn.textContent='✓ Downloaded';
+    }
+    setTimeout(()=>{btn.textContent=old;btn.disabled=false;},1800);
+  }catch(e){alert('Could not package the chart: '+e);pkgState='editing';renderSteps();btn.textContent=old;btn.disabled=false;}
+}
+$('#dlBtn').onclick=()=>downloadChart($('#dlBtn'));
 $('#stopBtn').onclick=async()=>{
   if(!curJob)return;
   stopped=true;
@@ -292,14 +480,14 @@ $('#genBtn').onclick=async()=>{
   if(tabSource==='url'&&_url)fd.append('songsterr_url',_url);
   if(tabSource==='file'&&_tabFile)fd.append('tab_file',_tabFile);
   fd.append('audio_source',audSource);fd.append('drum_mode',drumMode);
-  fd.append('auto_sync',$('#autoSync').checked);fd.append('style',stdMode);fd.append('standardize',stdMode==='raw'?'false':'true');fd.append('notes_style',noteStyle);fd.append('hihat_foot',$('#hhToggle').checked?'on':'off');fd.append('double_bass',$('#dbToggle').checked);
+  fd.append('auto_sync',$('#autoSync').checked);fd.append('style',stdMode);fd.append('standardize',stdMode==='raw'?'false':'true');fd.append('notes_style',noteStyle);fd.append('group_cymbals',$('#groupCymToggle').checked?'true':'false');fd.append('openhat_lp',$('#ohLpToggle').checked?'true':'false');fd.append('hihat_foot',$('#hhToggle').checked?'on':'off');fd.append('double_bass',$('#dbToggle').checked);
   fd.append('title',$('#title').value);fd.append('artist',$('#artist').value);fd.append('author',$('#author').value);
   fd.append('bpm',$('#bpm').value);fd.append('dlevel',$('#dlevel').value);
   { const t=$('#dtier'); const tierAuto=(t.value==='auto'||t.dataset.auto==='1'); fd.append('dlevel_tier', tierAuto?'auto':t.value); }
   // Audio is REQUIRED.
   if(audSource==='url'){if(!$('#yt').value.trim()){alert('Audio is required - paste an audio link, or switch to Upload file.');return;}fd.append('audio_url',$('#yt').value.trim());}
   if(audSource==='upload'){if(!$('#audio').files[0]){alert('Audio is required - choose an audio file.');return;}fd.append('audio_file',$('#audio').files[0]);}
-  $('#genBtn').disabled=true;$('#stopBtn').disabled=false;stopped=false;$('#done').classList.add('hidden');renderSteps([]);
+  $('#genBtn').disabled=true;$('#stopBtn').disabled=false;stopped=false;$('#done').classList.add('hidden');edModel=null;edModelJob=null;edShowPlaceholder();pkgState='';renderSteps([]);
   $('#outh').innerHTML='<span class="spin"></span>Working…';$('#log').innerHTML='';lastN=0;
   if(!hasNotation)logline('No notation given - transcribing drums from the audio (beta).');
   try{const r=await fetch('/api/generate',{method:'POST',body:fd});const j=await r.json();if(j.error)throw new Error(j.error);curJob=j.job_id;poll(j.job_id);}
@@ -310,6 +498,7 @@ let lastN=0;
 async function poll(id){
   if(stopped)return;
   try{const r=await fetch('/api/job/'+id);const j=await r.json();
+    if(curJob!==id)return;   // a reset / new job superseded this poll - drop stale updates
     renderSteps(j.stages);
     // auto-fill BPM the moment the pipeline detects it (only if the user left it blank)
     if(j.data&&j.data.bpm){const el=$('#bpm');
@@ -325,7 +514,7 @@ async function poll(id){
       const pv=s.playability||'',pc=pv==='playable'?'playable':(pv==='tight'?'tight':'problem');
       const f=s.faithfulness; const fc=f>=100?'playable':(f>=97?'tight':'problem');
       const isAudio=s.source==='audio';
-      const chg=[]; if(s.notes_moved)chg.push(s.notes_moved+' moved to left foot'); if(s.notes_dropped)chg.push(s.notes_dropped+' dropped'); if(s.notes_added)chg.push(s.notes_added+' foot notes added');
+      const chg=[]; if(s.notes_moved)chg.push(s.notes_moved+' repositioned'); if(s.notes_dropped)chg.push(s.notes_dropped+' removed'); if(s.notes_added)chg.push(s.notes_added+' added');
       let fbadge;
       if(isAudio){
         // audio-only: no faithfulness % - there is no reference chart to compare against
@@ -344,12 +533,537 @@ async function poll(id){
         `<span class="stat">score: <b>${s.dlevel!=null?s.dlevel.toFixed(2):'-'}</b></span>`+
         `<span class="stat">file: <b>${s.dtx_file||'-'}</b></span>`+
         `<span class="stat">drums: <b>${s.drum_mode}</b></span><span class="stat">hi-hat foot: <b>${s.hihat_foot}</b></span><span class="stat">double kick: <b>${s.double_bass}${s.double_bass==='on'&&s.double_kicks?' ('+s.double_kicks+')':''}</b></span></div>`;
-      $('#dl').href=j.download;$('#done').classList.remove('hidden');return;}
+      $('#dlBtn').textContent='⬇  Download chart .zip';$('#dlBtn').disabled=false;chartPackaged=false;
+      {const sp=$('#savedPath');if(sp){sp.classList.add('hidden');sp.textContent='';}}
+      edModel=null;edModelJob=null;
+      $('#done').classList.remove('hidden');pkgState='editing';renderSteps();openEditor();return;}
     if(j.status==='error'){$('#outh').textContent='✗ Failed';$('#genBtn').disabled=false;$('#stopBtn').disabled=true;return;}
     if(j.status==='cancelled'){$('#outh').textContent='Stopped';$('#genBtn').disabled=false;$('#stopBtn').disabled=true;return;}
     setTimeout(()=>poll(id),1200);
   }catch(e){logline('poll error: '+e);setTimeout(()=>poll(id),2000);}
 }
+
+/* ===================== Chart editor (vertical, one bar at a time) ===================== */
+const LANE_COLORS={"1A":"#cf1670","11":"#2f94c4","18":"#8fd4e8","1B":"#b268ba","12":"#fee92d","14":"#57ec33","13":"#6b54c9","15":"#fe2d2e","17":"#fea62d","16":"#2386c7","19":"#3358cf"};
+/* DTXManiaNX pad icons (sliced from the game's 7_pads.png) shown at the bottom of each lane */
+const edPadImg={};let edPadsReady=0;
+["1A","11","18","1B","12","14","13","15","17","16","19"].forEach(ch=>{
+  const im=new Image();im.onload=()=>{edPadsReady++;if(edModel&&edVisible())edDraw();};
+  im.src='/pads/'+ch+'.png';edPadImg[ch]=im;});
+let edModel=null,edBar=0,edGridN=16,edCanvas=null,edCtx=null,edDrag=null,edDirty=false,edMini=null,edMiniCtx=null;
+/* undo: snapshot the bars before each edit (button OR Ctrl+Z restores the last snapshot) */
+let edUndoStack=[];const ED_UNDO_MAX=60;
+function edSnapshot(){if(!edModel)return;edUndoStack.push(JSON.stringify(edModel.bars));if(edUndoStack.length>ED_UNDO_MAX)edUndoStack.shift();edUndoBtnSync();}
+function edUndoBtnSync(){const b=$('#edUndo');if(b)b.disabled=edUndoStack.length===0;}
+function edUndo(){
+  if(!edModel||!edUndoStack.length)return;
+  edModel.bars=JSON.parse(edUndoStack.pop());
+  edBar=Math.max(0,Math.min(edModel.bars.length-1,edBar));
+  edDirty=true;edUndoBtnSync();
+  edDraw();edDrawMini();updateTicker();
+}
+const ED={GUTTER:42,LANEW:0,OX:0,HEADER:28,PADB:12,FOOT:0,gridH:0,LANE_MIN:34,LANE_MAX:112};
+function edLanes(){return edModel?edModel.lanes:[];}
+function edBarObj(){return edModel.bars[edBar];}
+function edBarlen(){const b=edBarObj().barlen;return b[0]/b[1];}
+function edLayout(){const n=edLanes().length||1;
+  let lw=Math.floor((edCanvas.width-ED.GUTTER)/n);
+  lw=Math.max(ED.LANE_MIN,Math.min(ED.LANE_MAX,lw));
+  ED.LANEW=lw;
+  const blockW=ED.GUTTER+n*lw;
+  ED.OX=Math.max(0,Math.floor((edCanvas.width-blockW)/2));
+  ED.FOOT=Math.max(30,Math.min(lw+6,64,Math.floor((edCanvas.height-ED.HEADER-ED.PADB)*0.28)));
+  ED.gridH=edCanvas.height-ED.HEADER-ED.FOOT-ED.PADB;}
+function edLaneStart(){return ED.OX+ED.GUTTER;}
+function edBlockRight(){return edLaneStart()+edLanes().length*ED.LANEW;}
+function edLaneX(i){return edLaneStart()+i*ED.LANEW;}
+/* vertical zoom + scroll: BH = logical bar height; beat 1 anchored at the hit-line (bottom), rises upward */
+let edZoom=1,edScrollPx=0,edTransition=null;const ED_ZMIN=1,ED_ZMAX=6;
+/* highway scroll speed for playback (how fast notes FALL) - independent of audio rate/zoom */
+const ED_SPEEDS=[0.5,0.75,1,1.5,2,2.5,3,4,5];let edSpeedI=4,edSpeed=ED_SPEEDS[edSpeedI];
+function edSetSpeed(d){edSpeedI=Math.max(0,Math.min(ED_SPEEDS.length-1,edSpeedI+d));edSpeed=ED_SPEEDS[edSpeedI];
+  const l=$('#edSpeedLbl');if(l)l.textContent=edSpeed.toFixed(edSpeed<1?2:1).replace(/\.0$/,'.0')+'×';}
+function edResetSpeed(){edSpeedI=4;edSpeed=ED_SPEEDS[edSpeedI];const l=$('#edSpeedLbl');if(l)l.textContent='2.0×';}
+function edBH(){return ED.gridH*edZoom;}
+function edMaxScroll(){return Math.max(0,edBH()-ED.gridH);}
+function edBaseY(){return ED.HEADER+ED.gridH+edScrollPx;}   // screen y of pos 0 (beat 1)
+function edPosY(pos){return edBaseY()-(pos/edBarlen())*edBH();}   // beat 1 at the BOTTOM (hit-line), time rises upward like the game
+function edYPos(y){return Math.max(0,Math.min(edBarlen()-1e-9,((edBaseY()-y)/edBH())*edBarlen()));}
+function edXLane(x){const i=Math.floor((x-edLaneStart())/ED.LANEW);return (i>=0&&i<edLanes().length)?i:-1;}
+function edRR(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function edDrawLanesBg(c,n){
+  for(let i=0;i<n;i++){const x=edLaneX(i),lane=edLanes()[i];
+    c.fillStyle=(i%2)?"#12161d":"#0f1319";c.fillRect(x,ED.HEADER,ED.LANEW,ED.gridH);
+    c.fillStyle=LANE_COLORS[lane]||"#888";c.font="bold 11px system-ui";c.textAlign="center";
+    c.fillText((edModel.laneNames&&edModel.laneNames[lane])||lane,x+ED.LANEW/2,18);}
+}
+function edDrawFoot(c,n){
+  c.strokeStyle="#33404f";c.lineWidth=1.4;c.beginPath();c.moveTo(edLaneStart(),ED.HEADER+ED.gridH);c.lineTo(edBlockRight(),ED.HEADER+ED.gridH);c.stroke();
+  const footY=ED.HEADER+ED.gridH;
+  c.fillStyle="#0b0e13";c.fillRect(edLaneStart(),footY+1,edBlockRight()-edLaneStart(),ED.FOOT+ED.PADB);
+  c.strokeStyle="#c8536a";c.lineWidth=2;c.beginPath();c.moveTo(edLaneStart(),footY+1);c.lineTo(edBlockRight(),footY+1);c.stroke();   // hit-bar
+  for(let i=0;i<n;i++){const ch=edLanes()[i],im=edPadImg[ch];if(!im||!im.complete||!im.naturalWidth)continue;
+    const bw=ED.LANEW-6,bh=ED.FOOT-6,sc=Math.min(bw/im.naturalWidth,bh/im.naturalHeight);
+    const dw=im.naturalWidth*sc,dh=im.naturalHeight*sc;
+    c.drawImage(im,edLaneX(i)+(ED.LANEW-dw)/2,footY+4+(bh-dh)/2,dw,dh);}
+}
+/* draw one bar's gridlines + notes with beat 1 anchored at screen y=beat1Y, band height BH (caller clips) */
+function edDrawBarAt(c,bi,beat1Y,BH){
+  const bar=edModel.bars[bi],bl=bar.barlen[0]/bar.barlen[1];
+  const yOf=pos=>beat1Y-(pos/bl)*BH;
+  c.textAlign="right";c.font="10px system-ui";
+  for(let g=0;g<=edGridN*bl+1e-9;g++){const pos=g/edGridN;if(pos>bl+1e-9)break;
+    const y=yOf(pos),heavy=Math.abs((pos*4)-Math.round(pos*4))<1e-9;
+    c.strokeStyle=heavy?"#33404f":"#1b222c";c.lineWidth=heavy?1.4:1;
+    c.beginPath();c.moveTo(edLaneStart(),y);c.lineTo(edBlockRight(),y);c.stroke();
+    if(heavy){c.fillStyle="#5b6b7d";c.fillText((Math.round(pos*4)+1)+"",edLaneStart()-4,y-3);}}
+  const li={};edLanes().forEach((l,i)=>li[l]=i);
+  bar.notes.forEach(nt=>{const i=li[nt.lane];if(i==null)return;
+    const x=edLaneX(i)+3,w=ED.LANEW-6,y=yOf(nt.pos),h=11;
+    c.fillStyle=LANE_COLORS[nt.lane]||"#aaa";edRR(c,x,y-h/2,w,h,3);c.fill();
+    if(edDrag&&edDrag.note===nt){c.strokeStyle="#fff";c.lineWidth=1.5;edRR(c,x,y-h/2,w,h,3);c.stroke();}});
+}
+function edDraw(){
+  if(!edModel||edTransition)return; edLayout();
+  edScrollPx=Math.max(0,Math.min(edScrollPx,edMaxScroll()));
+  const c=edCtx,W=edCanvas.width,n=edLanes().length,bl=edBarlen();
+  c.clearRect(0,0,W,edCanvas.height);
+  edDrawLanesBg(c,n);
+  c.save();c.beginPath();c.rect(0,ED.HEADER,W,ED.gridH);c.clip();
+  edDrawBarAt(c,edBar,edBaseY(),edBH());
+  const yh=edPosY(Math.max(0,Math.min(bl,edPlayhead)));
+  c.strokeStyle="#ffd24a";c.lineWidth=2;c.beginPath();c.moveTo(edLaneStart(),yh);c.lineTo(edBlockRight(),yh);c.stroke();
+  c.fillStyle="#ffd24a";c.beginPath();c.moveTo(ED.OX+2,yh-6);c.lineTo(edLaneStart()-5,yh);c.lineTo(ED.OX+2,yh+6);c.closePath();c.fill();
+  c.restore();
+  edDrawFoot(c,n);
+  edSyncScroll();
+}
+/* custom vertical scrollbar: reflects/controls edScrollPx (within-bar pan when zoomed) */
+function edSyncScroll(){
+  const sc=document.getElementById('edVScroll'),th=document.getElementById('edVThumb');
+  if(!sc||!th)return;
+  const trackH=sc.clientHeight,max=edMaxScroll(),bh=edBH();
+  if(max<=0.5){sc.classList.add('off');th.style.height=(trackH-2)+'px';th.style.top='0px';return;}
+  sc.classList.remove('off');
+  const thumbH=Math.max(24,Math.round(trackH*ED.gridH/bh));
+  const frac=edScrollPx/max;                       // 1 = end of bar (top), 0 = start (bottom)
+  th.style.height=thumbH+'px';
+  th.style.top=Math.round((1-frac)*(trackH-thumbH))+'px';
+}
+function edDrawTransition(t,dir){
+  edLayout();
+  const c=edCtx,W=edCanvas.width,n=edLanes().length;
+  const gBot=ED.HEADER+ED.gridH,BH=ED.gridH*edZoom;
+  c.clearRect(0,0,W,edCanvas.height);
+  edDrawLanesBg(c,n);
+  c.save();c.beginPath();c.rect(0,ED.HEADER,W,ED.gridH);c.clip();
+  let fromY,toY;
+  if(dir>0){fromY=gBot+t*BH;toY=gBot-BH+t*BH;}   // scroll down: next bar falls in from the top
+  else{fromY=gBot-t*BH;toY=gBot+BH-t*BH;}         // scroll up: prev bar rises in from the bottom
+  edDrawBarAt(c,edTransition.from,fromY,BH);
+  edDrawBarAt(c,edTransition.to,toY,BH);
+  c.restore();
+  edDrawFoot(c,n);
+}
+function edGotoBar(nb){
+  if(!edModel)return;
+  nb=Math.max(0,Math.min(edModel.bars.length-1,nb));
+  if(nb===edBar||edTransition)return;
+  if(!edSongPlaying)edStopAudio();
+  const dir=nb>edBar?1:-1;
+  edTransition={from:edBar,to:nb,dir};const start=performance.now(),DUR=230;
+  (function step(now){
+    let t=(now-start)/DUR;if(t>1)t=1;
+    const e=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;   // easeInOutQuad
+    edDrawTransition(e,dir);
+    if(t<1)requestAnimationFrame(step);
+    else{edTransition=null;edBar=nb;edShowBar();}
+  })(performance.now());
+}
+/* cumulative whole-notes before bar b (absolute timeline position) */
+function edCumW(b){let t=0;for(let i=0;i<b;i++){const bl=edModel.bars[i].barlen;t+=bl[0]/bl[1];}return t;}
+/* PLAYBACK render: whole song scrolls DOWN past a fixed hit-line (game style). playAbs = current time in whole-notes */
+function edDrawScroll(playAbs){
+  if(!edModel)return; edLayout();
+  const c=edCtx,W=edCanvas.width,n=edLanes().length;
+  const gTop=ED.HEADER,gBot=ED.HEADER+ED.gridH,pxPerWhole=ED.gridH*edZoom*edSpeed;
+  // Judgement line sits a little ABOVE the pad icons (like a real rhythm game): a note crosses
+  // the line at its hit time, then keeps falling the JUDGE gap before disappearing at the pads,
+  // instead of vanishing the instant it's hit. The chip still fires when the note reaches this
+  // line (its musical time), so sound + line stay aligned.
+  const JUDGE=Math.max(22,Math.min(44,Math.round(ED.FOOT*0.7))),gJudge=gBot-JUDGE;
+  const visWhole=(gJudge-gTop)/pxPerWhole;   // whole-notes visible above the judgement line
+  const pastWhole=JUDGE/pxPerWhole;          // whole-notes of "already hit" travel below it
+  const yOf=absP=>gJudge-(absP-playAbs)*pxPerWhole;
+  c.clearRect(0,0,W,edCanvas.height);
+  edDrawLanesBg(c,n);
+  c.save();c.beginPath();c.rect(0,gTop,W,ED.gridH);c.clip();
+  const li={};edLanes().forEach((l,i)=>li[l]=i);
+  let cum=0;
+  for(let b=0;b<edModel.bars.length;b++){
+    const bl=edModel.bars[b].barlen[0]/edModel.bars[b].barlen[1],bStart=cum;cum+=bl;
+    if(cum<playAbs-pastWhole-0.02)continue;     // fully past the pads (already gone)
+    if(bStart>playAbs+visWhole+0.02)break;      // above the top edge (not visible yet)
+    c.textAlign="right";c.font="10px system-ui";
+    for(let g=0;g<=edGridN*bl+1e-9;g++){const p=g/edGridN;if(p>bl+1e-9)break;
+      const y=yOf(bStart+p);if(y<gTop-2||y>gBot+2)continue;
+      const heavy=Math.abs((p*4)-Math.round(p*4))<1e-9;
+      c.strokeStyle=heavy?"#33404f":"#1b222c";c.lineWidth=heavy?1.4:1;
+      c.beginPath();c.moveTo(edLaneStart(),y);c.lineTo(edBlockRight(),y);c.stroke();
+      if(heavy){c.fillStyle="#5b6b7d";c.fillText((Math.round(p*4)+1)+"",edLaneStart()-4,y-3);}}
+    for(const nt of edModel.bars[b].notes){const i=li[nt.lane];if(i==null)continue;
+      const y=yOf(bStart+nt.pos);if(y<gTop-8||y>gBot+8)continue;
+      const x=edLaneX(i)+3,w=ED.LANEW-6,h=11;
+      c.fillStyle=LANE_COLORS[nt.lane]||"#aaa";edRR(c,x,y-h/2,w,h,3);c.fill();}
+  }
+  c.restore();
+  edDrawFoot(c,n);
+  // bright DTXMania-style JUDGEMENT LINE, raised a little above the pad icons (where you hit)
+  c.save();
+  c.shadowColor="#ffe27a";c.shadowBlur=10;
+  c.strokeStyle="#ffe27a";c.lineWidth=3;
+  c.beginPath();c.moveTo(edLaneStart(),gJudge);c.lineTo(edBlockRight(),gJudge);c.stroke();
+  c.restore();
+}
+function edResize(){
+  if(!edCanvas)return;
+  const wrap=edCanvas.parentElement;
+  const w=Math.max(320,Math.floor(wrap.clientWidth-24));   // left 12 + right 12 inset
+  const h=Math.max(200,Math.floor(wrap.clientHeight-16));  // top 8 + bottom 8 inset
+  if(w===edCanvas.width&&h===edCanvas.height){if(edModel)edDraw();return;}
+  edCanvas.width=w;edCanvas.height=h;
+  if(edModel)edDraw();
+}
+/* ---- overview minimap: whole chart, piano-roll style; click a bar to jump ---- */
+const EDMINI={PAD:6,H:94};
+function edBarFrac(i){const b=edModel.bars[i].barlen;return b[0]/b[1];}
+function edMiniGeom(){
+  const pad=EDMINI.PAD,W=edMini.width,H=edMini.height,n=edModel.bars.length;
+  let total=0;const starts=[];
+  for(let i=0;i<n;i++){starts.push(total);total+=edBarFrac(i);}
+  const sx=(W-2*pad)/(total||1),nLanes=edLanes().length||1,rowH=(H-2*pad)/nLanes;
+  return {pad,W,H,n,starts,total,sx,nLanes,rowH};
+}
+function edMiniResize(){
+  if(!edMini)return;
+  const w=Math.max(200,Math.floor(edMini.parentElement.clientWidth));
+  if(edMini.width!==w)edMini.width=w;
+  if(edMini.height!==EDMINI.H)edMini.height=EDMINI.H;
+  if(edModel)edDrawMini();
+}
+let edMiniCache=null,edMiniCacheKey='';
+function edMiniBuildCache(g,lanes){
+  if(!edMiniCache)edMiniCache=document.createElement('canvas');
+  if(edMiniCache.width!==g.W)edMiniCache.width=g.W;
+  if(edMiniCache.height!==g.H)edMiniCache.height=g.H;
+  const c=edMiniCache.getContext('2d');
+  c.clearRect(0,0,g.W,g.H);
+  for(let li=0;li<g.nLanes;li++){c.fillStyle=(li%2)?"#12161d":"#0f1319";c.fillRect(g.pad,g.pad+li*g.rowH,g.W-2*g.pad,g.rowH);}
+  // current-bar highlight
+  const cbx=g.pad+g.starts[edBar]*g.sx,cbw=edBarFrac(edBar)*g.sx;
+  c.fillStyle="rgba(255,210,74,0.13)";c.fillRect(cbx,g.pad,cbw,g.H-2*g.pad);
+  // bar separators
+  c.strokeStyle="#26313f";c.lineWidth=1;
+  for(let i=0;i<=g.n;i++){const bx=g.pad+(i<g.n?g.starts[i]:g.total)*g.sx;c.beginPath();c.moveTo(Math.round(bx)+0.5,g.pad);c.lineTo(Math.round(bx)+0.5,g.H-g.pad);c.stroke();}
+  // notes as colored ticks
+  const li={};lanes.forEach((l,i)=>li[l]=i);
+  const tw=Math.max(1.5,Math.min(3.5,g.sx*0.03));
+  for(let i=0;i<g.n;i++){const x0=g.pad+g.starts[i]*g.sx,bw=edBarFrac(i)*g.sx,bf=edBarFrac(i);
+    for(const nt of edModel.bars[i].notes){const row=li[nt.lane];if(row==null)continue;
+      const nx=x0+(nt.pos/bf)*bw,ny=g.pad+row*g.rowH;
+      c.fillStyle=LANE_COLORS[nt.lane]||"#aaa";c.fillRect(nx,ny+0.5,tw,Math.max(1.5,g.rowH-1));}}
+  // current-bar outline on top
+  c.strokeStyle="#ffd24a";c.lineWidth=1.5;c.strokeRect(cbx+0.75,g.pad+0.75,cbw-1.5,g.H-2*g.pad-1.5);
+}
+/* The minimap's note field (every bar, every note) is expensive to redraw, so it is rendered
+   ONCE to an offscreen canvas and only rebuilt when the bar/size/note-count actually changes.
+   During playback each frame just blits that cache and draws the moving playhead on top, so the
+   whole-song play animation stays at the display's full refresh instead of stuttering at ~30 Hz.
+   ``force`` (default) rebuilds the cache -- callers after an edit / bar change pass nothing; the
+   per-frame playback loop passes force=false so it reuses the cache between bar boundaries. */
+function edDrawMini(force){
+  if(!edMini||!edMiniCtx||!edModel)return;
+  const g=edMiniGeom(),lanes=edLanes();
+  const key=edBar+'|'+g.W+'|'+g.H+'|'+g.nLanes+'|'+edModel.bars.length;
+  if(force!==false||key!==edMiniCacheKey||!edMiniCache){edMiniBuildCache(g,lanes);edMiniCacheKey=key;}
+  const c=edMiniCtx;
+  c.clearRect(0,0,g.W,g.H);
+  c.drawImage(edMiniCache,0,0);
+  // song playhead (sweeps across during global play) -- the only per-frame element
+  if(edSongPlayFrac>=0){const px=g.pad+edSongPlayFrac*g.sx;
+    c.strokeStyle="#fff";c.lineWidth=2;c.beginPath();c.moveTo(px,g.pad);c.lineTo(px,g.H-g.pad);c.stroke();
+    c.fillStyle="#fff";c.beginPath();c.moveTo(px-4,g.pad);c.lineTo(px+4,g.pad);c.lineTo(px,g.pad+6);c.closePath();c.fill();}
+}
+function edMiniClick(e){
+  if(!edModel)return;
+  const r=edMini.getBoundingClientRect(),x=(e.clientX-r.left)*(edMini.width/r.width);
+  const g=edMiniGeom();let frac=Math.max(0,Math.min(g.total-1e-6,(x-g.pad)/g.sx));
+  // resolve which bar the click landed in + the position within that bar
+  let acc=0,target=0,within=0;
+  for(let i=0;i<g.n;i++){const f=edBarFrac(i);if(frac<acc+f){target=i;within=frac-acc;break;}acc+=f;target=i;within=edBarFrac(i);}
+  const wasPlaying=edSongPlaying;if(wasPlaying)edStopSong();
+  // land the playhead exactly where the line dropped (survives the bar transition)
+  edPendingPlayhead=within;
+  edGotoBar(target);
+  if(!edTransition){edPendingPlayhead=null;edPlayhead=Math.max(0,Math.min(edBarlen()-1e-9,within));edSeek();edSongPlayFrac=-1;edDraw();edDrawMini();}
+}
+function edSnap(y){let g=Math.round(edYPos(y)*edGridN);const mx=Math.floor(edBarlen()*edGridN-1e-9);if(g>mx)g=mx;if(g<0)g=0;return {n:g,d:edGridN,pos:g/edGridN};}
+function edFind(x,y){const li={};edLanes().forEach((l,i)=>li[l]=i);let best=null,bd=1e9;
+  edBarObj().notes.forEach(nt=>{const i=li[nt.lane];if(i==null)return;const ny=edPosY(nt.pos);
+    if(x>=edLaneX(i)&&x<edLaneX(i)+ED.LANEW){const dd=Math.abs(ny-y);if(dd<9&&dd<bd){bd=dd;best=nt;}}});return best;}
+function edRel(e){const r=edCanvas.getBoundingClientRect();return {x:(e.clientX-r.left)*(edCanvas.width/r.width),y:(e.clientY-r.top)*(edCanvas.height/r.height)};}
+function edShowBar(){edBar=Math.max(0,Math.min(edModel.bars.length-1,edBar));
+  if(edPendingPlayhead!=null){edPlayhead=Math.max(0,Math.min(edBarlen()-1e-9,edPendingPlayhead));edPendingPlayhead=null;edScrollPx=edMaxScroll();edSeek();}
+  else{edPlayhead=0;edScrollPx=edMaxScroll();}
+  $('#edBarLbl').textContent=`Bar ${edBar+1} / ${edModel.bars.length}`;$('#edPrev').disabled=edBar===0;$('#edNext').disabled=edBar===edModel.bars.length-1;edDraw();edDrawMini();}
+function edSetZoom(z){const old=edZoom;edZoom=Math.max(ED_ZMIN,Math.min(ED_ZMAX,z));
+  // keep the hit-line (beat 1) anchored at the bottom when zooming
+  edScrollPx=edMaxScroll();
+  $('#edZoomLbl').textContent=Math.round(edZoom*100)+'%';edDraw();}
+async function openEditor(){
+  if(!curJob)return;
+  if(edModel&&edModelJob===curJob){edShowEditor();edResize();edMiniResize();edShowBar();updateTicker();return;}
+  try{const r=await fetch('/api/chart/'+curJob);const j=await r.json();if(j.error)throw new Error(j.error);
+    edModel=j;edModelJob=curJob;edBar=0;edDirty=false;edZoom=1;edScrollPx=0;$('#edZoomLbl').textContent='100%';
+    edUndoStack=[];edPendingPlayhead=null;edUndoBtnSync();
+    $('#edTitle').textContent='Edit notes'+(j.title?(' - '+(j.artist?j.artist+' - ':'')+j.title):'');
+    edSetupAudio(j.hasAudio);
+    edShowEditor();edResize();edMiniResize();edShowBar();updateTicker();
+  }catch(e){alert('Could not load chart for editing: '+e);}
+}
+/* ---- per-bar audio playback + draggable scrubber/playhead ---- */
+const RATES=[0.25,0.5,0.75,1,1.25,1.5,2];let edRateI=3,edAudio=null,edRAF=null;
+let edPlayhead=0,edScrubbing=false,edSongPlaying=false,edSongRAF=null,edSongPlayFrac=-1,edPendingPlayhead=null;
+/* ---- drum-chip preview: play the charted kit one-shots as the playhead crosses notes ---- */
+const LANE_LABEL={'13':'bd','12':'sd','11':'hh','18':'ho','1B':'lp','14':'ht','15':'lt','17':'ft','16':'cy','1A':'cy','19':'rd'};
+let edAC=null,edKit={},edKitLoading=false,edSched=[],edSchedIdx=0;
+function edChipOn(){const c=$('#edChip');return !c||c.checked;}
+function edEnsureAC(){if(!edAC){try{edAC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(edAC&&edAC.state==='suspended')edAC.resume();return edAC;}
+async function edLoadKit(){
+  if(edKitLoading||Object.keys(edKit).length)return;edKitLoading=true;
+  const ac=edEnsureAC();if(!ac){edKitLoading=false;return;}
+  const labels=['bd','sd','hh','ho','ht','lt','ft','cy','rd','lp'];
+  await Promise.all(labels.map(async lab=>{
+    try{const r=await fetch('/api/kit/'+lab+'.wav');const ab=await r.arrayBuffer();edKit[lab]=await ac.decodeAudioData(ab);}catch(e){}
+  }));
+  edKitLoading=false;
+}
+function edChip(lane){
+  if(!edChipOn())return;const lab=LANE_LABEL[lane];if(!lab)return;
+  const buf=edKit[lab],ac=edAC;if(!buf||!ac)return;
+  try{const s=ac.createBufferSource();s.buffer=buf;const g=ac.createGain();
+    g.gain.value=(lane==='11'||lane==='18')?0.6:0.85;   // hats a touch softer
+    s.connect(g).connect(ac.destination);s.start();}catch(e){}
+}
+function edBuildSched(barIdxs){
+  const w=edWhole(),list=[];
+  for(const bi of barIdxs){const bs=edBarStart(bi);
+    for(const nt of edModel.bars[bi].notes)list.push({t:bs+nt.pos*w,lane:nt.lane});}
+  list.sort((a,b)=>a.t-b.t);return list;
+}
+function edSchedStart(barIdxs,fromT){edSched=edBuildSched(barIdxs);edSchedIdx=0;
+  while(edSchedIdx<edSched.length&&edSched[edSchedIdx].t<fromT-0.02)edSchedIdx++;}
+/* How far AHEAD of a note reaching the judgement line to trigger its chip. The note is drawn
+   AT the judgement line exactly when playback time == the note's time, but the sound a chip
+   makes is heard a little later than start() (WebAudio output + base latency, ~20-50ms on
+   Windows/WebView2). Firing this many seconds early makes the sound LAND on the line -- so the
+   trigger reads as the judgement line, not "behind the icons". Falls back to 12ms. */
+function edChipLead(){const ac=edAC;if(!ac)return 0.012;
+  const L=(ac.baseLatency||0)+(ac.outputLatency||0);
+  return Math.min(0.09,Math.max(0.012,L));}
+function edFireChips(cur){const lead=edChipLead();while(edSchedIdx<edSched.length&&edSched[edSchedIdx].t<=cur+lead){edChip(edSched[edSchedIdx].lane);edSchedIdx++;}}
+function edSetupAudio(hasAudio){
+  edPlayhead=0;edStopSong();
+  $('#edNoAudio').classList.toggle('hidden',!!hasAudio);
+  ['#edPlay','#edSlow','#edFast','#edLoop','#edPlaySong'].forEach(s=>$(s).disabled=!hasAudio);
+  if(!hasAudio){if(edAudio){edAudio.pause();}return;}
+  if(!edAudio){edAudio=new Audio();edAudio.preservesPitch=true;edAudio.mozPreservesPitch=true;edAudio.webkitPreservesPitch=true;}
+  edAudio.src='/api/audio/'+curJob;edAudio.playbackRate=RATES[edRateI];
+  edLoadKit();
+}
+function edWhole(){return 4*60.0/edModel.bpm;}
+function edBarStart(idx){const whole=edWhole();let t=0;for(let i=0;i<idx;i++){const b=edModel.bars[i].barlen;t+=(b[0]/b[1])*whole;}return t;}
+function edBarDur(idx){const b=edModel.bars[idx].barlen;return (b[0]/b[1])*edWhole();}
+function edSeek(){if(edAudio){try{edAudio.currentTime=edBarStart(edBar)+edPlayhead*edWhole();}catch(e){}}}
+function edStopAudio(){if(edRAF){cancelAnimationFrame(edRAF);edRAF=null;}if(edAudio){edAudio.pause();}$('#edPlay').textContent='▶ Play';edDraw();}
+function edAnimate(){
+  if(!edAudio||edAudio.paused){return;}
+  const rel=edAudio.currentTime-edBarStart(edBar);
+  edPlayhead=Math.max(0,Math.min(edBarlen(),rel/edWhole()));
+  edFireChips(edAudio.currentTime);
+  edDrawScroll(edCumW(edBar)+edPlayhead);   // notes fall down past the hit-line (game style)
+  if(rel>=edBarDur(edBar)-0.004){
+    if($('#edLoop').checked){edPlayhead=0;edSeek();edSchedStart([edBar],edBarStart(edBar));edAudio.play().catch(()=>{});edRAF=requestAnimationFrame(edAnimate);}
+    else{edStopAudio();}
+    return;
+  }
+  edRAF=requestAnimationFrame(edAnimate);
+}
+function edPlayBar(){
+  if(!edAudio||!edModel)return;
+  if(edSongPlaying)edStopSong();
+  if(!edAudio.paused){edStopAudio();return;}
+  if(edPlayhead>=edBarlen()-1e-6)edPlayhead=0;   // from the top if parked at the end
+  edEnsureAC();
+  edAudio.playbackRate=RATES[edRateI];edSeek();
+  edSchedStart([edBar],edBarStart(edBar)+edPlayhead*edWhole());
+  edAudio.play().then(()=>{$('#edPlay').textContent='⏸ Stop';edRAF=requestAnimationFrame(edAnimate);}).catch(()=>{});
+}
+function edSetRate(d){edRateI=Math.max(0,Math.min(RATES.length-1,edRateI+d));$('#edRate').textContent=RATES[edRateI].toFixed(2).replace(/0$/,'')+'×';if(edAudio)edAudio.playbackRate=RATES[edRateI];}
+/* ---- global play: whole song scrolls DOWN continuously; minimap playhead sweeps ---- */
+function edSongTotal(){return edBarStart(edModel.bars.length);}
+function edBarAtTime(cur){let acc=0;for(let i=0;i<edModel.bars.length;i++){const d=edBarDur(i);if(cur<acc+d)return i;acc+=d;}return edModel.bars.length-1;}
+function edStopSong(){
+  if(edSongRAF){cancelAnimationFrame(edSongRAF);edSongRAF=null;}
+  const was=edSongPlaying;edSongPlaying=false;edSongPlayFrac=-1;
+  if(edAudio)edAudio.pause();
+  const b=$('#edPlaySong');if(b){b.textContent='▶ Play song';b.classList.remove('on');}
+  if(was){edDrawMini();edDraw();}
+}
+function edPlaySong(){
+  if(!edAudio||!edModel)return;
+  if(edSongPlaying){edStopSong();return;}
+  edStopAudio();                                    // stop any per-bar playback first
+  edZoom=1;edScrollPx=0;$('#edZoomLbl').textContent='100%';   // clean full-song playthrough
+  edSongPlaying=true;
+  const b=$('#edPlaySong');b.textContent='⏸ Stop';b.classList.add('on');
+  edAudio.playbackRate=RATES[edRateI];
+  let startT=edBarStart(edBar)+edPlayhead*edWhole();
+  if(startT>=edSongTotal()-0.03)startT=0;
+  try{edAudio.currentTime=startT;}catch(e){}
+  edEnsureAC();
+  const allBars=edModel.bars.map((_,i)=>i);edSchedStart(allBars,startT);
+  edAudio.play().then(()=>{edSongRAF=requestAnimationFrame(edSongLoop);}).catch(()=>{edStopSong();});
+}
+function edSongLoop(){
+  if(!edSongPlaying||!edAudio||edAudio.paused)return;
+  const cur=edAudio.currentTime;
+  if(cur>=edSongTotal()-0.005){edStopSong();return;}
+  edFireChips(cur);
+  const playAbs=cur/edWhole();
+  const b=edBarAtTime(cur),blb=edModel.bars[b].barlen[0]/edModel.bars[b].barlen[1];
+  edPlayhead=Math.max(0,Math.min(blb,(cur-edBarStart(b))/edWhole()));
+  if(b!==edBar){edBar=b;$('#edBarLbl').textContent=`Bar ${b+1} / ${edModel.bars.length}`;$('#edPrev').disabled=b===0;$('#edNext').disabled=b===edModel.bars.length-1;}
+  edSongPlayFrac=playAbs;edDrawMini(false);
+  edDrawScroll(playAbs);                             // whole song scrolls down past the fixed hit-line
+  edSongRAF=requestAnimationFrame(edSongLoop);
+}
+/* scrubber: drag in the left gutter to move the playhead; it seeks + plays where the line is */
+function edScrubStart(y){if(edSongPlaying)edStopSong();edScrubbing=true;if(edRAF){cancelAnimationFrame(edRAF);edRAF=null;}edPlayhead=edYPos(y);edSeek();
+  if(edAudio){edAudio.playbackRate=RATES[edRateI];edAudio.play().catch(()=>{});}edDraw();}
+function edScrubMove(y){edPlayhead=edYPos(y);edSeek();edDraw();}
+function edScrubEnd(){if(!edScrubbing)return;edScrubbing=false;if(edAudio)edAudio.pause();edDraw();}
+/* wire editor controls once (elements are static in the DOM) */
+edCanvas=$('#edCanvas');edCtx=edCanvas.getContext('2d');
+edMini=$('#edMini');edMiniCtx=edMini.getContext('2d');edMini.addEventListener('click',edMiniClick);
+/* ---- editor visibility (merged 3-column workspace) ---- */
+function edVisible(){return !$('#edBox').classList.contains('hidden');}
+function edShowEditor(){$('#edBox').classList.remove('hidden');$('#edPlaceholder').classList.add('hidden');}
+function edShowPlaceholder(){$('#edBox').classList.add('hidden');$('#edPlaceholder').classList.remove('hidden');edStopSong();$('#editTicker').classList.add('hidden');}
+function updateTicker(){
+  const t=$('#editTicker');if(!t)return;
+  if(!edModel){t.classList.add('hidden');return;}
+  if(edDirty&&pkgState==='done'){pkgState='editing';renderSteps();}   // editing resumed after a download
+  t.classList.remove('hidden');
+  const notes=edModel.bars.reduce((a,b)=>a+b.notes.length,0);
+  $('#editTickerTxt').innerHTML='<b>✎ Editing mode</b> - '+notes+' notes · '+edModel.bars.length+' bars'+(edDirty?' · <b style="color:var(--acc2)">unsaved edits</b>':'')+'.<br>Tweak notes in the middle; your <b>.zip</b> is built when you hit Download.';
+}
+window.addEventListener('resize',()=>{if(edVisible()){edResize();edMiniResize();}});
+/* resizable column dividers (Details | Editor | Console) */
+(function(){
+  function startDrag(divIdx,e){
+    e.preventDefault();
+    const det=$('#wcol-details'),cons=$('#wcol-console'),edw=$('#wcol-editor'),div=e.currentTarget;
+    div.classList.add('drag');
+    const startX=e.clientX,dW=det.getBoundingClientRect().width,cW=cons.getBoundingClientRect().width,eW=edw.getBoundingClientRect().width;
+    function move(ev){const dx=ev.clientX-startX;
+      if(divIdx===0){det.style.flex='0 0 '+Math.max(200,Math.min(dW+dx,dW+eW-320))+'px';}
+      else{cons.style.flex='0 0 '+Math.max(190,Math.min(cW-dx,cW+eW-320))+'px';}
+      if(edVisible()){edResize();edMiniResize();}}
+    function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);div.classList.remove('drag');}
+    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  }
+  $('#wdiv0').addEventListener('mousedown',e=>startDrag(0,e));
+  $('#wdiv1').addEventListener('mousedown',e=>startDrag(1,e));
+})();
+$('#edPrev').onclick=()=>edGotoBar(edBar-1);
+$('#edNext').onclick=()=>edGotoBar(edBar+1);
+$('#edPlay').onclick=edPlayBar;
+$('#edPlaySong').onclick=edPlaySong;
+$('#edSlow').onclick=()=>edSetRate(-1);
+$('#edFast').onclick=()=>edSetRate(1);
+document.querySelectorAll('#edGrid button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#edGrid button').forEach(x=>x.classList.remove('active'));b.classList.add('active');edGridN=+b.dataset.g;edDraw();});
+$('#edZoomIn').onclick=()=>edSetZoom(edZoom*1.4);
+$('#edZoomOut').onclick=()=>edSetZoom(edZoom/1.4);
+$('#edZoomLbl').onclick=()=>edSetZoom(1);
+$('#edSpeedUp').onclick=()=>{edSetSpeed(1);if(edSongPlaying||(edAudio&&!edAudio.paused)){}else edDraw();};
+$('#edSpeedDn').onclick=()=>{edSetSpeed(-1);if(edSongPlaying||(edAudio&&!edAudio.paused)){}else edDraw();};
+$('#edSpeedLbl').onclick=()=>{edResetSpeed();};
+$('#edUndo').onclick=edUndo;
+window.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&(e.key==='z'||e.key==='Z')){
+    if(!edVisible())return;const t=e.target;if(t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))return;
+    e.preventDefault();edUndo();
+  }});
+edCanvas.addEventListener('wheel',e=>{
+  if(!edModel||edSongPlaying)return;
+  e.preventDefault();
+  const max=edMaxScroll();
+  if(max>0){
+    const nv=Math.max(0,Math.min(max,edScrollPx-e.deltaY));
+    if(nv!==edScrollPx){edScrollPx=nv;edDraw();return;}
+    // at a scroll limit -> roll onto the neighbouring bar so the wheel moves along the track
+  }
+  if(e.deltaY>0)edGotoBar(edBar-1);                 // wheel down -> earlier in the track (beat 1 sits at the bottom)
+  else edGotoBar(edBar+1);
+},{passive:false});
+// draggable vertical scrollbar thumb
+(function(){
+  const sc=document.getElementById('edVScroll'),th=document.getElementById('edVThumb');
+  if(!sc||!th)return;
+  let drag=null;
+  th.addEventListener('mousedown',e=>{
+    if(edMaxScroll()<=0.5)return;
+    e.preventDefault();e.stopPropagation();
+    drag={y0:e.clientY,top0:parseFloat(th.style.top)||0};th.classList.add('grab');
+    if(edSongPlaying)edStopSong();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    const trackH=sc.clientHeight,thumbH=th.offsetHeight,max=edMaxScroll();
+    let top=Math.max(0,Math.min(trackH-thumbH,drag.top0+(e.clientY-drag.y0)));
+    edScrollPx=(1-top/(trackH-thumbH))*max;         // top of track = end of bar
+    edDraw();
+  });
+  window.addEventListener('mouseup',()=>{if(drag){drag=null;th.classList.remove('grab');}});
+})();
+edCanvas.addEventListener('mousedown',e=>{
+  if(e.button!==0||!edModel)return;const {x,y}=edRel(e);
+  if(x<edLaneStart()){edScrubStart(y);return;}          // left gutter = scrubber track
+  if(edSongPlaying)edStopSong();                         // editing stops song playback
+  if(y>ED.HEADER+ED.gridH)return;                        // below the grid = instrument-pad band (not editable)
+  const lane=edXLane(x);if(lane<0)return;
+  const hit=edFind(x,y);
+  if(hit){edSnapshot();edDrag={note:hit};}
+  else{const sp=edSnap(y),ch=edLanes()[lane];
+    if(!edBarObj().notes.some(nt=>nt.lane===ch&&Math.abs(nt.pos-sp.pos)<1e-9)){edSnapshot();edBarObj().notes.push({lane:ch,n:sp.n,d:sp.d,pos:sp.pos,slot:null});edDirty=true;}}
+  edDraw();edDrawMini();updateTicker();});
+edCanvas.addEventListener('mousemove',e=>{
+  if(edScrubbing){edScrubMove(edRel(e).y);return;}
+  if(!edDrag||!edModel)return;const {x,y}=edRel(e);const lane=edXLane(x);const sp=edSnap(y);
+  if(lane>=0)edDrag.note.lane=edLanes()[lane];edDrag.note.n=sp.n;edDrag.note.d=sp.d;edDrag.note.pos=sp.pos;edDirty=true;edDraw();});
+window.addEventListener('mouseup',()=>{if(edScrubbing){edScrubEnd();}if(edDrag){edDrag=null;edDraw();edDrawMini();updateTicker();}});
+edCanvas.addEventListener('contextmenu',e=>{
+  e.preventDefault();if(!edModel)return;const {x,y}=edRel(e);const hit=edFind(x,y);
+  if(hit){edSnapshot();const a=edBarObj().notes,k=a.indexOf(hit);if(k>=0)a.splice(k,1);edDirty=true;edDraw();edDrawMini();updateTicker();}});
+async function saveEdits(silent){
+  if(!curJob||!edModel)return;
+  const r=await fetch('/api/save/'+curJob,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bars:edModel.bars})});
+  const j=await r.json();if(j.error)throw new Error(j.error);
+  edDirty=false;chartPackaged=false;updateTicker();   // model changed -> next Download re-packages
+  if(!silent){const b=$('#edSave');b.textContent='Saved ✓';setTimeout(()=>b.textContent='Save changes',1500);}
+}
+$('#edSave').onclick=()=>{saveEdits(false).catch(e=>alert('Save failed: '+e));};
 </script>
 </body>
 </html>

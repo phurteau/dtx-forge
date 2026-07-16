@@ -33,6 +33,10 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 - **Faithfulness score.** When charting from a tab, each chart reports how true it is to the tab -
   **100% = untouched** - and shows exactly what changed (notes moved to the left foot, dropped, or added).
 - **Live pipeline visualizer.** Watch each stage light up as it runs.
+- **Built-in chart editor.** After generating, open a vertical one-bar-at-a-time editor (DTXMania-style
+  colored lanes) to clean up notes by hand - click to add, drag to move, right-click to delete - with
+  **per-bar audio playback** (slow / fast, pitch-preserved) and a **draggable scrubber** to hear exactly
+  where you're editing. The chart is packaged once, on download, after your edits.
 - **Personalize it.** Light/dark themes + an accent color picker (remembered between runs).
 
 ---
@@ -143,7 +147,7 @@ quantizes **each bar to its own natural subdivision** - quarter, 8th, 16th, 32nd
 that bar actually plays - so a sparse bar stays sparse and a fast fill stays fast, then removes doubled /
 jittered / physically-impossible notes. Per-bar density mirrors the song.
 
-**Notes style - Transcribed · DTXMania** (in the **Advanced** card, works for *both* a supplied tab
+**Chart style - Transcribed · DTXMania** (in the **Advanced** card, works for *both* a supplied tab
 and audio transcription). **Transcribed** keeps the chart as generated from your source. **DTXMania**
 regularizes it into idiomatic patterns - steady, evenly-spaced timekeeping at the difficulty's resolution
 and one timekeeper (hi-hat *or* ride) per section - and adds authentic left-foot technique automatically by

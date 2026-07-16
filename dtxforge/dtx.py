@@ -25,6 +25,58 @@ WAV_SLOTS = [
 LABEL2SLOT = {lab: slot for slot, lab in WAV_SLOTS}
 LANE_ORDER = ["13", "12", "11", "18", "1B", "14", "15", "17", "16", "1A", "19"]
 
+# Human-readable names + the WAV slot a NEWLY-added note on each lane should reference
+# (used by the chart editor). Crash and left-crash share the crash sample.
+LANE_NAME = {"1A": "LC", "11": "HH", "18": "HO", "1B": "LP", "12": "SD", "14": "HT",
+             "13": "BD", "15": "LT", "17": "FT", "16": "CY", "19": "RD"}
+LANE_DEFAULT_SLOT = {"13": "02", "12": "03", "11": "04", "18": "05", "14": "06",
+                     "15": "07", "17": "08", "16": "09", "1A": "09", "19": "0A", "1B": "0C"}
+# Left→right column order for the editor (DTXMania-style drum lane layout).
+EDITOR_LANES = ["1A", "11", "18", "1B", "12", "14", "13", "15", "17", "16", "19"]
+
+
+def chart_to_json(events, barlens, bpm, meta):
+    """Serialize the in-memory chart into an editor-friendly JSON dict. Positions are
+    sent as an exact fraction {n,d} plus a float for convenient canvas placement."""
+    bars = []
+    for i, chan in enumerate(events):
+        notes = []
+        for ch, slots in chan.items():
+            for pos, slot in slots.items():
+                notes.append({"lane": ch, "n": pos.numerator, "d": pos.denominator,
+                              "pos": float(pos), "slot": slot})
+        bl = barlens[i] if i < len(barlens) else Fraction(1)
+        bars.append({"index": i, "barlen": [bl.numerator, bl.denominator], "notes": notes})
+    return {"bpm": round(float(bpm), 3), "bars": bars,
+            "lanes": EDITOR_LANES, "laneNames": LANE_NAME,
+            "title": meta.get("title", ""), "artist": meta.get("artist", "")}
+
+
+def events_from_json(bars_json, n_bars):
+    """Rebuild (events, barlens) from the editor's edited bar list. Unknown lanes are
+    ignored; a note with no slot falls back to the lane's default sample."""
+    events = [dict() for _ in range(n_bars)]
+    barlens = [Fraction(1)] * n_bars
+    for b in bars_json:
+        i = int(b.get("index", 0))
+        if not (0 <= i < n_bars):
+            continue
+        bl = b.get("barlen")
+        if isinstance(bl, (list, tuple)) and len(bl) == 2 and bl[1]:
+            barlens[i] = Fraction(int(bl[0]), int(bl[1]))
+        for nt in b.get("notes", []):
+            ch = str(nt.get("lane", ""))
+            if ch not in LANE_NAME:
+                continue
+            d = int(nt.get("d", 1)) or 1
+            pos = Fraction(int(nt.get("n", 0)), d)
+            if pos < 0 or pos >= 1:
+                continue
+            slot = str(nt.get("slot") or LANE_DEFAULT_SLOT.get(ch, "04"))
+            events[i].setdefault(ch, {})[pos] = slot
+    return events, barlens
+
+
 # DTXMania / GITADORA difficulty tiers, keyed by the 0.00-9.99 auto-difficulty score.
 # Each: (key, .dtx filename, set.def label, set.def Ln slot, low, high)  -- range is [low, high)
 DIFF_TIERS = [

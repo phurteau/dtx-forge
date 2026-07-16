@@ -22,6 +22,7 @@ hiddenimports += ["dtxforge", "dtxforge.songsterr", "dtxforge.audio",
                   "dtxforge.sources", "dtxforge.faithfulness", "dtxforge.difficulty",
                   "dtxforge.fullkit", "dtxforge.larsnet_engine",
                   "dtxforge.standardize", "dtxforge.simplify", "dtxforge.dtxmania_style",
+                  "dtxforge.pattern_match", "dtxforge.groove_data",
                   "dtxforge.vendor", "dtxforge.vendor.larsnet_unet",
                   "guitarpro", "attr", "attrs",
                   "app", "anyio", "mido", "clr", "webview.platforms.winforms"]

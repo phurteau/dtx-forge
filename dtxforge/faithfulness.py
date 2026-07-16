@@ -54,18 +54,20 @@ def compare(original_events, final_events):
 
 def summary_line(f, source="tab"):
     """source: 'tab' or 'audio' - names the baseline the score is measured against.
-    In audio-only mode we don't present a faithfulness % (there's no reference chart
-    to be 'faithful' to) - only what the foot-technique pass changed."""
+    In audio-only mode we don't present a faithfulness % (there's no reference chart to be
+    'faithful' to) - only how many notes the post-transcription passes (de-flam, de-jitter,
+    groove snap, foot technique, thinning) changed. Labels are neutral because the diff
+    itself doesn't distinguish a cleanup reposition from a foot-technique move."""
     bits = []
     if f["moved"]:
-        bits.append(f"{f['moved']} moved to left foot")
+        bits.append(f"{f['moved']} repositioned")
     if f["dropped"]:
-        bits.append(f"{f['dropped']} dropped")
+        bits.append(f"{f['dropped']} removed")
     if f["added"]:
-        bits.append(f"{f['added']} foot notes added")
+        bits.append(f"{f['added']} added")
     if source == "audio":
         if bits:
-            return "Transcribed from audio (beta) - foot-technique changes: " + "; ".join(bits) + "."
+            return "Transcribed from audio (beta) - cleanup changes: " + "; ".join(bits) + "."
         return "Transcribed from audio (beta) - notes exactly as detected."
     detail = ("; ".join(bits)) if bits else "tab untouched"
     return f"Tab faithfulness: {f['percent']:.1f}% ({detail})."

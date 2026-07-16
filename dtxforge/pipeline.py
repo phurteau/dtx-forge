@@ -296,10 +296,13 @@ def run(opts, workdir, assets_dir, progress):
 
     # ---------- 6c. NOTES STYLE (DTXMania regularization - any source, tab or audio) ----------
     if notes_style == "dtxmania":
-        from . import dtxmania_style
-        events, nchg = dtxmania_style.apply(events, barlens, bpm, tier_key)
-        log(f"DTXMania style: one timekeeper per section + jitter cleanup, density and "
-            f"crashes preserved ({nchg} edits).")
+        from . import dtxmania_style, pattern_match
+        group_cym = str(opts.get("group_cymbals", "true")).lower() != "false"
+        events, nchg = dtxmania_style.apply(events, barlens, bpm, tier_key,
+                                            aggressive=True, group_cymbals=group_cym)
+        log(f"DTXMania style: whole groove rewritten to real GITADORA patterns"
+            f"{' + right cymbals grouped' if group_cym else ''}; tom fills, crashes and feet "
+            f"kept as the fill layer ({nchg} edits).")
         # Authentic charts add left-foot technique, tier-gated (real data: Basic/Advanced
         # ~none, Extreme double bass, Master hi-hat chick + double bass). Feet fill the
         # gaps now that the hands are regularized, so no manual toggle is needed.
@@ -309,6 +312,27 @@ def run(opts, workdir, assets_dir, progress):
             if hh_on: bits.append("hi-hat foot on 2 & 4")
             if db_on: bits.append(f"double bass ({db_converted} fast kicks split)")
             log(f"DTXMania foot technique for {tier_key.title()}: {', '.join(bits)}.")
+        # niche: move the open hi-hat onto the left-foot pedal (after auto_foot so the
+        # one-left-foot rule holds against any chick/double-bass notes it just added).
+        if str(opts.get("openhat_lp", "false")).lower() == "true":
+            events, oh_moved = pattern_match.openhat_to_left_pedal(events)
+            if oh_moved:
+                log(f"Open hi-hat moved to left-foot pedal ({oh_moved} notes).")
+
+    # ---------- 6c-2. STANDARDIZE regularization (audio, conservative) ----------
+    # When the audio was transcribed with Standardize (and NOT DTXMania), run the SAME
+    # regularization the previous DTXMania did, in its conservative form: one timekeeper per
+    # section, de-flam cymbals, de-jitter timekeeping, declutter closed-hat-under-crash, and
+    # the conservative "snap groove, keep fills" (real grooves kept, only noise nudged). This
+    # is the rung between Raw and DTXMania. Auto foot technique and cymbal grouping are NOT
+    # applied here -- those stay DTXMania-only.
+    if notes_style != "dtxmania" and opts["tab_source"] == "audio" and do_std_audio:
+        from . import dtxmania_style
+        events, nchg = dtxmania_style.apply(events, barlens, bpm, tier_key,
+                                            aggressive=False, group_cymbals=False)
+        if nchg:
+            log(f"Standardize: de-flam + de-jitter + groove snapped to real patterns "
+                f"(real grooves kept faithful, {nchg} edits).")
 
     # ---------- 6d. DE-CONFLICT a redundant second timekeeper (hi-hat AND ride) ----------
     # Note values are NOT capped by tier -- the chart keeps its real 16th/32nd content at
@@ -338,8 +362,11 @@ def run(opts, workdir, assets_dir, progress):
     setdata("dlevel_tier", tier_key)
     log(f"Difficulty level: {tier_label.title()} (score {dlevel_display:.2f}) -> {dtx_name}.")
 
-    # ---------- 7. PACKAGE ----------
-    stg("package", "Building DTX chart...")
+    # ---------- 7. PACKAGE (deferred for the editor-first flow) ----------
+    # The UI edits the chart in-memory first and packages ONCE on download, so nothing
+    # is zipped at generation time when defer_package is set.
+    defer = bool(opts.get("defer_package"))
+    stg("package", "Preparing chart..." if defer else "Building DTX chart...")
     if bgm_file is None:
         import wave
         silent_wav = os.path.join(workdir, "silence.wav")
@@ -354,11 +381,17 @@ def run(opts, workdir, assets_dir, progress):
                 comment=(f"Charted by {opts['author']} using DTX Forge."
                          if opts.get("author") else "Charted using DTX Forge."),
                 bgm=os.path.basename(bgm_file))
-    dtx_text = dtx.emit_dtx(events, barlens, meta)
-
     song_name = f"{_slug(artist)} - {_slug(title)}"
-    folder, zpath = dtx.package(os.path.join(workdir, "dist"), song_name, dtx_text, bgm_file, kit_dir, kit_files,
-                                dtx_name=dtx_name, set_label=tier_label, set_slot=tier_slot)
+    repack = dict(out_dir=os.path.join(workdir, "dist"), song_name=song_name,
+                  bgm_file=bgm_file, kit_dir=kit_dir, kit_files=kit_files,
+                  dtx_name=dtx_name, set_label=tier_label, set_slot=tier_slot)
+    if defer:
+        folder, zpath = None, None
+    else:
+        dtx_text = dtx.emit_dtx(events, barlens, meta)
+        folder, zpath = dtx.package(repack["out_dir"], song_name, dtx_text, bgm_file,
+                                    kit_dir, kit_files, dtx_name=dtx_name,
+                                    set_label=tier_label, set_slot=tier_slot)
     if hasattr(progress, "finish"): progress.finish()
     stats = dict(measures=len(events), chips=dtx.count_chips(events), bpm=meta["bpm"],
                  drum_mode=drum_mode if raw_audio else "none",
@@ -373,4 +406,8 @@ def run(opts, workdir, assets_dir, progress):
                  dlevel_tier=tier_key, dtx_file=dtx_name, tier_manual=(tier_choice in ("basic","advanced","extreme","master")),
                  source=opts["tab_source"], title=title, artist=artist)
     log("Done.")
-    return dict(folder=folder, zip=zpath, stats=stats, playability=play_report, faithfulness=fscore)
+    # Chart model + re-emit params, so the UI editor can load/edit/re-save the chart.
+    chart = dict(events=events, barlens=barlens, bpm=float(meta["bpm"]), meta=meta,
+                 has_audio=bool(raw_audio))
+    return dict(folder=folder, zip=zpath, stats=stats, playability=play_report,
+                faithfulness=fscore, chart=chart, repack=repack)

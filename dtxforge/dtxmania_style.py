@@ -17,20 +17,31 @@ What the data CONFIRMED and this module keeps:
   1. One timekeeper at a time -- hi-hat and ride coexist in only ~0.1% of bars, so a
      redundant second timekeeper is dropped. Chosen once per SECTION (a run of bars),
      not per bar, so the timekeeper doesn't flip hi-hat/ride/hi-hat between neighbours.
-  2. Jitter cleanup only -- a timekeeping line is snapped to the bar's OWN subdivision to
+  2. De-flam cymbals -- audio transcription splits a hard cymbal/hi-hat hit into a flam
+     (a phantom second onset from decay / mic bleed). Real charts essentially never place
+     two hits of the same cymbal under ~50-70 ms apart, so a sub-threshold same-lane
+     cymbal/hi-hat pair is collapsed to the more on-grid hit. Toms/snare/kick are left
+     alone (real fills, drags and double-bass play fast there).
+  3. Jitter cleanup only -- a timekeeping line is snapped to the bar's OWN subdivision to
      remove timing jitter, but its note count is PRESERVED. It is never inflated to a
      per-tier grid: real charts of every difficulty are mostly quarter + 8th with 16th a
      minority (Extreme is only ~7% 16th) and mix note values freely bar to bar, so the
      density detected from the song is what the chart keeps.
-  3. Closed hi-hat + crash on the same tick is a transcription artifact (3 in 160k real
+  4. Closed hi-hat + crash on the same tick is a transcription artifact (3 in 160k real
      bars) -- the closed hi-hat is dropped there so the crash reads as the accent. (Open
      hi-hat under a crash is a real, if rare, technique and is left intact.)
+  5. Snap groove, keep fills -- the steady backbone (kick + snare + hi-hat/ride) of a clean
+     1/16 bar is matched to the nearest of a mined vocabulary of real grooves (see
+     ``pattern_match`` / ``groove_data``) and replaced when the transcription is already
+     close, so the timekeeping reads "produced". Tom fills, crashes, open hi-hat and feet
+     are never touched, so the song's fills and accents survive verbatim.
 
 Kick, snare, toms and crashes (the groove, fills and accents) are left as transcribed
 -- only the hi-hat / ride timekeeping layer is de-conflicted and de-jittered.
 """
 from fractions import Fraction
 from . import humanize
+from . import pattern_match
 
 _HAT = "11"           # closed hi-hat
 _HHO = "18"           # open hi-hat
@@ -43,6 +54,16 @@ SECTION = 4           # bars per timekeeping section
 # Real GITADORA charts of every tier mix note values freely, so timekeeping is preserved
 # at whatever subdivision the bar actually plays, not forced to a per-tier grid.
 _TK_GRIDS = [4, 8, 12, 16, 24, 32]
+
+# Cymbal / hi-hat lanes are bleed-prone: a hard hit's decay or mic bleed spawns a second
+# onset a few ms later, which quantizes into a FLAM (two same-lane hits jammed together).
+# Real GITADORA charts essentially never place two hits of the SAME cymbal that close --
+# across 4,729 charts, same-lane spacing under 50 ms is 0.0% for hi-hat and 0.2% for
+# crash -- so collapsing sub-threshold same-lane cymbal pairs removes bleed artifacts
+# without touching real playing. Toms, snare and kick are deliberately NOT de-flammed:
+# real fills, drags and double-bass genuinely play fast there.
+_CYMBAL_LANES = ("11", "18", "16", "1A", "19")   # closed hat, open hat, crash, Lcrash, ride
+FLAM_MS = 70.0                                    # same-lane cymbal hits closer than this = bleed
 
 # Tier-gated left-foot technique for an authentic DTXMania/GITADORA chart, from the
 # 2000-chart analysis: Basic/Advanced use the left foot almost never; Extreme adds
@@ -91,6 +112,59 @@ def _line_grid(positions):
     return _TK_GRIDS[-1]
 
 
+def _collapse_flams(sm, thresh_sec, bar_seconds):
+    """Collapse same-lane onsets closer than ``thresh_sec`` into one, keeping the more
+    on-grid position (a bleed straggler quantizes to a finer, less-musical subdivision
+    than the real hit). Walks left→right so a chain of bleed hits collapses to a single
+    note. Returns a new {pos: slot} dict."""
+    items = sorted(sm.items())
+    kept = []
+    for pos, slot in items:
+        if kept:
+            pp, _ps = kept[-1]
+            if float(pos - pp) * bar_seconds < thresh_sec:
+                # flam pair: keep whichever sits on the coarser (more musical) grid;
+                # on a tie the earlier hit (already kept) wins -- the real transient leads.
+                if pos.denominator < pp.denominator:
+                    kept[-1] = (pos, slot)
+                continue
+        kept.append((pos, slot))
+    return dict(kept)
+
+
+def _deflam_cymbals(bar, bar_seconds):
+    """Remove bleed-induced flams on cymbal / hi-hat lanes only. Two same-lane onsets
+    (or a closed + open hi-hat, which are one physical instrument) closer than FLAM_MS
+    are one stroke split by mic bleed -- collapse to the more on-grid hit. Toms, snare
+    and kick are untouched."""
+    if bar_seconds <= 0:
+        return 0
+    thresh = FLAM_MS / 1000.0
+    changed = 0
+    # (a) within each cymbal/hi-hat lane
+    for ch in _CYMBAL_LANES:
+        sm = bar.get(ch)
+        if not sm or len(sm) < 2:
+            continue
+        new = _collapse_flams(sm, thresh, bar_seconds)
+        if len(new) != len(sm):
+            changed += len(sm) - len(new)
+            bar[ch] = new
+    # (b) hi-hat family: a single stroke can register as BOTH closed and open a few ms
+    # apart -> drop the open one when it flam-hugs a closed hit (closed is the canonical
+    # timekeeping hat).
+    hc, ho = bar.get(_HAT), bar.get(_HHO)
+    if hc and ho:
+        drop = [p for p in ho if any(abs(float(p - q)) * bar_seconds < thresh for q in hc)]
+        for p in drop:
+            del ho[p]
+        if drop:
+            changed += len(drop)
+        if not ho:
+            bar.pop(_HHO, None)
+    return changed
+
+
 def _regularize_timekeeping(bar):
     """Remove timing JITTER from a steady hi-hat / ride line by snapping each hit to the
     bar's OWN natural subdivision -- NOT a fixed per-tier grid. The number of hits is
@@ -132,21 +206,213 @@ def _declutter_hh_crash(bar):
     return len(hit)
 
 
-def apply(events, barlens, bpm, tier="advanced"):
-    """Regularize a chart toward idiomatic DTXMania patterns WITHOUT falsifying density.
-    Mutates and returns (events, changed_count). ``tier`` is accepted for signature
-    stability but no longer imposes a timekeeping grid -- note values are preserved from
-    the source, because real GITADORA charts of every difficulty mix subdivisions."""
+def _declutter_open_hat(bar):
+    """A CLOSED hi-hat that lands on the exact tick of an OPEN hi-hat is impossible -- one
+    hand, one hat, so it's either closed or open at a given moment. The section groove snap
+    rewrites the closed-hat lane and can drop a closed hat onto a tick the transcription heard
+    (by sustain) as OPEN; the open articulation is what you hear, so it wins and the closed hat
+    on that tick is removed."""
+    hh = bar.get(_HAT)
+    ho = bar.get(_HHO)
+    if not hh or not ho:
+        return 0
+    open_ticks = set(ho)
+    hit = [p for p in hh if p in open_ticks]
+    for p in hit:
+        del hh[p]
+    if not hh:
+        del bar[_HAT]
+    return len(hit)
+
+
+# Physical-playability: a fast snare roll or tom fill commits BOTH hands to the drums, so
+# the timekeeping hand can't also play the hi-hat / ride at the same time. Real charts stop
+# the hats during a fill; audio transcription doesn't (the hat bleed keeps triggering), which
+# is the "snare roll AND hi-hat at once" artifact. We detect a run of >=3 fast snare/tom hits
+# and drop the closed-hat / open-hat / ride that fall inside it (kick stays -- it's the foot;
+# a crash at the fill's edge stays -- it's a one-hand accent).
+_FILL_LANES = ("12", "14", "15", "17")            # snare + toms (the hands-busy drums)
+_TIMEKEEP_LANES = ("11", "18", "19")              # closed hat, open hat, ride
+_ROLL_MIN = 3                                       # >=3 fast hits = a roll/fill
+_ROLL_GAP_FACTOR = 1.4                              # gaps up to ~1.4x a 16th count as "fast"
+
+
+def _free_hands_during_fills(events, barlens, bpm):
+    """Drop hi-hat/ride timekeeping that overlaps a fast snare roll or tom fill (both hands
+    are on the drums, so a simultaneous hat is physically impossible). Mutates ``events``;
+    returns notes removed. Kick (foot) and crashes (edge accents) are kept."""
+    if not bpm or bpm <= 0:
+        return 0
+    from . import notes as N
+    starts = N.bar_starts(barlens, bpm)               # bar start times, computed ONCE
+    whole = 4 * 60.0 / bpm
+
+    def at(mi, pos):
+        bl = float(barlens[mi]) if mi < len(barlens) else 1.0
+        return starts[mi] + float(pos) * bl * whole
+
+    sixteenth = (60.0 / bpm) / 4.0
+    gap_max = _ROLL_GAP_FACTOR * sixteenth
+    # all snare+tom hits on the absolute timeline
+    drum = []
+    for mi, bar in enumerate(events):
+        for ch in _FILL_LANES:
+            for pos in bar.get(ch, {}):
+                drum.append((at(mi, pos), mi, ch, pos))
+    drum.sort()
+    # group into runs of fast consecutive hits
+    runs = []
+    cur = []
+    for hit in drum:
+        if cur and hit[0] - cur[-1][0] > gap_max + 1e-6:
+            if len(cur) >= _ROLL_MIN:
+                runs.append((cur[0][0], cur[-1][0]))
+            cur = []
+        cur.append(hit)
+    if len(cur) >= _ROLL_MIN:
+        runs.append((cur[0][0], cur[-1][0]))
+    if not runs:
+        return 0
+    removed = 0
+    for mi, bar in enumerate(events):
+        for ch in _TIMEKEEP_LANES:
+            sm = bar.get(ch)
+            if not sm:
+                continue
+            drop = []
+            for pos in sm:
+                t = at(mi, pos)
+                if any(t0 - 1e-6 <= t <= t1 + 1e-6 for (t0, t1) in runs):
+                    drop.append(pos)
+            for pos in drop:
+                del sm[pos]
+                removed += 1
+            if not sm:
+                bar.pop(ch, None)
+    return removed
+
+
+_TOMS = ("14", "15", "17")
+# Toms de-jitter grid: real fills reach 1/32, so snap tom onsets to the coarsest of these
+# they already sit on (removes detection jitter without collapsing a genuine fast fill).
+_TOM_GRIDS = [4, 8, 12, 16, 24, 32]
+
+
+def _regularize_toms(bar):
+    """De-jitter tom (and snare-roll) onsets: snap each tom lane to the coarsest 1/4..1/32
+    subdivision its own hits already fit, so a fill reads clean without changing its note
+    count. Whole-kit normalization -- toms were previously left verbatim."""
+    changed = 0
+    for ch in _TOMS:
+        sm = bar.get(ch)
+        if not sm or len(sm) < 2:
+            continue
+        positions = [float(p) for p in sm]
+        g = _TOM_GRIDS[-1]
+        for cand in _TOM_GRIDS:
+            if all(abs(p * cand - round(p * cand)) <= 0.2 for p in positions):
+                g = cand
+                break
+        new = {}
+        for p, slot in sm.items():
+            new[Fraction(round(float(p) * g), g)] = slot
+        if new != sm:
+            bar[ch] = new
+            changed = 1
+    return changed
+
+
+# Cymbals read messy for the same reason the hats did: crash / ride / open-hat onsets arrive
+# a few ms off the beat, so an accent that should sit cleanly on a downbeat or 8th instead
+# lands between grid lines. Snap each cymbal onset to the coarsest of these subdivisions it
+# sits near -- a lone phrase-start crash lands on the quarter, an 8th ride pattern on the 8th
+# -- so the whole kit (not just the hats) reads neat. Grids stop at 1/16: real cymbal work is
+# essentially never finer, so this can't preserve (or invent) 1/32 cymbal jitter.
+_CYM_LANES = ("16", "1A", "19", "18")   # right crash, left crash, ride, open hi-hat
+_CYM_GRIDS = [4, 8, 12, 16]
+
+
+def _regularize_cymbals(bar):
+    """De-jitter every cymbal onset (crash / left-crash / ride / open-hat) onto the coarsest
+    1/4..1/16 grid slot it sits near, so cymbal accents land cleanly on the beat like the rest
+    of the kit. Unlike the toms pass this also snaps a LONE cymbal hit (accents are usually a
+    single crash on a strong beat, and a stray-off-beat crash is the most obvious jitter)."""
+    changed = 0
+    for ch in _CYM_LANES:
+        sm = bar.get(ch)
+        if not sm:
+            continue
+        positions = [float(p) for p in sm]
+        g = _CYM_GRIDS[-1]
+        for cand in _CYM_GRIDS:
+            if all(abs(p * cand - round(p * cand)) <= 0.25 for p in positions):
+                g = cand
+                break
+        new = {}
+        for p, slot in sm.items():
+            new[Fraction(round(float(p) * g), g)] = slot
+        if new != sm:
+            bar[ch] = new
+            changed = 1
+    return changed
+
+
+def apply(events, barlens, bpm, tier="advanced", aggressive=True, group_cymbals=True):
+    """Regularize a chart toward idiomatic DTXMania patterns.
+
+    Mutates and returns (events, changed_count). By default DTXMania mode is AGGRESSIVE: it
+    rewrites the whole groove (kick/snare/hat/ride) of every 4/4 non-fill bar to the nearest
+    real GITADORA groove so the chart reads "produced" even far from the exact transcription
+    (faithfulness is deliberately waived for feel). Tom fills, crashes, open hi-hat and the
+    feet are preserved as the fill/accent layer. ``group_cymbals`` folds ride + left-crash
+    onto the single right crash lane, as most DTXMania kits play them. (The niche open-hat ->
+    left-pedal move is applied by the pipeline AFTER auto_foot, so it isn't handled here.)
+
+    Set ``aggressive=False`` for the older conservative denoise (only unrecognized grooves
+    are nudged, within a small budget) -- kept for regression stability.
+    """
     # 1. one timekeeper (hi-hat OR ride) at a time, chosen consistently per section.
     events, changed = _deconflict_sectional(events)
-    for bar in events:
-        # 2. clean timing jitter only -- snap to each bar's OWN subdivision, never inflate.
+    whole = (4 * 60.0 / bpm) if bpm and bpm > 0 else 0.0
+    for i, bar in enumerate(events):
+        bar_seconds = float(barlens[i]) * whole if i < len(barlens) else whole
+        # 1b. remove bleed-induced cymbal/hi-hat flams (the audio artifact) BEFORE snapping.
+        changed += _deflam_cymbals(bar, bar_seconds)
+        # 2. clean timing jitter -- snap the timekeeper to the bar's OWN subdivision.
         changed += _regularize_timekeeping(bar)
+        # 2b. whole-kit normalization: de-jitter the toms (and snare-roll) onsets too.
+        changed += _regularize_toms(bar)
+        # 2c. ...and the cymbals (crash / ride / open-hat) -- neat across the WHOLE kit,
+        #     not just the hats: accents land on the beat instead of between grid lines.
+        changed += _regularize_cymbals(bar)
         # 3. a closed hi-hat sharing a crash's tick is an artifact -> let the crash speak.
         changed += _declutter_hh_crash(bar)
-    # Crashes are preserved exactly as transcribed: real charts stack them with kick,
-    # snare and other crashes, and only 31% of phrase downbeats carry one -- so this
-    # pass neither collapses crashes to one-per-bar nor injects phrase-start crashes.
+    # 4. hands-busy realism FIRST (before the groove snap can collapse a roll): a fast snare
+    #    roll / tom fill commits both hands, so drop any hi-hat / ride that overlaps it -- fixes
+    #    the impossible "snare roll AND hi-hat at once". Done on the intact transcription so the
+    #    roll is still detectable.
+    changed += _free_hands_during_fills(events, barlens, bpm)
+    # 5. snap the groove (kick+snare+hat/ride backbone) to real GITADORA patterns.
+    #    AGGRESSIVE (DTXMania): SECTION-first -- vote one clean groove per phrase and repeat it,
+    #    so the chart reads neat and consistent like the real corpus (not haphazard bar-to-bar).
+    #    CONSERVATIVE (Standardize): per-bar denoise of only unrecognized grooves.
+    if aggressive:
+        events, snapped = pattern_match.snap_sections(events, barlens, bpm, tier)
+    else:
+        events, snapped = pattern_match.snap(events, barlens, bpm, tier, aggressive=False)
+    changed += snapped
+    if snapped:
+        for bar in events:
+            changed += _declutter_hh_crash(bar)   # a snapped hat can land on a crash tick
+            changed += _declutter_open_hat(bar)   # ...or on an open-hat tick (open wins)
+    # 6. optional: fold ride + left-crash onto the one right cymbal (typical DTXMania kit).
+    if group_cymbals:
+        events, moved = pattern_match.group_right_cymbals(events)
+        changed += moved
+    # 7. optional (niche): the open-hat -> left-pedal move is applied by the pipeline AFTER
+    #    auto_foot, so it also respects any left-foot notes that stage adds.
+    # Crashes are otherwise preserved: real charts stack them with kick, snare and other
+    # crashes, so this pass neither collapses crashes to one-per-bar nor injects them.
     return events, changed
 
 

@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.5.0
+
+A built-in chart editor, a big step up in charting quality, and a smoother finish flow.
+
+- **Cleaner, more "real" charts (DTXMania Chart Style).** The DTXMania style now grooms the whole
+  groove toward the way real charts are actually written, grounded in a corpus of **4,700+ real
+  GITADORA/DrumMania charts**. Instead of snapping each bar on its own (which read jittery and
+  "thrown together"), it now finds a clean groove for each phrase and **repeats it**, so the chart
+  is as consistent bar-to-bar as a real one. Stray, bleed-induced ghost hi-hats are voted out, so a
+  quarter-note hat stays a quarter instead of inflating into a busy 8th/16th mess.
+- **The whole kit reads neat, not just the hi-hats.** Cymbals, ride and open hi-hats are de-jittered
+  onto a clean grid too, so crashes land on the beat instead of between grid lines. Toms are cleaned
+  the same way.
+- **No more impossible rolls.** During a fast snare roll or tom fill both hands are on the drums, so
+  the hi-hat/ride that transcription used to layer on top (physically impossible to play) is now
+  removed for the length of the fill.
+- **Chart Style options.** When **DTXMania** style is selected, you can group the right cymbal onto
+  the ride, and (optionally) map open hi-hats to the left-foot pedal. Left-foot technique (hi-hat
+  chick / double bass) is added automatically, tier-appropriate.
+- **Visual chart editor.** A new **Review & edit notes** step opens a vertical, one-bar-at-a-time
+  editor (DTXMania-style colored lanes). **Click** an empty cell to add a note, **drag** to move it,
+  **right-click** to delete; a grid selector (¼ · 8th · ⅓ · 16th · 24 · 32nd) sets the snap. **Undo**
+  (button or Ctrl+Z) and a **Reset** that also restores the view. Clean up anything by hand.
+- **Game-style playback in the editor.** Notes fall down a highway past a raised **judgement line**
+  (a little above the pad icons, like a real rhythm game), the charted drum sounds play as each note
+  crosses the line, and the whole-song play animation is smooth. Per-bar **Play** hears just the slice
+  under the bar you're editing, with **🐢 Slow / 🐇 Fast** (pitch-preserved), a scroll-speed control,
+  and a **loop** toggle. A draggable scrubber seeks and previews exactly where the line sits.
+- **De-flam cymbals.** Audio transcription can split one hard cymbal/hi-hat hit into a flam (a phantom
+  second onset from decay or mic bleed). Same-lane cymbal/hi-hat hits closer than ~70 ms are collapsed
+  to one, so timekeeping reads clean. Toms, snare and kick are left alone (they really do play fast).
+- **Downloads land in your Downloads folder.** Clicking **Download chart .zip** now saves the package
+  straight to your Downloads folder and shows you the exact path (the in-app browser's download
+  handler could silently drop it before). The chart is packaged **once, on download**, after any edits.
+- **UI polish.** "Notes Style" is now **Chart Style**; a **Make another chart** button resets the page
+  after a download; console shows a blinking cursor while a stage runs; trimmed wording throughout.
+
 ## v1.4.1
 
 Fidelity fix - the chart now mirrors the song's actual per-bar note values, at every
