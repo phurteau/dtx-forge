@@ -1,5 +1,5 @@
 """DTX Forge web app: FastAPI backend + background job runner."""
-import os, sys, uuid, threading, traceback, shutil
+import os, sys, uuid, threading, traceback, shutil, re, json, subprocess, webbrowser, urllib.request
 
 
 def _downloads_dir():
@@ -53,6 +53,48 @@ from fastapi.staticfiles import StaticFiles
 
 from dtxforge import pipeline, songsterr
 from dtxforge.report import Reporter
+from dtxforge import __version__ as APP_VERSION
+
+GITHUB_REPO = "phurteau/dtx-forge"
+_updl = {}   # download id -> {status, received, total, name, saved, error}
+
+
+def _ver_tuple(s):
+    """'v1.5.2' / '1.5.2' -> (1, 5, 2); trailing non-numeric parts ignored."""
+    nums = re.findall(r"\d+", s or "")
+    return tuple(int(n) for n in nums[:3]) if nums else (0,)
+
+
+def _latest_release(timeout=6):
+    """Fetch the latest GitHub release JSON (public repo, no auth). Raises on failure."""
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "DTX-Forge-Updater",
+        "Accept": "application/vnd.github+json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _pick_exe_asset(rel):
+    """The standalone-exe zip asset from a release (name ends '-EXE.zip'); None if absent."""
+    assets = rel.get("assets", []) or []
+    for a in assets:
+        if (a.get("name") or "").lower().endswith("-exe.zip"):
+            return a
+    for a in assets:                                   # fallback: any zip that isn't the source app
+        n = (a.get("name") or "").lower()
+        if n.endswith(".zip") and "app" not in n:
+            return a
+    return None
+
+
+def _reveal(path):
+    """Select the file in Explorer (Windows). Best-effort; never raises."""
+    try:
+        if os.name == "nt" and path and os.path.exists(path):
+            subprocess.Popen(["explorer", "/select,", os.path.normpath(path)])
+    except Exception:
+        pass
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WEB = os.path.join(HERE, "web")
@@ -326,6 +368,107 @@ def api_download(job_id: str):
         return JSONResponse({"error": "not ready"}, status_code=404)
     z = job["result"]["zip"]
     return FileResponse(z, filename=os.path.basename(z), media_type="application/zip")
+
+
+@app.get("/api/update-check")
+def api_update_check():
+    """Compare this build's version to the latest GitHub release. Never raises -- on any
+    error/offline it returns update_available False, so the UI simply shows no banner."""
+    try:
+        rel = _latest_release()
+        latest = rel.get("tag_name") or ""
+        asset = _pick_exe_asset(rel)
+        avail = _ver_tuple(latest) > _ver_tuple(APP_VERSION)
+        return {"ok": True, "current": APP_VERSION, "latest": latest.lstrip("v"),
+                "update_available": bool(avail and asset),
+                "html_url": rel.get("html_url", ""),
+                "asset": {"name": asset["name"], "size": asset.get("size", 0)} if asset else None}
+    except Exception as e:
+        return {"ok": False, "update_available": False, "error": str(e)}
+
+
+def _run_update_download(dl_id, url, name):
+    prog = _updl[dl_id]
+    try:
+        dst = _unique_in(_downloads_dir(), name)
+        tmp = dst + ".part"
+        req = urllib.request.Request(url, headers={"User-Agent": "DTX-Forge-Updater"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            prog["total"] = int(r.headers.get("Content-Length") or 0)
+            got = 0
+            with open(tmp, "wb") as f:
+                while True:
+                    chunk = r.read(1 << 16)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    got += len(chunk)
+                    prog["received"] = got
+        os.replace(tmp, dst)
+        prog["saved"] = dst
+        prog["saved_name"] = os.path.basename(dst)
+        prog["status"] = "done"
+        _reveal(dst)
+    except Exception as e:
+        prog["status"] = "error"
+        prog["error"] = str(e)
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except Exception:
+            pass
+
+
+@app.post("/api/update-download")
+def api_update_download():
+    """Download the latest release's standalone-exe zip straight into the user's Downloads
+    folder (server-side, because the packaged WebView2 host has no browser download handler)."""
+    try:
+        asset = _pick_exe_asset(_latest_release())
+        if not asset:
+            return JSONResponse({"error": "no downloadable asset in the latest release"}, status_code=404)
+        dl_id = uuid.uuid4().hex[:12]
+        _updl[dl_id] = {"status": "downloading", "received": 0, "total": asset.get("size", 0),
+                        "name": asset["name"], "saved": None, "error": None}
+        threading.Thread(target=_run_update_download,
+                         args=(dl_id, asset["browser_download_url"], asset["name"]),
+                         daemon=True).start()
+        return {"dl_id": dl_id, "name": asset["name"], "size": asset.get("size", 0)}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.get("/api/update-download/{dl_id}")
+def api_update_download_status(dl_id: str):
+    prog = _updl.get(dl_id)
+    if not prog:
+        return JSONResponse({"error": "unknown download"}, status_code=404)
+    total, got = prog.get("total") or 0, prog.get("received") or 0
+    out = {"status": prog["status"], "received": got, "total": total,
+           "pct": int(got * 100 / total) if total else 0}
+    if prog["status"] == "done":
+        out["saved"], out["saved_name"] = prog.get("saved"), prog.get("saved_name")
+    if prog["status"] == "error":
+        out["error"] = prog.get("error")
+    return out
+
+
+@app.post("/api/open-external")
+def api_open_external(payload: dict = Body(...)):
+    """Open a link in the system browser, restricted to this GitHub repo so the native
+    webview never navigates away from the app and no arbitrary URL can be opened."""
+    url = (payload or {}).get("url", "")
+    try:
+        from urllib.parse import urlparse
+        u = urlparse(url)
+        if (u.scheme in ("http", "https")
+                and u.netloc.lower() in ("github.com", "www.github.com")
+                and u.path.lower().startswith("/phurteau/dtx-forge")):
+            webbrowser.open(url)
+            return {"ok": True}
+        return JSONResponse({"error": "url not allowed"}, status_code=400)
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 if __name__ == "__main__":

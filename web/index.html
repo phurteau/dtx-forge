@@ -7,10 +7,10 @@
 <style>
   :root{ --acc:#025500; --acc2:#03b200; --acc-ink:#fff; --radius:12px; }
   html[data-theme="dark"]{
-    --bg:#04140b; --bg2:#02100a; --panel:#0a2414; --panel2:#0e3120; --line:#1a5230;
-    --txt:#e8f5ec; --dim:#8fbf9f; --glow:rgba(0,0,0,.35);
+    --bg:#000000; --bg2:#060606; --panel:#101012; --panel2:#17171a; --line:#2a2a2e;
+    --txt:#ededed; --dim:#9a9a9a; --glow:rgba(0,0,0,.5);
     --headgrad:linear-gradient(90deg,var(--panel),var(--bg));
-    --bodyglow:radial-gradient(1500px 760px at 50% -280px,color-mix(in srgb,var(--acc) 40%,transparent),transparent);
+    --bodyglow:radial-gradient(1500px 760px at 50% -300px,color-mix(in srgb,var(--acc) 20%,transparent),transparent);
   }
   html[data-theme="light"]{
     --bg:#eef4ef; --bg2:#e6ede8; --panel:#ffffff; --panel2:#f2f7f3; --line:#cfe0d4;
@@ -34,12 +34,17 @@
   .pop{position:absolute;right:0;top:44px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;width:250px;box-shadow:0 8px 30px var(--glow);z-index:20}
   .pop.hidden{display:none}
   .pop h4{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
-  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
-  .presets button{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
-  .presets button.on{border-color:var(--txt);box-shadow:0 0 0 2px var(--acc2)}
-  .pop label{font-size:12px;color:var(--dim);display:block;margin:8px 0 4px}
-  .pop input[type=color]{width:100%;height:38px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);cursor:pointer}
-  .pop .reset{width:100%;margin-top:10px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;cursor:pointer;font-size:13px}
+  .wheelwrap{position:relative;width:186px;height:186px;margin:2px auto 12px}
+  #wheel{width:186px;height:186px;border-radius:50%;cursor:crosshair;display:block;box-shadow:0 0 0 1px var(--line),inset 0 0 24px rgba(0,0,0,.35)}
+  .wheeldot{position:absolute;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1.5px #000,0 1px 4px #000b;transform:translate(-50%,-50%);pointer-events:none;left:93px;top:93px}
+  .valrow{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+  .valrow .vlbl{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px}
+  .valslider{flex:1 1 auto;-webkit-appearance:none;appearance:none;height:10px;border-radius:6px;background:linear-gradient(90deg,#000,var(--acc));outline:none;cursor:pointer}
+  .valslider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;border:2px solid #000;box-shadow:0 1px 3px #000a;cursor:pointer}
+  .pickrow{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+  .swatch.big{width:28px;height:28px;flex:0 0 auto;border:2px solid var(--line)}
+  .hexbox{flex:1 1 auto;min-width:0;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px 9px;font-family:Consolas,monospace;font-size:13px}
+  .pop .reset{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:8px;cursor:pointer;font-size:13px}
 
   /* 3-column workspace: Details | Editor | Console (resizable) */
   .workspace{flex:1 1 auto;min-height:0;display:flex;overflow:hidden;padding:12px}
@@ -132,6 +137,15 @@
   .dl{display:block;text-align:center;margin-top:14px;background:var(--acc);color:var(--acc-ink);font-weight:700;text-decoration:none;padding:14px 24px;border-radius:10px;font-size:15px;flex:0 0 auto}
   .dl2{display:block;width:100%;text-align:center;margin-top:10px;background:var(--panel2);color:var(--txt);font-weight:600;padding:11px 24px;border:1px solid var(--line);border-radius:10px;font-size:14px;cursor:pointer}
   .hidden{display:none}
+  /* ---- update banner ---- */
+  .updbar{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:9px 16px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--acc-ink);font-size:13.5px;font-weight:600;box-shadow:0 2px 10px var(--glow);z-index:20}
+  .updbar .updmsg{flex:1 1 auto;min-width:0}
+  .updbar .updbtn{flex:0 0 auto;background:rgba(0,0,0,.22);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:6px 14px;font-weight:700;font-size:13px;cursor:pointer}
+  .updbar .updbtn:hover{background:rgba(0,0,0,.34)}
+  .updbar .updbtn[disabled]{opacity:.7;cursor:default}
+  .updbar .updlink{flex:0 0 auto;color:var(--acc-ink);text-decoration:underline;font-weight:600;cursor:pointer;opacity:.92}
+  .updbar .updx{flex:0 0 auto;background:transparent;border:none;color:var(--acc-ink);font-size:15px;line-height:1;cursor:pointer;opacity:.8;padding:2px 4px}
+  .updbar .updx:hover{opacity:1}
   .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--acc2);border-radius:50%;animation:s .8s linear infinite;vertical-align:middle;margin-right:8px}
   @keyframes s{to{transform:rotate(360deg)}}
   /* ---- chart editor (Tab 2 panel, not a modal) ---- */
@@ -175,16 +189,24 @@
 </style>
 </head>
 <body>
+<div id="updBar" class="updbar hidden">
+  <span class="updmsg" id="updMsg"></span>
+  <button class="updbtn" id="updDl" type="button">⬇ Download update</button>
+  <a class="updlink" id="updNotes" href="#">Release notes</a>
+  <button class="updx" id="updX" type="button" title="Dismiss">✕</button>
+</div>
 <header>
-  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.5.2</span>
+  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.5.3</span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
     <button class="tbtn" id="themeBtn"><span id="themeIcon">🌙</span><span id="themeLbl">Dark</span></button>
     <div class="picker"><button class="tbtn" id="pickBtn"><span class="swatch"></span>Color</button>
-      <div class="pop hidden" id="pop"><h4>Accent color</h4><div class="presets" id="presets"></div>
-        <label>Custom</label><input type="color" id="colorInput" value="#025500">
-        <button class="reset" id="resetBtn">Reset</button></div>
+      <div class="pop hidden" id="pop"><h4>Accent color</h4>
+        <div class="wheelwrap"><canvas id="wheel" width="186" height="186"></canvas><div class="wheeldot" id="wheelDot"></div></div>
+        <div class="valrow"><span class="vlbl">Brightness</span><input type="range" id="valSlider" class="valslider" min="0" max="100" value="100"></div>
+        <div class="pickrow"><span class="swatch big" id="pickPreview"></span><input type="text" id="hexInput" class="hexbox" maxlength="7" spellcheck="false"></div>
+        <button class="reset" id="resetBtn">Reset to default</button></div>
     </div>
   </div>
 </header>
@@ -321,7 +343,7 @@
     </div>
   </section>
 </main>
-<div class="sig">phurteau</div>
+<div class="sig">github.com/phurteau</div>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -343,29 +365,70 @@ function renderSteps(stages){
 }
 renderSteps([]);
 
-/* theme + accent */
-const PRESETS=["#1f8a3b","#025500","#2f8fd6","#8b5cf6","#e0562f","#d6a12f","#d64f8f","#20b2aa"];
+/* theme + accent (HSV colour wheel) */
 function hexToHsl(h){h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');
   const r=parseInt(h.slice(0,2),16)/255,g=parseInt(h.slice(2,4),16)/255,b=parseInt(h.slice(4,6),16)/255;
   const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let hh,s,l=(mx+mn)/2;
   if(mx===mn){hh=s=0;}else{const d=mx-mn;s=l>0.5?d/(2-mx-mn):d/(mx+mn);switch(mx){case r:hh=(g-b)/d+(g<b?6:0);break;case g:hh=(b-r)/d+2;break;default:hh=(r-g)/d+4;}hh/=6;}return [hh*360,s*100,l*100];}
 const hsl=(h,s,l)=>`hsl(${h.toFixed(0)} ${s.toFixed(0)}% ${l.toFixed(0)}%)`;
-function applyAccent(hex){const [h,s,l]=hexToHsl(hex);
+const hexToRgb=h=>{h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+const rgbToHex=(r,g,b)=>'#'+[r,g,b].map(x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0')).join('');
+function hsvToRgb(h,s,v){s/=100;v/=100;const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let r=0,g=0,b=0;
+  if(h<60){r=c;g=x;}else if(h<120){r=x;g=c;}else if(h<180){g=c;b=x;}else if(h<240){g=x;b=c;}else if(h<300){r=x;b=c;}else{r=c;b=x;}
+  return [(r+m)*255,(g+m)*255,(b+m)*255];}
+function rgbToHsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;
+  if(d){switch(mx){case r:h=((g-b)/d+(g<b?6:0));break;case g:h=(b-r)/d+2;break;default:h=(r-g)/d+4;}h*=60;}
+  return [h,(mx?d/mx:0)*100,mx*100];}
+
+let curAccent='#00ff00',curV=100,curH=120,curS=100,wheelReady=false;
+const wheel=$('#wheel'),wctx=wheel.getContext('2d'),WR=wheel.width,WHR=WR/2;
+function drawWheel(){const img=wctx.createImageData(WR,WR),d=img.data;
+  for(let y=0;y<WR;y++)for(let x=0;x<WR;x++){const dx=x-WHR,dy=y-WHR,dist=Math.sqrt(dx*dx+dy*dy),i=(y*WR+x)*4;
+    if(dist>WHR+0.5){d[i+3]=0;continue;}
+    let h=Math.atan2(dy,dx)*180/Math.PI;if(h<0)h+=360;
+    const s=Math.min(100,dist/WHR*100),rgb=hsvToRgb(h,s,curV);
+    d[i]=rgb[0];d[i+1]=rgb[1];d[i+2]=rgb[2];d[i+3]=255;}
+  wctx.putImageData(img,0,0);}
+function placeDot(h,s){const rad=Math.min(1,s/100)*WHR,ang=h*Math.PI/180,dot=$('#wheelDot');
+  dot.style.left=(WHR+Math.cos(ang)*rad)+'px';dot.style.top=(WHR+Math.sin(ang)*rad)+'px';}
+
+function applyAccent(hex){if(!/^#[0-9a-fA-F]{6}$/.test(hex||''))return;hex=hex.toLowerCase();curAccent=hex;
+  const [h,s,l]=hexToHsl(hex),[R,G,B]=hexToRgb(hex),yiq=(R*299+G*587+B*114)/1000;
   document.documentElement.style.setProperty('--acc',hex);
-  document.documentElement.style.setProperty('--acc2',hsl(h,Math.max(45,s),Math.min(72,l+18)));
-  document.documentElement.style.setProperty('--acc-ink',l>62?'#0c1710':'#ffffff');
-  $('#colorInput').value=hex;document.querySelectorAll('#presets button').forEach(b=>b.classList.toggle('on',b.dataset.c.toLowerCase()===hex.toLowerCase()));
+  document.documentElement.style.setProperty('--acc2',hsl(h,Math.max(45,s),Math.min(75,l+20)));
+  document.documentElement.style.setProperty('--acc-ink',yiq>140?'#08140a':'#ffffff');
+  const [wh,ws,wv]=rgbToHsv(R,G,B);curV=Math.round(wv);if(wv>0){curH=wh;curS=ws;}
+  const vs=$('#valSlider');if(vs)vs.value=curV;
+  const hb=$('#hexInput');if(hb&&document.activeElement!==hb)hb.value=hex;
+  const pv=$('#pickPreview');if(pv)pv.style.background=hex;
+  if(wheelReady)placeDot(curH,curS);
   localStorage.setItem('dtx_accent',hex);}
 function applyTheme(m){document.documentElement.setAttribute('data-theme',m);$('#themeIcon').textContent=m==='dark'?'🌙':'☀️';$('#themeLbl').textContent=m==='dark'?'Dark':'Light';localStorage.setItem('dtx_theme',m);}
-const pcp=$('#presets');PRESETS.forEach(c=>{const b=document.createElement('button');b.dataset.c=c;b.style.background=c;b.onclick=()=>applyAccent(c);pcp.appendChild(b);});
+
+function wheelPick(ev){const rect=wheel.getBoundingClientRect();
+  const x=ev.clientX-rect.left-WHR,y=ev.clientY-rect.top-WHR;
+  let h=Math.atan2(y,x)*180/Math.PI;if(h<0)h+=360;
+  const s=Math.min(100,Math.sqrt(x*x+y*y)/WHR*100);
+  curH=h;curS=s;applyAccent(rgbToHex(...hsvToRgb(h,s,curV)));}
+let wheelDrag=false;
+wheel.addEventListener('pointerdown',e=>{wheelDrag=true;try{wheel.setPointerCapture(e.pointerId);}catch(_){}wheelPick(e);});
+wheel.addEventListener('pointermove',e=>{if(wheelDrag)wheelPick(e);});
+window.addEventListener('pointerup',()=>{wheelDrag=false;});
+$('#valSlider').addEventListener('input',e=>{curV=+e.target.value;drawWheel();applyAccent(rgbToHex(...hsvToRgb(curH,curS,curV)));});
+$('#hexInput').addEventListener('change',e=>{let v=e.target.value.trim();if(v&&v[0]!=='#')v='#'+v;
+  if(/^#[0-9a-fA-F]{6}$/.test(v))applyAccent(v);else e.target.value=curAccent;});
+
 $('#themeBtn').onclick=()=>applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
 $('#pickBtn').onclick=e=>{e.stopPropagation();$('#pop').classList.toggle('hidden');};
 document.addEventListener('click',e=>{if(!$('#pop').contains(e.target)&&e.target!==$('#pickBtn')&&!$('#pickBtn').contains(e.target))$('#pop').classList.add('hidden');});
-$('#colorInput').oninput=e=>applyAccent(e.target.value);$('#resetBtn').onclick=()=>applyAccent('#025500');
-/* one-time migration: move anyone still on the previous default green (#1f8a3b) to
-   the new darker-green default (#025500). A deliberate later pick is left untouched. */
-if(!localStorage.getItem('dtx_accent_v2')){ if(localStorage.getItem('dtx_accent')==='#1f8a3b')localStorage.removeItem('dtx_accent'); localStorage.setItem('dtx_accent_v2','1'); }
-applyTheme(localStorage.getItem('dtx_theme')||'dark');applyAccent(localStorage.getItem('dtx_accent')||'#025500');
+$('#resetBtn').onclick=()=>applyAccent('#025500');
+/* one-time migration: move anyone still on the original medium-green default (#1f8a3b)
+   to the current dimmed-green default. A colour picked deliberately is left untouched. */
+if(localStorage.getItem('dtx_accent_v3')!=='1'){const c=(localStorage.getItem('dtx_accent')||'').toLowerCase();
+  if(c==='#1f8a3b')localStorage.removeItem('dtx_accent');localStorage.setItem('dtx_accent_v3','1');}
+applyTheme(localStorage.getItem('dtx_theme')||'dark');
+applyAccent(localStorage.getItem('dtx_accent')||'#025500');
+wheelReady=true;drawWheel();placeDot(curH,curS);
 
 /* segmented controls */
 let tabSource="url",audSource="url",drumMode="quiet",stdMode="standardize",noteStyle="transcribed";
@@ -1064,6 +1127,35 @@ async function saveEdits(silent){
   if(!silent){const b=$('#edSave');b.textContent='Saved ✓';setTimeout(()=>b.textContent='Save changes',1500);}
 }
 $('#edSave').onclick=()=>{saveEdits(false).catch(e=>alert('Save failed: '+e));};
+
+/* ---- update check (GitHub releases) ---- */
+async function checkUpdate(){
+  let j;
+  try{ j=await (await fetch('/api/update-check')).json(); }catch(e){ return; }
+  if(!j||!j.update_available)return;
+  if(localStorage.getItem('dtx_upd_dismiss')===j.latest)return;   // this version was dismissed
+  const bar=$('#updBar'),msg=$('#updMsg'),dl=$('#updDl'),notes=$('#updNotes');
+  msg.textContent=`DTX Forge v${j.latest} is available (you have v${j.current}).`;
+  if(j.html_url){notes.classList.remove('hidden');
+    notes.onclick=e=>{e.preventDefault();fetch('/api/open-external',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:j.html_url})});};}
+  else notes.classList.add('hidden');
+  $('#updX').onclick=()=>{bar.classList.add('hidden');localStorage.setItem('dtx_upd_dismiss',j.latest);};
+  dl.onclick=async()=>{
+    dl.disabled=true;dl.textContent='Starting…';
+    let s; try{ s=await (await fetch('/api/update-download',{method:'POST'})).json(); }
+    catch(e){ dl.disabled=false;dl.textContent='⬇ Download update';return; }
+    if(!s||s.error){dl.disabled=false;dl.textContent='⬇ Download update';msg.textContent='Update download failed: '+((s&&s.error)||'network error');return;}
+    const tick=setInterval(async()=>{
+      let p; try{ p=await (await fetch('/api/update-download/'+s.dl_id)).json(); }catch(e){ return; }
+      if(p.status==='downloading'){dl.textContent=p.total?`Downloading… ${p.pct}%`:'Downloading…';}
+      else if(p.status==='done'){clearInterval(tick);dl.textContent='✓ Saved to Downloads';
+        msg.textContent=`Saved ${p.saved_name} to your Downloads folder - unzip it and run “DTX Forge.exe” to update.`;}
+      else if(p.status==='error'){clearInterval(tick);dl.disabled=false;dl.textContent='⬇ Download update';msg.textContent='Update download failed: '+(p.error||'unknown error');}
+    },600);
+  };
+  bar.classList.remove('hidden');
+}
+checkUpdate();
 </script>
 </body>
 </html>

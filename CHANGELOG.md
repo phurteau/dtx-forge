@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.5.3
+
+Black dark mode, a colour-wheel accent picker, and in-app update notifications.
+
+- **True-black dark mode.** Dark mode is now genuine black with neutral panels instead of the
+  dimmed-green theme, so the accent colour is what stands out. The default accent is unchanged
+  (the deep green), and light mode is untouched.
+- **Colour-wheel accent picker.** The accent picker is now an HSV colour wheel with a brightness
+  slider, a hex field and a live preview - pick any colour, not just the old presets.
+- **Update notifications.** On launch the app checks GitHub for a newer release and shows a
+  dismissible banner when one is available. One click downloads the new build straight into your
+  Downloads folder (unzip and run to update). Fails silently when offline - no banner, no error.
+
 ## v1.5.2
 
 Data-calibrated cleanup thresholds and a regression test that keeps them honest.
