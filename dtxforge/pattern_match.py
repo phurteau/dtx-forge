@@ -274,14 +274,20 @@ WINDOW = 5           # sliding-window radius (plain bars): how many neighbours t
 
 # A hi-hat/ride slot survives the timekeeping consensus if it appears in MORE than KEEP_PCT% of
 # the window -- applied EQUALLY to on-beat and off-beat slots (off-beat timekeeping is real
-# drumming, never penalised for sitting off the beat). The threshold is TIER-AWARE, grounded in
-# the full 6,621-chart corpus (docs/drum-corpus-facts.md): drumming complexity scales hard with
-# difficulty -- off-beat hats run 18% (Basic) -> 29% (Advanced) -> 47% (Extreme) -> 55% (Master),
-# and density 3.9 -> 13.5 notes/bar. So a Basic chart is simple and tolerates firmer cleanup, while
-# a Master chart is almost all intentional playing and must be cleaned GENTLY. Higher tier =>
-# lower threshold => keep more. Kick and snare are never subject to this -- always kept verbatim.
-KEEP_PCT_BY_TIER = {"basic": 50, "advanced": 45, "extreme": 38, "master": 32}
-KEEP_PCT = 40        # fallback when the tier is unknown
+# drumming, never penalised for sitting off the beat).
+#
+# The per-tier values are EMPIRICALLY CALIBRATED, not hand-picked: calibrate_keep_pct.py takes
+# real corpus charts (clean ground truth), injects synthetic transcription noise into the
+# hi-hat/ride (bleed ghosts + dropped/jittered hits), runs this cleaner at each candidate
+# threshold, and scores how well the output RECOVERS the original real chart (F1 over 1/16
+# timekeeping slots). Averaged over 3 noise seeds x ~160 charts/tier, the F1-maximising threshold
+# is 35 (Basic) and 30 (Advanced/Extreme/Master) -- higher difficulties are busier and want the
+# gentlest cleaning. The F1 curve is a broad plateau from ~25-40 (so the exact integer is not
+# critical) that falls off sharply above ~45; the earlier hand-picked 50/45/38/32 sat past the
+# plateau and over-cleaned. test_grounding.py re-runs a mini calibration and FAILS if these
+# shipped values ever drift off the data-optimal plateau. Kick and snare are never subject to this.
+KEEP_PCT_BY_TIER = {"basic": 35, "advanced": 30, "extreme": 30, "master": 30}
+KEEP_PCT = 32        # fallback when the tier is unknown (mid-plateau)
 MATCH_TEMPLATE = False   # emit the voted consensus directly (True re-maps it to the nearest
 # real template, which can re-add rotated 16th jitter -- the consensus is already clean).
 

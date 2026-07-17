@@ -23,8 +23,35 @@ cleanup never assumes plain 4/4 pop and never treats legitimate drumming as nois
 **A Master chart is 3.5× denser than Basic, is off-beat over half the time, and plays triplets in
 ~1 in 5 bars** - so it is almost entirely intentional playing and must be cleaned GENTLY, while a
 Basic chart is simple and tolerates firmer cleanup. This drives the **tier-aware** cleanup strength
-`KEEP_PCT_BY_TIER = {basic:50, advanced:45, extreme:38, master:32}` (higher tier → lower threshold
-→ keep more).
+`KEEP_PCT_BY_TIER` (higher tier → lower threshold → keep more).
+
+## Empirically calibrated thresholds (the corpus chooses, not us)
+
+`KEEP_PCT_BY_TIER` is not hand-picked - it is chosen by a closed-loop calibration against the real
+charts (`calibrate_keep_pct.py`):
+
+1. take real charts (clean, correct **ground truth**) and read their hi-hat/ride timekeeping;
+2. inject synthetic transcription noise - bleed ghosts (false positives) + dropped/jittered hits
+   (false negatives) - the two dominant audio-transcription error modes;
+3. run the cleaner at each candidate threshold;
+4. score how well the output **recovers the original real chart** (F1 over 1/16 timekeeping slots);
+5. the F1-maximising threshold per tier is the data-chosen value.
+
+Averaged over 3 noise seeds × 160 charts/tier (≈1,830 runs), the recovery F1 peaks at:
+
+| Tier | data-optimal KEEP_PCT | peak recovery F1 |
+|------|----------------------:|-----------------:|
+| Basic    | 35 | ~77% |
+| Advanced | 30 | ~79% |
+| Extreme  | 30 | ~80% |
+| Master   | 30 | ~79% |
+
+so **`KEEP_PCT_BY_TIER = {basic:35, advanced:30, extreme:30, master:30}`**. The F1 curve is a broad
+plateau from ~25–40 that falls off sharply above ~45 - the earlier hand-picked 50/45/38/32 sat past
+the plateau and over-cleaned (which is the over-deletion that motivated this calibration).
+`test_grounding.py` re-runs a mini calibration and FAILS if the shipped values ever drift off the
+plateau, and asserts the per-lane grids still match the corpus subdivision usage - so the code can
+never quietly diverge from the data.
 
 ## A. Subdivision usage per lane (% of that lane's hits, overall)
 

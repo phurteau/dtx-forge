@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.5.2
+
+Data-calibrated cleanup thresholds and a regression test that keeps them honest.
+
+- **Keep thresholds are now empirically calibrated, not hand-picked.** A closed-loop calibration
+  takes real corpus charts as ground truth, injects synthetic transcription noise into the
+  hi-hat/ride (bleed ghosts plus dropped and jittered hits), runs the cleaner at each candidate
+  strength, and scores how well the result recovers the original chart (F1 over 1/16 timekeeping
+  slots). Averaged over multiple noise seeds and ~160 charts per tier, the data picks a gentler
+  keep strength (35 for Basic, 30 for Advanced/Extreme/Master) than the earlier hand-picked
+  50/45/38/32, which sat past the plateau and over-cleaned. Kick and snare remain untouched.
+- **Grounding regression test.** `test_grounding.py` re-runs a mini calibration and fails if the
+  shipped thresholds ever drift off the data-optimal plateau, and checks the per-lane note grids
+  still match how real charts subdivide each lane.
+- **Corpus tooling in the repo.** The mining and calibration scripts used to derive every threshold
+  now live under `tools/` (with a README), so the grounding is reproducible from the real charts.
+
 ## v1.5.1
 
 Note-preservation fix and a much deeper grounding in real charts.
