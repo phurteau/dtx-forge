@@ -7,7 +7,6 @@ STAGES = [
     ("audio",       "Audio"),
     ("separate",    "Drum Separation"),
     ("align",       "Auto-sync"),
-    ("humanize",    "Foot Technique"),
     ("playability", "Playability"),
     ("package",     "Package"),
 ]

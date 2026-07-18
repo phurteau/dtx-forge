@@ -188,6 +188,7 @@ async def api_generate(
     midi_file: UploadFile = File(None),
     tab_file: UploadFile = File(None),
     audio_file: UploadFile = File(None),
+    image_file: UploadFile = File(None),
 ):
     job_id = uuid.uuid4().hex[:12]
     wd = os.path.join(JOBS, job_id)
@@ -209,6 +210,14 @@ async def api_generate(
         with open(p, "wb") as f:
             shutil.copyfileobj(audio_file.file, f)
         upload_paths["upload_audio_path"] = p
+    if image_file is not None:
+        ext = os.path.splitext(image_file.filename or "jacket.png")[1].lower()
+        if ext not in (".png", ".jpg", ".jpeg", ".bmp", ".gif"):
+            ext = ".png"
+        p = os.path.join(wd, "jacket" + ext)
+        with open(p, "wb") as f:
+            shutil.copyfileobj(image_file.file, f)
+        upload_paths["jacket_path"] = p
 
     opts = dict(
         tab_source=tab_source,
@@ -265,6 +274,7 @@ def api_chart(job_id: str):
     from dtxforge import dtx
     out = dtx.chart_to_json(ch["events"], ch["barlens"], ch["bpm"], ch["meta"])
     out["hasAudio"] = bool(ch.get("has_audio"))
+    out["review"] = ch.get("review") or {"onsets": []}
     return out
 
 
@@ -314,7 +324,8 @@ async def api_package(job_id: str, payload: dict = Body(None)):
         folder, zpath = dtx.package(
             rp["out_dir"], rp["song_name"], dtx_text, rp["bgm_file"],
             rp["kit_dir"], rp["kit_files"], dtx_name=rp["dtx_name"],
-            set_label=rp["set_label"], set_slot=rp["set_slot"])
+            set_label=rp["set_label"], set_slot=rp["set_slot"],
+            image_src=rp.get("image_file"))
         res["folder"], res["zip"] = folder, zpath
         # Save straight to the user's Downloads folder. The packaged exe's WebView2 host
         # doesn't wire up a browser download handler, so an <a download> click silently

@@ -135,6 +135,8 @@ def run(opts, workdir, assets_dir, progress):
 
     # ---------- 2. AUDIO ----------
     raw_audio = None
+    audio_onsets = []   # raw per-lane onset positions for the editor review overlay (audio path only)
+    sampled_lanes = []  # drum lanes voiced from real one-shots sliced from THIS song (audio path)
     if asrc == "none":
         skp("audio")
     else:
@@ -178,7 +180,7 @@ def run(opts, workdir, assets_dir, progress):
         do_std = do_std_audio
         kit_samples = {}
         try:
-            events, barlens, bpm2, audio_anchor, kit_samples = fullkit.from_audio_fullkit(
+            events, barlens, bpm2, audio_anchor, kit_samples, audio_onsets = fullkit.from_audio_fullkit(
                 drum_stem, bpm=bpm, progress=log, standardize=do_std)
         except Exception as e:
             log(f"Full-kit engines unavailable ({str(e)[:100]}); "
@@ -217,8 +219,13 @@ def run(opts, workdir, assets_dir, progress):
                     pass
             if saved:
                 kit_dir = job_kit
+                sampled_lanes = saved
                 log("Sampled real drums from the song: " + ", ".join(sorted(saved))
                     + " (other lanes use the built-in kit).")
+        if opts["tab_source"] == "audio" and not sampled_lanes:
+            log("No clean isolated drum hits could be sampled from this song; "
+                "the chart uses the built-in synth kit. If you also had no backing "
+                "track, add your own .ogg to the chart folder.")
 
     if events is None:
         raise RuntimeError("No notation was produced.")
@@ -275,22 +282,11 @@ def run(opts, workdir, assets_dir, progress):
         log("Encoding BGM...")
         audio.to_ogg(bgm_wav, bgm_file)
 
-    # ---------- 5. HUMANIZE (manual foot technique - Transcribed style only) ----------
-    # DTXMania style applies foot technique automatically and tier-gated in section 6c
-    # (after the hands are regularized), so the manual toggles are ignored in that mode.
-    hh_on = (str(opts.get("hihat_foot", "off")).strip().lower() == "on")
-    db_on = bool(opts.get("double_bass", False))
+    # ---------- 5. FOOT TECHNIQUE ----------
+    # Applied automatically and tier-gated for DTXMania style (section 6c). There is no
+    # manual foot-technique control -- feet fill the gaps once the hands are regularized.
+    hh_on = db_on = False
     db_converted = 0
-    if notes_style == "dtxmania":
-        hh_on = db_on = False                # manual toggles ignored; feet are auto (6c)
-        skp("humanize")
-    elif hh_on or db_on:
-        stg("humanize", f"Advanced technique (hi-hat foot: {'on' if hh_on else 'off'}, double bass: {'on' if db_on else 'off'})...")
-        events, db_converted = humanize.humanize(events, barlens, bpm, hihat_on=hh_on, doublebass=db_on)
-        if db_on:
-            log(f"Double kick: converted {db_converted} too-fast kicks to left-foot.")
-    else:
-        skp("humanize")
 
     # ---------- 6. PLAYABILITY ----------
     stg("playability", "Checking human playability...")
@@ -409,23 +405,31 @@ def run(opts, workdir, assets_dir, progress):
                 comment=(f"Charted by {opts['author']} using DTX Forge."
                          if opts.get("author") else "Charted using DTX Forge."),
                 bgm=os.path.basename(bgm_file))
+    jacket_path = opts.get("jacket_path")
+    if jacket_path and os.path.exists(jacket_path):
+        meta["preimage"] = os.path.basename(jacket_path)
+        log(f"Jacket image added ({meta['preimage']}).")
+    else:
+        jacket_path = None
     song_name = f"{_slug(artist)} - {_slug(title)}"
     repack = dict(out_dir=os.path.join(workdir, "dist"), song_name=song_name,
                   bgm_file=bgm_file, kit_dir=kit_dir, kit_files=kit_files,
-                  dtx_name=dtx_name, set_label=tier_label, set_slot=tier_slot)
+                  dtx_name=dtx_name, set_label=tier_label, set_slot=tier_slot,
+                  image_file=jacket_path)
     if defer:
         folder, zpath = None, None
     else:
         dtx_text = dtx.emit_dtx(events, barlens, meta)
         folder, zpath = dtx.package(repack["out_dir"], song_name, dtx_text, bgm_file,
                                     kit_dir, kit_files, dtx_name=dtx_name,
-                                    set_label=tier_label, set_slot=tier_slot)
+                                    set_label=tier_label, set_slot=tier_slot,
+                                    image_src=jacket_path)
     if hasattr(progress, "finish"): progress.finish()
     stats = dict(measures=len(events), chips=dtx.count_chips(events), bpm=meta["bpm"],
                  drum_mode=drum_mode if raw_audio else "none",
                  removed_drums=bool(raw_audio and drum_mode != "keep"),
-                 hihat_foot=("on" if hh_on else "off"), double_bass=("on" if db_on else "off"),
-                 double_kicks=db_converted,
+                 has_audio=bool(raw_audio), audio_source=asrc,
+                 sampled_lanes=sampled_lanes, sampled_count=len(sampled_lanes),
                  playability=play_report["verdict"], play_score=play_report["score"],
                  play_issues=play_report["issue_count"],
                  faithfulness=fscore["percent"], notes_moved=fscore["moved"],
@@ -436,6 +440,6 @@ def run(opts, workdir, assets_dir, progress):
     log("Done.")
     # Chart model + re-emit params, so the UI editor can load/edit/re-save the chart.
     chart = dict(events=events, barlens=barlens, bpm=float(meta["bpm"]), meta=meta,
-                 has_audio=bool(raw_audio))
+                 has_audio=bool(raw_audio), review=dict(onsets=audio_onsets))
     return dict(folder=folder, zip=zpath, stats=stats, playability=play_report,
                 faithfulness=fscore, chart=chart, repack=repack)

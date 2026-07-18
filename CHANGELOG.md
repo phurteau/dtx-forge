@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.6.0
+
+A ground-up chart-editor overhaul: a standard transport, a self-review layer, and fast bulk
+editing so the last 20% of a transcription is a quick touch-up instead of a bar-by-bar chore.
+
+- **Standard transport bar.** Play/pause in the center, back/forward 5s & 10s, and previous/next
+  bar - with the note highway free of controls. Space plays, arrows step bars, and dragging the
+  playhead scrubs the audio in both directions.
+- **Redo + keyboard shortcuts.** Full undo/redo (Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z), plus Ctrl+C /
+  Ctrl+V, Delete, and Escape.
+- **Review layer.** The app marks where it *heard* a drum hit in the audio but charted nothing
+  near it (cyan), and a Review button jumps you through the spots worth checking - so you fix the
+  weak cymbal/hi-hat calls instead of hunting for them.
+- **Assisted groove copy/paste.** Copy a bar and the overview highlights every repeat; stamp your
+  fix onto all of them at once (exact match by default, an optional looser near-match).
+- **Marquee selection.** Shift-drag a box to select notes, then copy / paste / delete them - with
+  a right-click context menu. Paste carries a pattern into any other bar.
+- **Bulk voice cleanups.** One-click, whole-chart fixes for the common transcription artifacts:
+  all rides → crash, left crash → crash, thin hi-hats by half, and clear all toms.
+- **Jacket image.** Upload a song-select image; it's embedded as `#PREIMAGE` and bundled in the zip.
+- **"Clean Up"** replaces the old "Standardize" label, and a notice now tells you when no backing
+  track or drum sample could be captured (so you can supply your own `.ogg`).
+
 ## v1.5.5
 
 Cleaner cymbals and a recalibration on the full 31-version chart corpus.

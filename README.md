@@ -24,8 +24,8 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
   quarter / 8th / 16th / triplet / 32nd notes the song actually plays (real GITADORA charts of every tier
   mix note values freely). The output `.dtx` is named by tier (`bsc` / `adv` / `ext` / `mstr`), the
   DTXMania / GITADORA convention.
-- **Advanced foot technique.** Optional left-foot hi-hat on the **2 & 4 backbeat**, plus **DKDK** double-bass
-  that converts only the kicks too fast to play one-legged. In **DTXMania** style it's applied automatically,
+- **Authentic foot technique.** In **DTXMania** style, left-foot hi-hat on the **2 & 4 backbeat** and
+  **DKDK** double-bass (converting only the kicks too fast to play one-legged) are applied automatically,
   gated by difficulty (Master gets the hi-hat foot **and** double bass; lower tiers little or none) to match
   real GITADORA charts.
 - **Human-playability check.** Every chart is verified against a 2-hands + 2-feet model and
@@ -33,10 +33,20 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 - **Faithfulness score.** When charting from a tab, each chart reports how true it is to the tab -
   **100% = untouched** - and shows exactly what changed (notes moved to the left foot, dropped, or added).
 - **Live pipeline visualizer.** Watch each stage light up as it runs.
-- **Built-in chart editor.** After generating, open a vertical one-bar-at-a-time editor (DTXMania-style
-  colored lanes) to clean up notes by hand - click to add, drag to move, right-click to delete - with
-  **per-bar audio playback** (slow / fast, pitch-preserved) and a **draggable scrubber** to hear exactly
-  where you're editing. The chart is packaged once, on download, after your edits.
+- **Built-in chart editor.** After generating, open a DTXMania-style editor (colored lanes, one bar at a
+  time) to finish the chart by hand:
+  - **Standard transport** - play/pause, back/forward 5s & 10s, previous/next bar, a rate control
+    (slow/fast, pitch-preserved), and a draggable playhead that scrubs the audio.
+  - **Edit** - click to add, drag to move, right-click to delete, and **shift-drag to select** a region,
+    then copy / paste / delete it (with a right-click menu). Full **undo/redo** and keyboard shortcuts.
+  - **Review layer** - the app marks where it heard a drum hit but charted nothing near it, and a Review
+    button steps you through the spots worth checking.
+  - **Assisted copy/paste** - copy a bar and every repeat lights up in the overview; stamp your fix onto
+    all of them at once.
+  - **Bulk cleanups** - one-click, whole-chart fixes (rides → crash, thin hi-hats, clear toms).
+
+  The chart is packaged once, on download, after your edits.
+- **Song-select jacket.** Optionally upload an image; it's embedded as the chart's `#PREIMAGE`.
 - **Personalize it.** Light/dark themes + an accent color picker (remembered between runs).
 
 ---

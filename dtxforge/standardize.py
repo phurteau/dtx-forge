@@ -164,3 +164,21 @@ def build_events(hits, bpm, grid_div=GRID_DIV, max_hand_voices=2, adaptive=False
 
     events, barlens = _assemble(placed, max_hand_voices)
     return events, barlens, anchor
+
+
+def map_onsets(hits, bpm, anchor):
+    """Map every raw ``(time, gm_midi)`` onset onto the adaptive per-bar grid as
+    ``[{bar, lane, pos}]`` -- BEFORE the de-dupe/voice-cap in ``_assemble`` drops any.
+
+    This is the editor "review" overlay's honest record of what the audio actually
+    hit: a detected onset with no charted note in the same lane flags a drum the
+    cleanup dropped (a likely-missed crash), while the notes themselves confirm the
+    hits that survived. Uses the same quantization as the ``adaptive`` chart so the
+    marks land exactly on the editor's grid."""
+    bar_time = 4 * 60.0 / bpm if bpm else 0.0
+    if bar_time <= 0:
+        return []
+    out = []
+    for bar, pos, ch, _lab in _place_perbar(hits, anchor, bar_time):
+        out.append({"bar": int(bar), "lane": ch, "pos": round(float(pos), 6)})
+    return out

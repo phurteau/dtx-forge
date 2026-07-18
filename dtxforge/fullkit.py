@@ -385,7 +385,7 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False,
     _add_cymbals(stems, sr, hits, has_isolated_hat)
 
     if not hits:
-        return [{}], [Fraction(1)], round(bpm or 120.0, 3), 0.0, {}
+        return [{}], [Fraction(1)], round(bpm or 120.0, 3), 0.0, {}, []
 
     # tempo from the kick+snare backbone if not supplied
     if bpm is None:
@@ -410,7 +410,8 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False,
         events, barlens, anchor = _std.build_events(hits, bpm, max_hand_voices=2, adaptive=True)
     else:
         events, barlens, anchor = _std.build_events(hits, bpm, grid_div=64, max_hand_voices=999)
-    return events, barlens, round(bpm, 3), anchor, samples
+    onsets = _std.map_onsets(hits, bpm, anchor)
+    return events, barlens, round(bpm, 3), anchor, samples, onsets
 
 
 def from_audio_fullkit(drum_wav, bpm=None, progress=None, standardize=True):
