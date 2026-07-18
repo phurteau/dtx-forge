@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.5.4
+
+Per-song drum sounds, a clearer update indicator, and a banner fix.
+
+- **Real drum sounds from your song.** Audio-only charts now voice each drum chip with a one-shot
+  sliced from that song's own separated stems - so the kick, snare, toms, hats, ride and crash
+  sound like the actual recording instead of a fixed synth kit. Any lane without a clean, isolated
+  hit falls back to the built-in kit, so a chart is never silent or garbled.
+- **"Latest" confirmation.** When you're on the newest release the header now shows a subtle
+  "✓ Latest" badge next to the version. When an update exists you get the download banner plus an
+  "● Update available" badge.
+- **Fixed an empty update bar.** A stray blank bar could appear at the top when you were already on
+  the latest version; the update banner now only shows when there's actually a newer release.
+
 ## v1.5.3
 
 Black dark mode, a colour-wheel accent picker, and in-app update notifications.

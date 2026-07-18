@@ -195,6 +195,101 @@ def _classify_cymbal(x, sr, p_time, isolated_hat):
     return 42                           # closed hi-hat
 
 
+# --------------------------------------------------------------- per-song kit sampling
+# One-shot lengths per lane (seconds), mirroring the synthesized fallback kit.
+_SAMPLE_DUR = {"bd": 0.30, "sd": 0.22, "ht": 0.34, "lt": 0.35, "ft": 0.40,
+               "hh": 0.09, "ho": 0.30, "cy": 0.85, "rd": 0.48}
+_SAMPLE_MIN_HITS = 2        # need at least this many detected hits to trust a lane
+_SAMPLE_PEAK_FLOOR = 0.0003 # only rejects a digitally-silent/empty stem; separated stems
+                            # are quiet in absolute terms, and every slice is normalized,
+                            # so absolute loudness is NOT a quality signal here.
+_SAMPLE_ATTACK_MIN = 1.4    # THE quality gate: the peak must rise this sharply over the
+                            # 6 ms before it. A real hit (even a soft, sparse tom) clears
+                            # ~1.5; pure bleed/noise/silence stays near 1.0. Density-
+                            # agnostic, so a fast lane is never penalized for close hits.
+
+_SAMPLE_DEBUG = os.environ.get("DTX_SAMPLE_DEBUG")
+
+
+def _stem_for_midi(m, has_isolated_hat):
+    """Which separated stem a GM-midi hit was detected in (mirrors transcribe_stems)."""
+    if m in (35, 36): return "kick"
+    if m in (37, 38, 40): return "snare"
+    if m in (41, 43, 45, 47, 48, 50): return "toms"
+    if m in (42, 44, 46): return "hihat" if has_isolated_hat else "cymbals"
+    return "cymbals"                                    # crash / ride / bell
+
+
+def _pick_cleanest(times, x, sr):
+    """Among candidate onset times pick the loudest, most time-isolated instance (largest
+    gap before it -> the slice won't start mid-decay of a previous hit). Returns
+    (isolation, peak_index, peak_amp, attack) or None. `attack` (peak over the 6 ms just
+    before the transient) measures onset crispness and is used only for the quality gate."""
+    best = None
+    for t in times[:80]:
+        c = int(t * sr)
+        a = max(0, c - int(0.003 * sr)); b = min(len(x), c + int(0.012 * sr))
+        if b <= a:
+            continue
+        pk = a + int(np.argmax(np.abs(x[a:b]))); peak = float(abs(x[pk]))
+        l0 = max(0, pk - int(0.040 * sr)); l1 = max(0, pk - int(0.005 * sr))
+        lead = float(np.sqrt((x[l0:l1] ** 2).mean())) if l1 > l0 else 0.0
+        a0 = max(0, pk - int(0.006 * sr)); a1 = max(0, pk - int(0.001 * sr))
+        atk_pre = float(np.sqrt((x[a0:a1] ** 2).mean())) if a1 > a0 else 0.0
+        isolation = peak / (lead + 1e-4)
+        attack = peak / (atk_pre + 1e-4)
+        if best is None or isolation > best[0]:
+            best = (isolation, pk, peak, attack)
+    return best
+
+
+def extract_kit_samples(stems, sr, hits, has_isolated_hat):
+    """Slice a clean one-shot per lane straight from this song's isolated stems (so toms,
+    snare, etc. sound like the real kit). Hybrid: only lanes with a confidently crisp,
+    loud hit are returned; the caller keeps the synth sample for every other lane."""
+    from collections import defaultdict
+    by_lane = defaultdict(list)
+    for t, m in hits:
+        lab = dtx.MAP.get(m, (None, None))[1]
+        if lab not in _SAMPLE_DUR:
+            continue
+        by_lane[lab].append((t, _stem_for_midi(m, has_isolated_hat)))
+    samples = {}
+    for lab, cand in by_lane.items():
+        n_hits = len(cand)
+        x = stems.get(cand[0][1]) if cand else None
+        best = _pick_cleanest([t for t, _ in cand], x, sr) if (x is not None and np.any(x)) else None
+        passed = False
+        if best is not None and n_hits >= _SAMPLE_MIN_HITS:
+            isolation, pk, peak, attack = best
+            if peak >= _SAMPLE_PEAK_FLOOR and attack >= _SAMPLE_ATTACK_MIN:
+                dn = int(_SAMPLE_DUR[lab] * sr)
+                start = max(0, pk - int(0.002 * sr))
+                seg = x[start:start + dn].astype(np.float64).copy()
+                if len(seg) >= int(0.02 * sr):
+                    fi = max(1, int(0.0015 * sr)); seg[:fi] *= np.linspace(0, 1, fi)
+                    fo = max(1, int(len(seg) * 0.30)); seg[-fo:] *= np.linspace(1, 0, fo) ** 1.5
+                    mx = float(np.max(np.abs(seg))) or 1.0
+                    samples[lab] = seg / mx * 0.9
+                    passed = True
+        if _SAMPLE_DEBUG:
+            if best is not None:
+                iso, _pk, pk_a, atk = best
+                print(f"[sample] {lab}: hits={n_hits} peak={pk_a:.3f} attack={atk:.2f} "
+                      f"iso={iso:.2f} -> {'SAMPLE' if passed else 'synth'}", flush=True)
+            else:
+                print(f"[sample] {lab}: hits={n_hits} (no usable stem) -> synth", flush=True)
+    return samples
+
+
+def save_oneshot(path, seg, sr=44100):
+    """Write a float one-shot as 44.1k/16-bit mono WAV (same format as the synth kit)."""
+    data = (np.clip(np.asarray(seg, dtype=np.float64), -1.0, 1.0) * 32767).astype("<i2")
+    with wave.open(path, "w") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(int(sr))
+        w.writeframes(data.tobytes())
+
+
 def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False, standardize=True):
     """Per-stem onset detection + sub-classification -> (events, barlens, bpm, anchor).
     Same event structure as transcribe.from_audio_drums so the pipeline is unchanged."""
@@ -239,7 +334,7 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False,
     add("cymbals", kind="cymbal")
 
     if not hits:
-        return [{}], [Fraction(1)], round(bpm or 120.0, 3), 0.0
+        return [{}], [Fraction(1)], round(bpm or 120.0, 3), 0.0, {}
 
     # tempo from the kick+snare backbone if not supplied
     if bpm is None:
@@ -251,6 +346,10 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False,
                 ref = e[0] if ref is None else ref + e[0]
         bpm = T._estimate_bpm(ref, fps) if ref is not None else 120.0
 
+    # Per-song drum voicing: slice a clean one-shot per lane from the isolated stems so
+    # the chart plays this song's actual drums (hybrid - synth fallback per missing lane).
+    samples = extract_kit_samples(stems, sr, hits, has_isolated_hat)
+
     # Standardize (default): quantize to a musical 1/16 grid, de-dupe, and cap
     # simultaneous voices so the raw onsets become a clean, playable chart. When
     # standardize is off, emit exactly what was heard on the fine 1/64 grid with no
@@ -260,7 +359,7 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False,
         events, barlens, anchor = _std.build_events(hits, bpm, max_hand_voices=2, adaptive=True)
     else:
         events, barlens, anchor = _std.build_events(hits, bpm, grid_div=64, max_hand_voices=999)
-    return events, barlens, round(bpm, 3), anchor
+    return events, barlens, round(bpm, 3), anchor, samples
 
 
 def from_audio_fullkit(drum_wav, bpm=None, progress=None, standardize=True):

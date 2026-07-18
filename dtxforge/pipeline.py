@@ -176,14 +176,16 @@ def run(opts, workdir, assets_dir, progress):
         from . import fullkit
         stg("notation", "Full-kit transcription (inagoy + LarsNet, beta)...")
         do_std = do_std_audio
+        kit_samples = {}
         try:
-            events, barlens, bpm2, audio_anchor = fullkit.from_audio_fullkit(
+            events, barlens, bpm2, audio_anchor, kit_samples = fullkit.from_audio_fullkit(
                 drum_stem, bpm=bpm, progress=log, standardize=do_std)
         except Exception as e:
             log(f"Full-kit engines unavailable ({str(e)[:100]}); "
                 f"using the fast kick/snare/hat detector.")
             events, barlens, bpm2, audio_anchor = transcribe.from_audio_drums(
                 drum_stem, bpm=bpm, progress=log, standardize=do_std)
+            kit_samples = {}
         bpm = bpm or bpm2
         # The transcription puts the first detected hit at chart t=0; trim the
         # backing track to start there too so chart and BGM stay in sync.
@@ -191,6 +193,32 @@ def run(opts, workdir, assets_dir, progress):
             log(f"Aligning backing track to first drum hit (trim {audio_anchor:.2f}s).")
             full_wav = audio.trim_start(full_wav, os.path.join(workdir, "full_trim.wav"), audio_anchor)
             drum_stem = audio.trim_start(drum_stem, os.path.join(workdir, "drums_trim.wav"), audio_anchor)
+
+        # ---------- 3c. PER-SONG DRUM VOICING ----------
+        # Voice the chart with one-shots sliced from THIS song's isolated stems (so toms,
+        # snare, etc. sound like the real kit) and fall back to the synth sample per lane
+        # that had no clean, isolated hit. Build a job-local kit dir so the shared
+        # assets/drumkit stays untouched.
+        if kit_samples:
+            import shutil as _sh
+            job_kit = os.path.join(workdir, "kit")
+            os.makedirs(job_kit, exist_ok=True)
+            for _lab, _fn in kit_files.items():
+                _sh.copy2(os.path.join(kit_dir, _fn), os.path.join(job_kit, _fn))
+            saved = []
+            for _lab, _seg in kit_samples.items():
+                _fn = kit_files.get(_lab)
+                if not _fn:
+                    continue
+                try:
+                    fullkit.save_oneshot(os.path.join(job_kit, _fn), _seg)
+                    saved.append(_lab)
+                except Exception:
+                    pass
+            if saved:
+                kit_dir = job_kit
+                log("Sampled real drums from the song: " + ", ".join(sorted(saved))
+                    + " (other lanes use the built-in kit).")
 
     if events is None:
         raise RuntimeError("No notation was produced.")

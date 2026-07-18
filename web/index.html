@@ -98,6 +98,9 @@
   .stop:disabled{opacity:.4;cursor:not-allowed}
   .stop:hover:not(:disabled){background:#e04434}
   header .ver{font-size:11px;color:var(--dim);letter-spacing:1px;align-self:flex-start;margin:3px 0 0 -4px}
+  header .verstat{font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:10px;margin:2px 0 0 7px;align-self:flex-start;white-space:nowrap}
+  header .verstat.latest{background:color-mix(in srgb,var(--acc2) 16%,transparent);color:var(--acc2);border:1px solid color-mix(in srgb,var(--acc2) 45%,transparent)}
+  header .verstat.behind{background:color-mix(in srgb,var(--acc) 22%,transparent);color:var(--acc-ink);border:1px solid var(--acc);cursor:pointer}
   .panel{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
   /* visualizer */
   .viz{margin-top:16px;flex:0 0 auto}
@@ -139,6 +142,7 @@
   .hidden{display:none}
   /* ---- update banner ---- */
   .updbar{flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:9px 16px;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--acc-ink);font-size:13.5px;font-weight:600;box-shadow:0 2px 10px var(--glow);z-index:20}
+  .updbar.hidden{display:none}
   .updbar .updmsg{flex:1 1 auto;min-width:0}
   .updbar .updbtn{flex:0 0 auto;background:rgba(0,0,0,.22);color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:6px 14px;font-weight:700;font-size:13px;cursor:pointer}
   .updbar .updbtn:hover{background:rgba(0,0,0,.34)}
@@ -196,7 +200,7 @@
   <button class="updx" id="updX" type="button" title="Dismiss">✕</button>
 </div>
 <header>
-  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.5.3</span>
+  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.5.4</span><span class="verstat hidden" id="verStat"></span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
@@ -1132,9 +1136,20 @@ $('#edSave').onclick=()=>{saveEdits(false).catch(e=>alert('Save failed: '+e));};
 async function checkUpdate(){
   let j;
   try{ j=await (await fetch('/api/update-check')).json(); }catch(e){ return; }
-  if(!j||!j.update_available)return;
-  if(localStorage.getItem('dtx_upd_dismiss')===j.latest)return;   // this version was dismissed
+  if(!j||!j.ok)return;                                   // offline / error -> no indicator
+  const vs=$('#verStat');
+  if(!j.update_available){
+    // On the newest release -> subtle "Latest" confirmation next to the version label.
+    if(vs){ vs.textContent='✓ Latest'; vs.title='You’re on the latest version (v'+(j.current||'')+').';
+      vs.classList.remove('hidden','behind'); vs.classList.add('latest'); vs.onclick=null; }
+    return;
+  }
+  // A newer version exists -> mark the header and (unless dismissed) show the download banner.
+  if(vs){ vs.textContent='● Update available'; vs.title='DTX Forge v'+j.latest+' is available.';
+    vs.classList.remove('hidden','latest'); vs.classList.add('behind'); }
   const bar=$('#updBar'),msg=$('#updMsg'),dl=$('#updDl'),notes=$('#updNotes');
+  if(vs) vs.onclick=()=>bar.classList.remove('hidden');   // clicking the pill re-opens a dismissed banner
+  if(localStorage.getItem('dtx_upd_dismiss')===j.latest)return;   // this version was dismissed
   msg.textContent=`DTX Forge v${j.latest} is available (you have v${j.current}).`;
   if(j.html_url){notes.classList.remove('hidden');
     notes.onclick=e=>{e.preventDefault();fetch('/api/open-external',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:j.html_url})});};}
