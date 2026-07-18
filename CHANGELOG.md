@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.5.5
+
+Cleaner cymbals and a recalibration on the full 31-version chart corpus.
+
+- **Cymbals read as crashes.** GITADORA charts don't use a separate ride lane, so audio-only
+  charts now voice every detected cymbal as a crash instead of splitting some onto a ride. A new
+  precision guard keeps a cymbal only when it lands on a musical accent (with a kick or snare) or
+  is a loud, isolated hit - so bleed from the separated stem no longer sprays in phantom cymbals -
+  while songs whose groove rides the cymbals keep their full cymbal line.
+- **Re-grounded on the complete corpus.** The pattern library and cleanup thresholds were
+  recalibrated against the full 31-version, ~8,000-chart corpus (now through GALAXY WAVE DELTA).
+  The expanded data confirmed the existing tuning, with the timekeeping cleanup now uniform across
+  every difficulty tier.
+
 ## v1.5.4
 
 Per-song drum sounds, a clearer update indicator, and a banner fix.

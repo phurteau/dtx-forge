@@ -63,6 +63,18 @@ def _read_stereo(path, target_sr=44100):
     return x, sr
 
 
+# Cymbal precision guard (Option A). GITADORA charts use ONLY the crash lane (the ride lane
+# 19 is unused across the corpus), so every cymbal-stem onset is charted as a crash. Crashes
+# are accents that survive downstream de-confliction, so to avoid charting the heavy bleed in
+# the separated cymbals stem as phantom crashes, an onset is kept only if it lands on a
+# musical accent -- coincident with a kick/snare hit -- OR is a prominent transient. Real
+# crashes accent the beat; bleed rings between the hits. (Tuned on real GITADORA charts.)
+_CRASH_COINC = 0.045      # kick/snare coincidence window (s)
+_CRASH_PROM_Q = 0.88      # keep an isolated onset only above this onset-peak quantile (loud crash)
+_CRASH_LED_RATIO = 1.5    # if cymbal onsets exceed hi-hat onsets by this, cymbals ARE the
+                          # groove (a ride/crash timekeeper) -> keep them all, skip the guard
+
+
 # ----------------------------------------------------------------------------- engine: inagoy
 INAGOY_URL = ("https://github.com/ZFTurbo/Music-Source-Separation-Training/"
               "releases/download/v1.0.5/model_drumsep.th")
@@ -186,13 +198,54 @@ def _classify_cymbal(x, sr, p_time, isolated_hat):
     peak = float(np.max(np.abs(x[s0:s0 + int(0.03 * sr)])) or 1e-9)
     sustain = float(np.sqrt((tail ** 2).mean())) / peak if tail.size else 0.0
     if isolated_hat:
-        # crash = long sustained wash; ride = shorter, more periodic ping
-        return 49 if sustain > 0.33 else 51
+        # GITADORA charts use only the crash lane (the ride lane is unused across the whole
+        # corpus), so a cymbal-stem onset is charted as a crash rather than split to ride.
+        return 49                       # crash
     # inagoy combined stem: conservative crash gate (from First Date feature analysis:
     # sustain>0.35 & peak>0.08 -> ~4% of hits, matching real crash frequency).
     if sustain > 0.35 and peak > 0.08:
         return 49                       # crash
     return 42                           # closed hi-hat
+
+
+def _add_cymbals(stems, sr, hits, has_isolated_hat):
+    """Detect cymbal-stem onsets and append the ones that pass the precision guard as
+    crashes. The separated cymbals stem carries heavy bleed (other cymbals ringing, metallic
+    hi-hat, snare spill) -- ~3x more onsets than real crashes -- and since crashes are
+    preserved downstream, charting them all would inflate the cymbal lane. Real crashes accent
+    the beat (they co-occur with a kick or snare), so an onset is kept only when it is
+    coincident with a kick/snare hit OR is a loud isolated transient (top ``_CRASH_PROM_Q``
+    onset-peak quantile). Mutates ``hits``; returns notes kept."""
+    import bisect
+    x = stems.get("cymbals")
+    if x is None or not np.any(x):
+        return 0
+    ons, _, _ = _onset_times(x, sr, min_gap=0.06, thr_rel=0.06, thr_abs=0.09)
+    if not ons:
+        return 0
+    ks = sorted(t for t, m in hits if m in (35, 36, 38))     # kick + snare accents
+    hat_n = sum(1 for _t, m in hits if m in (42, 46))        # detected hi-hat onsets
+    # When cymbals outnumber the hi-hat they ARE the timekeeper (a ride/crash groove), not
+    # bleed -- keep them all, since the accent guard would wrongly thin a real cymbal
+    # timekeeping line (e.g. Meikyou Shisui: 436 cymbals vs 19 hi-hats).
+    cymbal_led = len(ons) > max(hat_n, 1) * _CRASH_LED_RATIO
+    peaks = [pk for _t, pk in ons]
+    prom = float(np.quantile(peaks, _CRASH_PROM_Q)) if peaks else 0.0
+    kept = 0
+    for t, pk in ons:
+        if not cymbal_led:
+            coincident = False
+            if ks:
+                j = bisect.bisect_left(ks, t)
+                for k in (j - 1, j):
+                    if 0 <= k < len(ks) and abs(ks[k] - t) <= _CRASH_COINC:
+                        coincident = True
+                        break
+            if not (coincident or pk >= prom):
+                continue
+        hits.append((t, _classify_cymbal(x, sr, t, has_isolated_hat)))
+        kept += 1
+    return kept
 
 
 # --------------------------------------------------------------- per-song kit sampling
@@ -317,8 +370,6 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False,
                 peak = float(np.max(np.abs(x[s0:s0 + int(0.03 * sr)])) or 1e-9)
                 sus = float(np.sqrt((tail ** 2).mean())) / peak if tail.size else 0.0
                 hits.append((t, 46 if sus > 0.35 else 42))     # open vs closed
-            elif kind == "cymbal":
-                hits.append((t, _classify_cymbal(x, sr, t, has_isolated_hat)))
             else:
                 hits.append((t, midi_fixed))
 
@@ -331,7 +382,7 @@ def transcribe_stems(stems, sr, bpm=None, progress=None, has_isolated_hat=False,
         hits.append((t, midi))
     if has_isolated_hat:
         add("hihat", kind="hihat")
-    add("cymbals", kind="cymbal")
+    _add_cymbals(stems, sr, hits, has_isolated_hat)
 
     if not hits:
         return [{}], [Fraction(1)], round(bpm or 120.0, 3), 0.0, {}

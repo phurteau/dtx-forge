@@ -1,4 +1,4 @@
-# 🥁 DTX Forge
+# DTX Forge
 
 Turn a drum tab (or just audio) into a fully playable **DTXMania** chart - **no manual notation**.
 It fetches the tab, grabs the song, auto-syncs the audio, applies realistic foot technique,
@@ -69,7 +69,7 @@ Fill in **Title** and **Artist** (both required), pick your sources, hit **Gener
 ## Install a chart
 
 Unzip the downloaded `Artist - Title.zip` into your DTXMania songs folder
-(e.g. `DTXManiaNX\...\Songs\`). Launch DTXMania → it rescans → play. 🎶
+(e.g. `DTXManiaNX\...\Songs\`). Launch DTXMania → it rescans → play.
 
 ## Uninstall / free up space
 

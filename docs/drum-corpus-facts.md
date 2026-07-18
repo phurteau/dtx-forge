@@ -1,7 +1,8 @@
 # Drum-corpus facts
 
-Actionable drumming statistics mined from the **full corpus of 6,621 unique real GITADORA/
-DrumMania charts** (both local sets, deduplicated by drum-content hash), used to ground the
+Actionable drumming statistics mined from the **full corpus of 8,005 unique real GITADORA/
+DrumMania charts** (first mix through GALAXY WAVE DELTA - 31 versions, both local sets,
+deduplicated by drum-content hash), used to ground the
 DTXMania neatening logic in real data rather than assumption. Regenerate with `mine_all_charts.py`
 (per-tier report + `drum_facts_all.json`), `mine_drum_facts.py`, and `mine_flam_ms.py` (timing).
 
@@ -11,14 +12,14 @@ The DTXMania "Chart Style" cleans an audio transcription toward how real charts 
 threshold that decides *what to keep vs. remove* is calibrated from the numbers below, so the
 cleanup never assumes plain 4/4 pop and never treats legitimate drumming as noise.
 
-## Complexity scales HARD with difficulty (per-tier, 6,621 charts)
+## Complexity scales HARD with difficulty (per-tier, 8,005 charts)
 
 | Tier | charts | notes/bar | off-beat hats | triplet bars | hat 16th | tom <70ms | hat repeat |
 |------|-------:|----------:|--------------:|-------------:|---------:|----------:|-----------:|
-| Basic    | 1673 |  3.9 | 17.8% |  5.6% |  1.2% |  0.3% | 7.7% |
-| Advanced | 1659 |  7.3 | 29.0% |  9.4% |  1.9% |  1.3% | 10.3% |
-| Extreme  | 1660 | 11.1 | 47.4% | 14.4% |  6.1% |  5.4% | 10.0% |
-| Master   | 1173 | 13.5 | 54.6% | 17.8% | 10.5% | 12.2% | 7.8% |
+| Basic    | 2019 |  3.9 | 17.7% |  5.6% |  1.2% |  0.3% | 7.5% |
+| Advanced | 2005 |  7.2 | 28.9% |  9.3% |  1.7% |  1.3% | 10.1% |
+| Extreme  | 2006 | 10.9 | 46.9% | 14.2% |  5.7% |  6.1% | 10.0% |
+| Master   | 1519 | 13.5 | 54.0% | 17.6% | 10.0% | 13.2% | 8.3% |
 
 **A Master chart is 3.5× denser than Basic, is off-beat over half the time, and plays triplets in
 ~1 in 5 bars** - so it is almost entirely intentional playing and must be cleaned GENTLY, while a
@@ -37,17 +38,18 @@ charts (`calibrate_keep_pct.py`):
 4. score how well the output **recovers the original real chart** (F1 over 1/16 timekeeping slots);
 5. the F1-maximising threshold per tier is the data-chosen value.
 
-Averaged over 3 noise seeds × 160 charts/tier (≈1,830 runs), the recovery F1 peaks at:
+Averaged over 3 noise seeds × 160 charts/tier (≈1,900 runs), the recovery F1 peaks at:
 
 | Tier | data-optimal KEEP_PCT | peak recovery F1 |
 |------|----------------------:|-----------------:|
-| Basic    | 35 | ~77% |
-| Advanced | 30 | ~79% |
-| Extreme  | 30 | ~80% |
-| Master   | 30 | ~79% |
+| Basic    | 30 | ~75% |
+| Advanced | 30 | ~76% |
+| Extreme  | 30 | ~78% |
+| Master   | 30 | ~77% |
 
-so **`KEEP_PCT_BY_TIER = {basic:35, advanced:30, extreme:30, master:30}`**. The F1 curve is a broad
-plateau from ~25–40 that falls off sharply above ~45 - the earlier hand-picked 50/45/38/32 sat past
+so **`KEEP_PCT_BY_TIER = {basic:30, advanced:30, extreme:30, master:30}`** - the expanded corpus
+lands on a single, uniform value across every tier. The F1 curve is a broad
+plateau from ~25–38 that falls off sharply above ~45 - the earlier hand-picked 50/45/38/32 sat past
 the plateau and over-cleaned (which is the over-deletion that motivated this calibration).
 `test_grounding.py` re-runs a mini calibration and FAILS if the shipped values ever drift off the
 plateau, and asserts the per-lane grids still match the corpus subdivision usage - so the code can

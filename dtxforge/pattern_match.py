@@ -280,14 +280,14 @@ WINDOW = 5           # sliding-window radius (plain bars): how many neighbours t
 # real corpus charts (clean ground truth), injects synthetic transcription noise into the
 # hi-hat/ride (bleed ghosts + dropped/jittered hits), runs this cleaner at each candidate
 # threshold, and scores how well the output RECOVERS the original real chart (F1 over 1/16
-# timekeeping slots). Averaged over 3 noise seeds x ~160 charts/tier, the F1-maximising threshold
-# is 35 (Basic) and 30 (Advanced/Extreme/Master) -- higher difficulties are busier and want the
-# gentlest cleaning. The F1 curve is a broad plateau from ~25-40 (so the exact integer is not
-# critical) that falls off sharply above ~45; the earlier hand-picked 50/45/38/32 sat past the
-# plateau and over-cleaned. test_grounding.py re-runs a mini calibration and FAILS if these
-# shipped values ever drift off the data-optimal plateau. Kick and snare are never subject to this.
-KEEP_PCT_BY_TIER = {"basic": 35, "advanced": 30, "extreme": 30, "master": 30}
-KEEP_PCT = 32        # fallback when the tier is unknown (mid-plateau)
+# timekeeping slots). Re-calibrated over the FULL 8,005-unique-chart corpus (first mix ->
+# GALAXY WAVE DELTA, 3 noise seeds x 160 charts/tier): the F1-maximising threshold is 30 for
+# EVERY tier. The F1 curve is a broad plateau (~25-38) that falls off sharply above ~45; the
+# earlier hand-picked 50/45/38/32 sat past the plateau and over-cleaned. test_grounding.py
+# re-runs a mini calibration and FAILS if these shipped values ever drift off the data-optimal
+# plateau. Kick and snare are never subject to this.
+KEEP_PCT_BY_TIER = {"basic": 30, "advanced": 30, "extreme": 30, "master": 30}
+KEEP_PCT = 30        # fallback when the tier is unknown (on the plateau, uniform across tiers)
 MATCH_TEMPLATE = False   # emit the voted consensus directly (True re-maps it to the nearest
 # real template, which can re-add rotated 16th jitter -- the consensus is already clean).
 
