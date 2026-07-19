@@ -8,6 +8,10 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 
 ![DTX Forge](docs/screenshot.png)
 
+*Dark and light themes, with the built-in chart editor open.*
+
+![DTX Forge - light theme](docs/screenshot-light.png)
+
 ---
 
 ## Highlights

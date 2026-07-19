@@ -120,7 +120,9 @@ def pad_icon(name: str):
     p = os.path.join(WEB, "pads", name)
     if not os.path.isfile(p):
         return JSONResponse({"error": "not found"}, status_code=404)
-    return FileResponse(p, media_type="image/png")
+    # no-cache => the browser revalidates (cheap 304 when unchanged) so updated pad/fire art
+    # is picked up immediately instead of a stale copy lingering in the WebView2 HTTP cache.
+    return FileResponse(p, media_type="image/png", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/kit/{name}")
@@ -669,6 +671,21 @@ def api_open_external(payload: dict = Body(...)):
         return JSONResponse({"error": "url not allowed"}, status_code=400)
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/quit")
+def api_quit():
+    """Cleanly shut the whole app down and release everything it holds (the uvicorn server,
+    the listening port, the native window). The Exit button calls this; we flush the HTTP
+    response first, then hard-exit the process after a short delay. Works the same in the
+    native-window build, the browser fallback, and a plain `python app.py` run."""
+    import time as _t
+
+    def _bye():
+        _t.sleep(0.35)
+        os._exit(0)
+    threading.Thread(target=_bye, daemon=True).start()
+    return {"ok": True}
 
 
 if __name__ == "__main__":

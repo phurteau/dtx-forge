@@ -11,12 +11,27 @@
     --txt:#ededed; --dim:#9a9a9a; --glow:rgba(0,0,0,.5);
     --headgrad:linear-gradient(90deg,var(--panel),var(--bg));
     --bodyglow:radial-gradient(1500px 760px at 50% -300px,color-mix(in srgb,var(--acc) 20%,transparent),transparent);
+    /* modern surface treatment: subtle top-lit gradient + layered depth + inner highlight */
+    --surface:linear-gradient(180deg,#17171b,#0e0e10);
+    --surface2:linear-gradient(180deg,#1c1c20,#141416);
+    --elev1:0 1px 0 rgba(255,255,255,.04) inset,0 1px 2px rgba(0,0,0,.5),0 6px 20px rgba(0,0,0,.42);
+    --elev2:0 1px 0 rgba(255,255,255,.05) inset,0 4px 14px rgba(0,0,0,.55),0 14px 40px rgba(0,0,0,.5);
+    --btnface:linear-gradient(180deg,#212127,#17171b);
+    --btnhi:0 1px 0 rgba(255,255,255,.06) inset;
+    --inset:inset 0 1px 3px rgba(0,0,0,.45);
   }
   html[data-theme="light"]{
     --bg:#eef4ef; --bg2:#e6ede8; --panel:#ffffff; --panel2:#f2f7f3; --line:#cfe0d4;
     --txt:#12251a; --dim:#5c7a66; --glow:rgba(20,60,35,.10);
     --headgrad:linear-gradient(90deg,#ffffff,#eef4ef);
     --bodyglow:radial-gradient(1500px 760px at 50% -280px,color-mix(in srgb,var(--acc) 18%,transparent),transparent);
+    --surface:linear-gradient(180deg,#ffffff,#f3f8f4);
+    --surface2:linear-gradient(180deg,#f7fbf8,#eef4ef);
+    --elev1:0 1px 0 rgba(255,255,255,.7) inset,0 1px 2px rgba(20,60,35,.10),0 6px 20px rgba(20,60,35,.09);
+    --elev2:0 1px 0 rgba(255,255,255,.8) inset,0 6px 22px rgba(20,60,35,.14);
+    --btnface:linear-gradient(180deg,#ffffff,#eef4ef);
+    --btnhi:0 1px 0 rgba(255,255,255,.9) inset;
+    --inset:inset 0 1px 2px rgba(20,60,35,.10);
   }
   *{box-sizing:border-box}
   html,body{height:100%}
@@ -27,11 +42,11 @@
   header .logo{font-size:26px} header h1{font-size:20px;margin:0;letter-spacing:2px}
   header .tag{color:var(--dim);font-size:13px;margin-left:auto}
   .tools{display:flex;align-items:center;gap:10px}
-  .tbtn{display:flex;align-items:center;gap:7px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:20px;padding:7px 12px;cursor:pointer;font-size:13px}
-  .tbtn:hover{border-color:var(--acc2)}
+  .tbtn{display:flex;align-items:center;gap:7px;background:var(--btnface);border:1px solid var(--line);color:var(--txt);border-radius:20px;padding:7px 12px;cursor:pointer;font-size:13px;box-shadow:var(--btnhi);transition:transform .12s,border-color .15s}
+  .tbtn:hover{border-color:var(--acc2);transform:translateY(-1px)}
   .swatch{width:16px;height:16px;border-radius:50%;border:2px solid #fff3;background:var(--acc)}
   .picker{position:relative}
-  .pop{position:absolute;right:0;top:44px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;width:250px;box-shadow:0 8px 30px var(--glow);z-index:20}
+  .pop{position:absolute;right:0;top:44px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;width:250px;box-shadow:var(--elev2);z-index:20}
   .pop.hidden{display:none}
   .pop h4{margin:0 0 10px;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--dim)}
   .wheelwrap{position:relative;width:186px;height:186px;margin:2px auto 12px}
@@ -57,8 +72,10 @@
   .wdiv:hover::before,.wdiv.drag::before{background:var(--acc2);width:3px;left:4px}
   .editnote{margin-top:14px;display:flex;align-items:center;gap:13px;padding:13px 15px;border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--acc2) 15%,var(--panel2)),var(--panel2));border:1px solid color-mix(in srgb,var(--acc2) 42%,var(--line));box-shadow:0 2px 14px color-mix(in srgb,var(--acc2) 14%,transparent)}
   .editnote-txt{flex:1;font-size:13px;line-height:1.5;color:var(--txt);letter-spacing:.1px}
-  .hdrreset{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:20px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600}
-  .hdrreset:hover{border-color:var(--acc2)}
+  .hdrreset{background:var(--btnface);border:1px solid var(--line);color:var(--txt);border-radius:20px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600;box-shadow:var(--btnhi);transition:transform .12s,border-color .15s}
+  .hdrreset:hover{border-color:var(--acc2);transform:translateY(-1px)}
+  .hdrexit{background:var(--btnface);border:1px solid color-mix(in srgb,#e5484d 55%,var(--line));color:#e5757a;border-radius:20px;padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600;box-shadow:var(--btnhi);transition:transform .12s,background .15s,color .15s,border-color .15s}
+  .hdrexit:hover{background:#e5484d;color:#fff;border-color:#e5484d;transform:translateY(-1px)}
   /* editor placeholder (shown until a chart is generated) */
   .edplaceholder{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--dim);text-align:center;border:1.5px dashed var(--line);border-radius:14px;margin:2px;padding:24px}
   .edplaceholder .big{font-size:44px;opacity:.6}
@@ -69,24 +86,24 @@
   @keyframes tickPulse{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
 
   .col{min-height:0;display:flex;flex-direction:column;gap:18px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:0 2px 14px var(--glow)}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--elev1)}
   .card h2{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin:0 0 12px;display:flex;align-items:center}
   .card h2 .n{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;background:var(--acc);color:var(--acc-ink);border-radius:50%;font-size:12px;margin-right:8px}
   .card h2 .tagpill{text-transform:none;letter-spacing:0;font-size:10px;font-weight:600;color:var(--dim);border:1px solid var(--line);border-radius:10px;padding:2px 7px;margin-left:8px}
   .card h2 .tagpill.req{color:var(--acc2);border-color:var(--acc2)}
   label{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
-  input[type=text],input[type=number],input[type=file],select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none}
+  input[type=text],input[type=number],input[type=file],select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;box-shadow:var(--inset);transition:border-color .15s,box-shadow .15s}
   select{cursor:pointer;height:42px}
-  input[type=file]{padding:8px} input:focus{border-color:var(--acc2)}
+  input[type=file]{padding:8px} input:focus,select:focus{border-color:var(--acc2);box-shadow:var(--inset),0 0 0 3px color-mix(in srgb,var(--acc2) 22%,transparent)}
   .seg{display:flex;flex-wrap:wrap;gap:8px}
-  .seg button{flex:1;min-width:105px;background:var(--panel2);border:1px solid var(--line);color:var(--dim);padding:11px;border-radius:8px;cursor:pointer;font-size:14px;transition:.15s}
-  .seg button.active{background:var(--acc);border-color:var(--acc2);color:var(--acc-ink);font-weight:600}
-  .seg button:hover:not(.active){border-color:var(--acc2);color:var(--txt)}
+  .seg button{flex:1;min-width:105px;background:var(--btnface);border:1px solid var(--line);color:var(--dim);padding:11px;border-radius:8px;cursor:pointer;font-size:14px;box-shadow:var(--btnhi);transition:transform .12s,border-color .15s,box-shadow .15s,color .15s}
+  .seg button.active{background:linear-gradient(180deg,color-mix(in srgb,var(--acc2) 30%,var(--acc)),var(--acc));border-color:var(--acc2);color:var(--acc-ink);font-weight:600;box-shadow:var(--btnhi),0 3px 12px color-mix(in srgb,var(--acc2) 28%,transparent)}
+  .seg button:hover:not(.active){border-color:var(--acc2);color:var(--txt);transform:translateY(-1px)}
   .row{display:flex;gap:14px;flex-wrap:wrap}.row>div{flex:1;min-width:130px}
   .hint{font-size:12px;color:var(--dim);margin-top:6px}
   .chk{display:flex;align-items:flex-start;gap:9px;margin-top:12px;cursor:pointer}
   .chk input{width:18px;height:18px;accent-color:var(--acc);margin-top:1px}.chk b{color:var(--txt)}
-  .adv{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel2)}
+  .adv{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--surface2);box-shadow:var(--btnhi)}
   .adv+.adv{margin-top:12px}.adv .head{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:4px}.adv .ic{font-size:18px}
   .adv.locked{opacity:.5}.adv.locked .seg,.adv.locked .chk{pointer-events:none}
   .jacketrow{display:flex;align-items:center;gap:10px}
@@ -97,15 +114,17 @@
   .notewarn b{color:#ffcf8a}.notewarn code{background:#0d1016;padding:1px 5px;border-radius:4px;font-size:11px}
   .noteinfo{margin-top:10px;padding:8px 11px;border:1px solid var(--line);background:var(--panel2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.5}
 
-  .go{width:100%;padding:16px;font-size:16px;font-weight:700;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--acc-ink);border:none;border-radius:10px;cursor:pointer;letter-spacing:.5px;flex:0 0 auto}
+  .go{width:100%;padding:16px;font-size:16px;font-weight:700;background:linear-gradient(180deg,color-mix(in srgb,var(--acc2) 32%,var(--acc)),var(--acc));color:var(--acc-ink);border:none;border-radius:10px;cursor:pointer;letter-spacing:.5px;flex:0 0 auto;box-shadow:0 1px 0 rgba(255,255,255,.15) inset,0 4px 16px color-mix(in srgb,var(--acc2) 30%,transparent);transition:transform .12s,box-shadow .15s,filter .15s}
+  .go:hover:not(:disabled){transform:translateY(-1px);filter:brightness(1.06);box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 6px 22px color-mix(in srgb,var(--acc2) 38%,transparent)}
+  .go:active:not(:disabled){transform:translateY(0)}
   .go:disabled{opacity:.5;cursor:not-allowed}
   .gorow{display:flex;gap:10px;flex:0 0 auto}
   .gorow .go{flex:3;width:auto}
   .stop{flex:1;padding:16px 8px;font-size:15px;font-weight:700;background:#c0392b;color:#fff;border:none;border-radius:10px;cursor:pointer;letter-spacing:.5px}
   .stop:disabled{opacity:.4;cursor:not-allowed}
   .stop:hover:not(:disabled){background:#e04434}
-  .importbtn{width:100%;margin-top:10px;padding:12px;font-size:14px;font-weight:600;background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:10px;cursor:pointer;flex:0 0 auto}
-  .importbtn:hover{border-color:var(--acc2);color:var(--acc2)}
+  .importbtn{width:100%;margin-top:10px;padding:12px;font-size:14px;font-weight:600;background:var(--btnface);color:var(--txt);border:1px solid var(--line);border-radius:10px;cursor:pointer;flex:0 0 auto;box-shadow:var(--btnhi);transition:transform .12s,border-color .15s,color .15s}
+  .importbtn:hover{border-color:var(--acc2);color:var(--acc2);transform:translateY(-1px)}
   header .ver{font-size:11px;color:var(--dim);letter-spacing:1px;align-self:flex-start;margin:3px 0 0 -4px}
   header .verstat{font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:10px;margin:2px 0 0 7px;align-self:flex-start;white-space:nowrap}
   header .verstat.latest{background:color-mix(in srgb,var(--acc2) 16%,transparent);color:var(--acc2);border:1px solid color-mix(in srgb,var(--acc2) 45%,transparent)}
@@ -146,7 +165,8 @@
   .badge.problem{background:#451717;color:#f0938a;border:1px solid #8a3030}
   .badge.info{background:var(--panel2);color:var(--dim);border:1px solid var(--line)}
   .stat{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 14px;margin:4px 8px 4px 0;font-size:14px}.stat b{color:var(--acc2)}
-  .dl{display:block;text-align:center;margin-top:14px;background:var(--acc);color:var(--acc-ink);font-weight:700;text-decoration:none;padding:14px 24px;border-radius:10px;font-size:15px;flex:0 0 auto}
+  .dl{display:block;text-align:center;margin-top:14px;background:linear-gradient(180deg,color-mix(in srgb,var(--acc2) 32%,var(--acc)),var(--acc));color:var(--acc-ink);font-weight:700;text-decoration:none;padding:14px 24px;border-radius:10px;font-size:15px;flex:0 0 auto;box-shadow:0 1px 0 rgba(255,255,255,.15) inset,0 4px 16px color-mix(in srgb,var(--acc2) 30%,transparent);transition:transform .12s,filter .15s}
+  .dl:hover{transform:translateY(-1px);filter:brightness(1.06)}
   .dl2{display:block;width:100%;text-align:center;margin-top:10px;background:var(--panel2);color:var(--txt);font-weight:600;padding:11px 24px;border:1px solid var(--line);border-radius:10px;font-size:14px;cursor:pointer}
   .hidden{display:none}
   /* ---- update banner ---- */
@@ -204,8 +224,9 @@
   .tp:hover:not(:disabled){border-color:var(--acc2);background:rgba(127,140,160,.12)}
   .tp:disabled{opacity:.4;cursor:not-allowed}
   .tp.secs{font-size:12px;font-weight:600;color:var(--muted)}.tp.secs .ar{font-size:9px;color:var(--dim)}
-  .tp.play{background:linear-gradient(180deg,var(--acc),var(--acc2));border:none;color:var(--acc-ink);width:54px;height:54px;min-width:54px;border-radius:50%;font-size:22px;box-shadow:0 3px 12px var(--glow)}
-  .tp.play:hover{filter:brightness(1.08)}
+  .tp.play{position:relative;background:radial-gradient(120% 120% at 50% 22%,color-mix(in srgb,#fff 30%,var(--acc2)),var(--acc2) 42%,var(--acc) 100%);border:none;color:var(--acc-ink);width:56px;height:56px;min-width:56px;border-radius:50%;font-size:22px;cursor:pointer;box-shadow:0 2px 0 rgba(255,255,255,.25) inset,0 -3px 8px rgba(0,0,0,.28) inset,0 6px 18px color-mix(in srgb,var(--acc2) 45%,transparent),0 2px 6px rgba(0,0,0,.4);transition:transform .12s,box-shadow .18s,filter .15s}
+  .tp.play:hover{transform:translateY(-1px);filter:brightness(1.07);box-shadow:0 2px 0 rgba(255,255,255,.3) inset,0 -3px 8px rgba(0,0,0,.28) inset,0 8px 26px color-mix(in srgb,var(--acc2) 60%,transparent),0 3px 8px rgba(0,0,0,.4)}
+  .tp.play:active{transform:translateY(0) scale(.96);box-shadow:0 1px 0 rgba(255,255,255,.2) inset,0 3px 10px rgba(0,0,0,.4) inset,0 3px 10px color-mix(in srgb,var(--acc2) 40%,transparent)}
   .topts{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
   /* on/off toggle switch */
   .toggle{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--txt);cursor:pointer;user-select:none}
@@ -221,7 +242,7 @@
   .edclip-btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer}
   .edclip-btn:hover:not(:disabled){border-color:var(--acc2)}
   .edclip-btn:disabled{opacity:.4;cursor:not-allowed}
-  .edclip-btn.primary{background:linear-gradient(90deg,var(--acc),var(--acc2));border:none;color:var(--acc-ink)}
+  .edclip-btn.primary{background:linear-gradient(180deg,color-mix(in srgb,var(--acc2) 30%,var(--acc)),var(--acc));border:none;color:var(--acc-ink);box-shadow:0 1px 0 rgba(255,255,255,.14) inset}
   .edclip-x{margin-left:auto;background:transparent;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:2px 6px}
   .edclip-x:hover{color:var(--txt)}
   .edcanvas-wrap{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
@@ -241,8 +262,11 @@
   .edvscroll.off{opacity:.35}
   .edvscroll.off .edvthumb{cursor:default}
   .edfoot{display:flex;gap:10px;padding:12px 16px;border-top:1px solid var(--line)}
-  .edfoot .save{flex:2;background:linear-gradient(90deg,var(--acc),var(--acc2));color:var(--acc-ink);font-weight:700;border:none;border-radius:9px;padding:11px;cursor:pointer;font-size:14px}
-  .edfoot .dlz{flex:1;background:var(--acc);color:var(--acc-ink);font-weight:700;border:none;border-radius:9px;padding:11px;cursor:pointer;font-size:14px}
+  .edfoot .save{flex:2;background:linear-gradient(180deg,color-mix(in srgb,var(--acc2) 32%,var(--acc)),var(--acc));color:var(--acc-ink);font-weight:700;border:none;border-radius:9px;padding:11px;cursor:pointer;font-size:14px;box-shadow:0 1px 0 rgba(255,255,255,.15) inset,0 4px 14px color-mix(in srgb,var(--acc2) 28%,transparent);transition:transform .12s,filter .15s,box-shadow .15s}
+  .edfoot .save:hover{transform:translateY(-1px);filter:brightness(1.06)}
+  .edfoot .save:active{transform:translateY(0)}
+  .edfoot .dlz{flex:1;background:linear-gradient(180deg,color-mix(in srgb,var(--acc2) 22%,var(--acc)),color-mix(in srgb,#000 6%,var(--acc)));color:var(--acc-ink);font-weight:700;border:none;border-radius:9px;padding:11px;cursor:pointer;font-size:14px;box-shadow:0 1px 0 rgba(255,255,255,.13) inset,0 3px 12px color-mix(in srgb,var(--acc2) 22%,transparent);transition:transform .12s,filter .15s}
+  .edfoot .dlz:hover{transform:translateY(-1px);filter:brightness(1.08)}
   .edmenu{position:fixed;z-index:110;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden;font-size:13px}
   .edmenu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--txt);padding:9px 16px;cursor:pointer}
   .edmenu button:hover{background:var(--panel2)}
@@ -257,7 +281,7 @@
   <button class="updx" id="updX" type="button" title="Dismiss">✕</button>
 </div>
 <header>
-  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.6.1</span><span class="verstat hidden" id="verStat"></span>
+  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.6.2</span><span class="verstat hidden" id="verStat"></span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
@@ -269,6 +293,7 @@
         <div class="pickrow"><span class="swatch big" id="pickPreview"></span><input type="text" id="hexInput" class="hexbox" maxlength="7" spellcheck="false"></div>
         <button class="reset" id="resetBtn">Reset to default</button></div>
     </div>
+    <button class="hdrexit" id="exitBtn" type="button" title="Close DTX Forge and release the app">✕ Exit</button>
   </div>
 </header>
 
@@ -291,7 +316,7 @@
         <div><label>Difficulty Score <span class="hint" id="dlevelHint">(auto-rated if blank)</span></label><input type="text" id="dlevel" placeholder="auto"></div></div>
       <div class="row" style="margin-top:6px">
         <div><label>BPM <span class="hint" id="bpmHint">(optional)</span></label><input type="number" id="bpm" step="0.001" placeholder="auto"></div>
-        <div><label>Jacket Image <span class="hint">(optional)</span></label>
+        <div><label>Image <span class="hint">(optional)</span></label>
           <div class="jacketrow"><input type="file" id="jacket" accept="image/png,image/jpeg,image/bmp,image/gif"><img id="jacketPrev" class="jacketprev hidden" alt=""></div>
           <div class="hint" style="margin-top:4px">Shown in the DTXMania song list. A small square image works best.</div></div></div>
     </div>
@@ -303,7 +328,7 @@
         <div class="hint">Paste a link from <b>YouTube, SoundCloud, Bandcamp, Vimeo</b> and 1000+ sites, or a <b>direct audio-file URL</b>.</div></div>
       <div id="aud-upload" class="hidden"><label>Audio file (mp3 / wav / ogg / m4a)</label><input type="file" id="audio" accept="audio/*"></div>
 
-      <label>Drums in the backing track</label>
+      <label>Drums in the Backing Track</label>
       <div class="seg" id="drumseg"><button data-v="keep">Keep</button><button data-v="quiet" class="active">Quiet</button><button data-v="remove">Remove</button></div>
       <label class="chk"><input type="checkbox" id="autoSync" checked><span><b>Auto-sync audio to chart</b><br><span class="hint" style="margin:0">Aligns the downloaded/uploaded audio to the notes (fixes intro offset &amp; slight tempo diffs).</span></span></label>
     </div>
@@ -342,7 +367,7 @@
 
   <!-- EDITOR (middle) -->
   <section class="wcol editor" id="wcol-editor">
-    <div class="edplaceholder" id="edPlaceholder"><div><b>Your chart appears here.</b></div></div>
+    <div class="edplaceholder" id="edPlaceholder"><div><b>Your chart appears here</b></div></div>
     <div class="edbox hidden" id="edBox">
       <div class="edhead">
         <h3 id="edTitle">Edit notes</h3>
@@ -383,12 +408,12 @@
           <button id="edNext" class="tp" title="Next bar">⏭</button>
         </div>
         <div class="topts">
-          <span class="tlbl">Rate</span>
-          <span class="stepper"><button id="edSlow" class="stepbtn" title="Slower">−</button><button id="edRate" class="steplbl" title="Playback rate" style="min-width:44px">1.0×</button><button id="edFast" class="stepbtn" title="Faster">+</button></span>
+          <span class="tlbl">Speed</span>
+          <span class="stepper"><button id="edSlow" class="stepbtn" title="Slower">−</button><button id="edRate" class="steplbl" title="Playback speed" style="min-width:44px">1.0×</button><button id="edFast" class="stepbtn" title="Faster">+</button></span>
           <label class="toggle" title="Play the charted drum sounds (kick, snare, hi-hat…) with the track"><input type="checkbox" id="edChip" checked><span class="tk"></span>Drum Sounds</label>
           <label class="toggle" title="Cyan marks where the app heard a drum hit in the audio but charted nothing near it - a candidate note to check by ear (could also be stem bleed). Click that spot to add one."><input type="checkbox" id="edDet" checked><span class="tk"></span>Detected Hits</label>
           <label class="toggle" title="Loop the current bar during playback"><input type="checkbox" id="edLoop"><span class="tk"></span>Loop</label>
-          <span class="tlbl" style="margin-left:6px">Speed</span>
+          <span class="tlbl" style="margin-left:6px">Scroll</span>
           <span class="stepper"><button id="edSpeedDn" class="stepbtn" title="Slower fall">−</button><button id="edSpeedLbl" class="steplbl" title="Reset scroll speed" style="min-width:42px">2.0×</button><button id="edSpeedUp" class="stepbtn" title="Faster fall">+</button></span>
           <span id="edNoAudio" class="hidden tlbl" style="color:var(--muted)">No audio</span>
         </div>
@@ -489,7 +514,8 @@ function applyAccent(hex){if(!/^#[0-9a-fA-F]{6}$/.test(hex||''))return;hex=hex.t
   const hb=$('#hexInput');if(hb&&document.activeElement!==hb)hb.value=hex;
   const pv=$('#pickPreview');if(pv)pv.style.background=hex;
   if(wheelReady)placeDot(curH,curS);
-  localStorage.setItem('dtx_accent',hex);}
+  localStorage.setItem('dtx_accent',hex);
+  if(typeof edVisible==='function'&&edVisible()){try{edDraw();}catch(e){}}}   // recolour the editor's bar-number readout live
 function applyTheme(m){document.documentElement.setAttribute('data-theme',m);$('#themeIcon').textContent=m==='dark'?'🌙':'☀️';$('#themeLbl').textContent=m==='dark'?'Dark':'Light';localStorage.setItem('dtx_theme',m);}
 
 function wheelPick(ev){const rect=wheel.getBoundingClientRect();
@@ -593,6 +619,15 @@ async function resetForm(){
   resetPage();
 }
 $('#resetForm').onclick=resetForm;
+/* Exit: cleanly shut the app down (stops the server + releases the port/window). Confirms if
+   there are unsaved chart edits. Works in the native window and the browser fallback alike. */
+async function quitApp(){
+  if(edDirty&&!confirm('You have unsaved chart edits. Exit without saving?'))return;
+  try{await fetch('/api/quit',{method:'POST'});}catch(e){}
+  document.documentElement.innerHTML='<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0e13;color:#8fa0b3;font:15px system-ui;letter-spacing:.3px">DTX Forge has closed - you can close this window.</body>';
+  setTimeout(()=>{try{window.close();}catch(e){}},250);
+}
+$('#exitBtn').onclick=quitApp;
 /* Download packages the (possibly edited) chart ONCE, then saves the zip. */
 let chartPackaged=false;
 async function downloadChart(btn){
@@ -729,9 +764,23 @@ async function poll(id){
 const LANE_COLORS={"1A":"#cf1670","11":"#2f94c4","18":"#8fd4e8","1B":"#b268ba","12":"#fee92d","14":"#57ec33","13":"#6b54c9","15":"#fe2d2e","17":"#fea62d","16":"#2386c7","19":"#3358cf"};
 /* DTXManiaNX pad icons (sliced from the game's 7_pads.png) shown at the bottom of each lane */
 const edPadImg={};let edPadsReady=0;
+/* asset-revision token appended to pad/fire image URLs so updated art (e.g. the foot pads and
+   chip-fire sprites) is always fetched fresh across app upgrades instead of a stale cached copy.
+   Bump this whenever the pad/fire PNGs change. */
+const ED_ASSET_V='162';
 ["1A","11","18","1B","12","14","13","15","17","16","19"].forEach(ch=>{
   const im=new Image();im.onload=()=>{edPadsReady++;if(edModel&&edVisible())edDraw();};
-  im.src='/pads/'+ch+'.png';edPadImg[ch]=im;});
+  im.src='/pads/'+ch+'.png?v='+ED_ASSET_V;edPadImg[ch]=im;});
+/* per-lane hit-explosion sprites (authentic DTXMania "chip fire" art), blended additively at
+   the judgement line during playback for a crunchy hit flash. */
+const edFireImg={};
+["1A","11","18","1B","12","14","13","15","17","16","19"].forEach(ch=>{
+  const im=new Image();im.src='/pads/fire_'+ch+'.png?v='+ED_ASSET_V;edFireImg[ch]=im;});
+/* foot silhouettes overlaid on the falling BD (right foot) + LP (left foot) chips during
+   playback, so the pedal notes read as feet like the real game. */
+const edFootOver={};
+[["13","right"],["1B","left"]].forEach(([ch])=>{
+  const im=new Image();im.src='/pads/footover_'+ch+'.png?v='+ED_ASSET_V;edFootOver[ch]=im;});
 let edModel=null,edBar=0,edGridN=16,edCanvas=null,edCtx=null,edDrag=null,edDirty=false,edMini=null,edMiniCtx=null;
 /* undo: snapshot the bars before each edit (button OR Ctrl+Z restores the last snapshot) */
 let edUndoStack=[],edRedoStack=[];const ED_UNDO_MAX=60;
@@ -755,15 +804,16 @@ function edRedo(){
   if(edClip)edComputeClipMatches();
   edDraw();edDrawMini();updateTicker();
 }
-const ED={GUTTER:42,LANEW:0,OX:0,HEADER:28,PADB:12,FOOT:0,gridH:0,LANE_MIN:34,LANE_MAX:112};
+const ED={GUTTER:42,RGUT:0,LANEW:0,OX:0,HEADER:28,PADB:12,FOOT:0,gridH:0,LANE_MIN:34,LANE_MAX:112};
 function edLanes(){return edModel?edModel.lanes:[];}
 function edBarObj(){return edModel.bars[edBar];}
 function edBarlen(){const b=edBarObj().barlen;return b[0]/b[1];}
 function edLayout(){const n=edLanes().length||1;
-  let lw=Math.floor((edCanvas.width-ED.GUTTER)/n);
+  const rg=32;                                     // right gutter (mirrors the left) for the bar-number readout
+  let lw=Math.floor((edCanvas.width-ED.GUTTER-rg)/n);
   lw=Math.max(ED.LANE_MIN,Math.min(ED.LANE_MAX,lw));
-  ED.LANEW=lw;
-  const blockW=ED.GUTTER+n*lw;
+  ED.LANEW=lw;ED.RGUT=rg;
+  const blockW=ED.GUTTER+n*lw+rg;
   ED.OX=Math.max(0,Math.floor((edCanvas.width-blockW)/2));
   ED.FOOT=Math.max(30,Math.min(lw+6,64,Math.floor((edCanvas.height-ED.HEADER-ED.PADB)*0.28)));
   ED.gridH=edCanvas.height-ED.HEADER-ED.FOOT-ED.PADB;}
@@ -790,13 +840,43 @@ const ED_SPEEDS=[0.5,0.75,1,1.5,2,2.5,3,4,5];let edSpeedI=4,edSpeed=ED_SPEEDS[ed
 function edSetSpeed(d){edSpeedI=Math.max(0,Math.min(ED_SPEEDS.length-1,edSpeedI+d));edSpeed=ED_SPEEDS[edSpeedI];
   const l=$('#edSpeedLbl');if(l)l.textContent=edSpeed.toFixed(edSpeed<1?2:1).replace(/\.0$/,'.0')+'×';}
 function edResetSpeed(){edSpeedI=4;edSpeed=ED_SPEEDS[edSpeedI];const l=$('#edSpeedLbl');if(l)l.textContent='2.0×';}
-function edBH(){return ED.gridH*edZoom;}
-function edMaxScroll(){return Math.max(0,edBH()-ED.gridH);}
-function edBaseY(){return ED.HEADER+ED.gridH+edScrollPx;}   // screen y of pos 0 (beat 1)
-function edPosY(pos){return edBaseY()-(pos/edBarlen())*edBH();}   // beat 1 at the BOTTOM (hit-line), time rises upward like the game
+/* EDIT-VIEW vertical model: the current bar fills the middle ~80% of the grid; the top ~10%
+   previews the NEXT bar and the bottom ~10% previews the PREVIOUS bar (context for cross-bar
+   editing). beat 1 sits at 90% down (just above the bottom peek), time rising upward. */
+const ED_FOCUS=0.8,ED_PEEK=0.1;
+function edBH(){return ED_FOCUS*ED.gridH*edZoom;}                       // current bar height
+function edMaxScroll(){return Math.max(0,edBH()-ED_FOCUS*ED.gridH);}    // pan only when zoomed in
+function edBaseY(){return ED.HEADER+ED.gridH*(1-ED_PEEK)+edScrollPx;}   // screen y of pos 0 (beat 1)
+function edPosY(pos){return edBaseY()-(pos/edBarlen())*edBH();}   // beat 1 near the BOTTOM (hit-line), time rises upward like the game
 function edYPos(y){return Math.max(0,Math.min(edBarlen()-1e-9,((edBaseY()-y)/edBH())*edBarlen()));}
 function edXLane(x){const i=Math.floor((x-edLaneStart())/ED.LANEW);return (i>=0&&i<edLanes().length)?i:-1;}
 function edRR(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+/* colour helpers for the modern chip shading */
+function edHexRGB(hex){hex=(hex||'#888').replace('#','');if(hex.length===3)hex=hex.split('').map(x=>x+x).join('');return [parseInt(hex.slice(0,2),16),parseInt(hex.slice(2,4),16),parseInt(hex.slice(4,6),16)];}
+function edShade(hex,f){const[r,g,b]=edHexRGB(hex);const m=(v)=>Math.max(0,Math.min(255,Math.round(f<0?v*(1+f):v+(255-v)*f)));return `rgb(${m(r)},${m(g)},${m(b)})`;}
+const edChipCache={};
+/* draw a modern, dimensional note chip: vertical gradient body, glossy top highlight, darker
+   bottom edge, soft coloured glow + subtle rim - replaces the old flat fill. */
+function edDrawChip(c,x,y,w,h,color,opts){
+  opts=opts||{};const r=Math.min(4,h/2);
+  let grad=edChipCache[color+'|'+Math.round(h)];
+  if(!grad){grad=c.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0,edShade(color,0.42));grad.addColorStop(0.5,edShade(color,0.06));
+    grad.addColorStop(1,edShade(color,-0.32));edChipCache[color+'|'+Math.round(h)]=grad;}
+  c.save();
+  c.translate(x,y-h/2);
+  // soft coloured glow underneath so chips pop off the dark lane
+  if(!opts.flat){c.shadowColor=color;c.shadowBlur=opts.glow!=null?opts.glow:3;c.shadowOffsetY=1;}
+  c.fillStyle=grad;edRR(c,0,0,w,h,r);c.fill();
+  c.shadowColor='transparent';c.shadowBlur=0;c.shadowOffsetY=0;
+  // glossy highlight across the top third
+  c.globalAlpha=0.4;c.fillStyle='#fff';edRR(c,1.5,1,w-3,Math.max(1.5,h*0.32),r*0.7);c.fill();c.globalAlpha=1;
+  // crisp light rim + a hair of dark on the bottom edge for depth
+  c.lineWidth=1;c.strokeStyle=edShade(color,0.55);edRR(c,0.5,0.5,w-1,h-1,r);c.stroke();
+  c.strokeStyle='rgba(0,0,0,0.28)';c.beginPath();c.moveTo(1.5,h-0.7);c.lineTo(w-1.5,h-0.7);c.stroke();
+  c.restore();
+}
+
 function edDrawLanesBg(c,n){
   for(let i=0;i<n;i++){const x=edLaneX(i),lane=edLanes()[i];
     c.fillStyle=(i%2)?"#12161d":"#0f1319";c.fillRect(x,ED.HEADER,ED.LANEW,ED.gridH);
@@ -813,28 +893,47 @@ function edDrawFoot(c,n){
     const dw=im.naturalWidth*sc,dh=im.naturalHeight*sc;
     c.drawImage(im,edLaneX(i)+(ED.LANEW-dw)/2,footY+4+(bh-dh)/2,dw,dh);}
 }
-/* draw one bar's gridlines + notes with beat 1 anchored at screen y=beat1Y, band height BH (caller clips) */
-function edDrawBarAt(c,bi,beat1Y,BH){
-  const bar=edModel.bars[bi],bl=bar.barlen[0]/bar.barlen[1];
+/* draw one bar's gridlines + notes with beat 1 anchored at screen y=beat1Y, band height BH (caller clips).
+   opts.dim => render as a faded CONTEXT neighbour (no beat labels, ghosts, or selection chrome). */
+function edDrawBarAt(c,bi,beat1Y,BH,opts){
+  const bar=edModel.bars[bi];if(!bar)return;const bl=bar.barlen[0]/bar.barlen[1];
+  const dim=opts&&opts.dim;
   const yOf=pos=>beat1Y-(pos/bl)*BH;
+  c.save();if(dim)c.globalAlpha=0.5;
   c.textAlign="right";c.font="10px system-ui";
   for(let g=0;g<=edGridN*bl+1e-9;g++){const pos=g/edGridN;if(pos>bl+1e-9)break;
     const y=yOf(pos),heavy=Math.abs((pos*4)-Math.round(pos*4))<1e-9;
     c.strokeStyle=heavy?"#33404f":"#1b222c";c.lineWidth=heavy?1.4:1;
     c.beginPath();c.moveTo(edLaneStart(),y);c.lineTo(edBlockRight(),y);c.stroke();
-    if(heavy){c.fillStyle="#5b6b7d";c.fillText((Math.round(pos*4)+1)+"",edLaneStart()-4,y-3);}}
+    if(heavy&&!dim&&pos<bl-1e-9){c.fillStyle="#5b6b7d";c.fillText((Math.round(pos*4)+1)+"",edLaneStart()-4,y-3);}}
   const li={};edLanes().forEach((l,i)=>li[l]=i);
-  if(edShowDet&&edReviewByBar.size){const ons=edReviewByBar.get(bi);if(ons)ons.forEach(o=>{
+  if(!dim&&edShowDet&&edReviewByBar.size){const ons=edReviewByBar.get(bi);if(ons)ons.forEach(o=>{
     const i=li[o.lane];if(i==null)return;if(edOnsetMatched(bi,o.lane,o.pos))return;
     const cx=edLaneX(i)+ED.LANEW/2,y=yOf(o.pos);
     c.globalAlpha=0.4;c.fillStyle=ED_GHOST;c.fillRect(edLaneX(i)+2,y-0.75,ED.LANEW-4,1.5);c.globalAlpha=1;
     c.strokeStyle=ED_GHOST;c.lineWidth=1.4;c.beginPath();c.arc(cx,y,4.5,0,6.2832);c.stroke();});}
   bar.notes.forEach(nt=>{const i=li[nt.lane];if(i==null)return;
-    const x=edLaneX(i)+3,w=ED.LANEW-6,y=yOf(nt.pos),h=11;
-    c.fillStyle=LANE_COLORS[nt.lane]||"#aaa";edRR(c,x,y-h/2,w,h,3);c.fill();
-    if(ED_WEAK.has(nt.lane)){c.strokeStyle="#ffcf5a";c.lineWidth=1.3;edRR(c,x-1.5,y-h/2-1.5,w+3,h+3,4);c.stroke();}
-    if(bi===edBar&&edSel.has(edNoteKey(nt))){c.save();c.strokeStyle="#fff";c.lineWidth=2;c.setLineDash([3,2]);edRR(c,x-2,y-h/2-2,w+4,h+4,4);c.stroke();c.restore();}
-    if(edDrag&&edDrag.note===nt){c.strokeStyle="#fff";c.lineWidth=1.5;edRR(c,x,y-h/2,w,h,3);c.stroke();}});
+    const x=edLaneX(i)+3,w=ED.LANEW-6,y=yOf(nt.pos),h=12;
+    edDrawChip(c,x,y,w,h,LANE_COLORS[nt.lane]||"#aaa",{flat:dim,glow:dim?0:3});
+    if(!dim&&ED_WEAK.has(nt.lane)){c.strokeStyle="#ffcf5a";c.lineWidth=1.3;edRR(c,x-1.5,y-h/2-1.5,w+3,h+3,4);c.stroke();}
+    if(!dim&&bi===edBar&&edSel.has(edNoteKey(nt))){c.save();c.strokeStyle="#fff";c.lineWidth=2;c.setLineDash([3,2]);edRR(c,x-2,y-h/2-2,w+4,h+4,4);c.stroke();c.restore();}
+    if(!dim&&edDrag&&edDrag.note===nt){c.strokeStyle="#fff";c.lineWidth=1.5;edRR(c,x,y-h/2,w,h,3);c.stroke();}});
+  c.restore();
+}
+/* faint gridline backdrop spanning the full view (incl. the 10% peek bands) so no zone reads
+   blank - the focus + neighbour bars draw their finer grids on top. Uses the edit-grid spacing
+   so even an empty peek (first/last bar) still shows gridlines. */
+function edDrawGridBackdrop(c,beat1,ppw,gTop,gBot){
+  const step=ppw/edGridN;                 // one edit-grid cell
+  if(step<4)return;
+  c.save();
+  for(let k=0,y=beat1;y>=gTop-1;k++,y=beat1-k*step){if(y<=gBot+1){
+    c.strokeStyle=(k%4===0)?"#1b2430":"#141a22";c.lineWidth=1;   // accent the beat lines
+    c.beginPath();c.moveTo(edLaneStart(),y);c.lineTo(edBlockRight(),y);c.stroke();}}
+  for(let k=1,y=beat1+step;y<=gBot+1;k++,y=beat1+k*step){
+    c.strokeStyle=(k%4===0)?"#1b2430":"#141a22";c.lineWidth=1;
+    c.beginPath();c.moveTo(edLaneStart(),y);c.lineTo(edBlockRight(),y);c.stroke();}
+  c.restore();
 }
 function edDraw(){
   if(!edModel||edTransition)return; edLayout();
@@ -844,12 +943,53 @@ function edDraw(){
   c.clearRect(0,0,W,edCanvas.height);
   edDrawLanesBg(c,n);
   c.save();c.beginPath();c.rect(0,ED.HEADER,W,ED.gridH);c.clip();
-  edDrawBarAt(c,edBar,edBaseY(),edBH());
+  const beat1=edBaseY(),BH=edBH(),ppw=BH/bl;
+  const gTop=ED.HEADER,gBot=ED.HEADER+ED.gridH,peek=ED.gridH*ED_PEEK;
+  // faint gridline backdrop across the WHOLE view (incl. the peek bands) so nothing reads blank
+  edDrawGridBackdrop(c,beat1,ppw,gTop,gBot);
+  // --- neighbour context bars: NEXT bar peeks in at the top, PREVIOUS bar at the bottom ---
+  if(edBar>0){const pbl=edModel.bars[edBar-1].barlen;const pblf=pbl[0]/pbl[1];
+    edDrawBarAt(c,edBar-1,beat1+ppw*pblf,ppw*pblf,{dim:true});}
+  if(edBar<edModel.bars.length-1){const nbl=edModel.bars[edBar+1].barlen;const nblf=nbl[0]/nbl[1];
+    edDrawBarAt(c,edBar+1,beat1-BH,ppw*nblf,{dim:true});}
+  // very light shade over the two peek bands so the middle focus bar still stands out
+  c.fillStyle="rgba(6,9,13,0.22)";
+  c.fillRect(edLaneStart(),gTop,edBlockRight()-edLaneStart(),peek);
+  c.fillRect(edLaneStart(),gBot-peek,edBlockRight()-edLaneStart(),peek);
+  // --- current (focus) bar on top ---
+  edDrawBarAt(c,edBar,beat1,BH);
+  edDrawBarBadge(c,edBar,beat1);
+  // bar-boundary lines: current bar start (beat 1) and end, tinted so the focus zone reads clearly
+  const endY=beat1-BH;
+  c.strokeStyle="rgba(120,140,165,0.55)";c.lineWidth=1.5;
+  [beat1,endY].forEach(by=>{if(by>=gTop-1&&by<=gBot+1){c.beginPath();c.moveTo(edLaneStart(),by);c.lineTo(edBlockRight(),by);c.stroke();}});
+  // top boundary = the NEXT bar's downbeat: label it "1" + the next bar number (dimmed), instead of "5"
+  if(edBar<edModel.bars.length-1&&endY>=gTop-1){
+    c.save();c.globalAlpha=0.55;c.textBaseline='alphabetic';
+    c.fillStyle="#5b6b7d";c.font="10px system-ui";c.textAlign="right";
+    c.fillText("1",edLaneStart()-4,endY-3);                       // next bar beat 1
+    c.fillStyle=edAccent();c.font="700 15px system-ui";
+    c.fillText(String(edBar+2),edLaneStart()-13,endY-3);          // next bar number (left)
+    const rGutMid=edBlockRight()+Math.max(10,(ED.RGUT-13)/2);
+    c.textAlign="center";c.fillText(String(edBar+2),rGutMid,endY-3);   // next bar number (right)
+    c.restore();
+  }
   if(edMarquee){const {x0,y0,x1,y1}=edMarquee;const rx=Math.min(x0,x1),ry=Math.min(y0,y1),rw=Math.abs(x1-x0),rh=Math.abs(y1-y0);
     c.fillStyle="rgba(120,200,255,0.12)";c.strokeStyle="#78c8ff";c.lineWidth=1;c.fillRect(rx,ry,rw,rh);c.strokeRect(rx+0.5,ry+0.5,rw,rh);}
   const yh=edPosY(Math.max(0,Math.min(bl,edPlayhead)));
-  c.strokeStyle="#ffd24a";c.lineWidth=2;c.beginPath();c.moveTo(edLaneStart(),yh);c.lineTo(edBlockRight(),yh);c.stroke();
-  c.fillStyle="#ffd24a";c.beginPath();c.moveTo(ED.OX+2,yh-6);c.lineTo(edLaneStart()-5,yh);c.lineTo(ED.OX+2,yh+6);c.closePath();c.fill();
+  c.save();
+  // glowing gradient playhead line
+  const phg=c.createLinearGradient(edLaneStart(),0,edBlockRight(),0);
+  phg.addColorStop(0,"rgba(255,210,74,0.15)");phg.addColorStop(0.5,"#ffe27a");phg.addColorStop(1,"rgba(255,210,74,0.15)");
+  c.shadowColor="#ffd24a";c.shadowBlur=8;
+  c.strokeStyle=phg;c.lineWidth=2.5;c.beginPath();c.moveTo(edLaneStart(),yh);c.lineTo(edBlockRight(),yh);c.stroke();
+  c.shadowBlur=0;
+  // rounded knob handle in the gutter (replaces the flat triangle)
+  const hx=edLaneStart()-9;
+  c.fillStyle="#ffe27a";c.strokeStyle="rgba(0,0,0,0.35)";c.lineWidth=1;
+  c.beginPath();c.arc(hx,yh,5.5,0,6.2832);c.fill();c.stroke();
+  c.fillStyle="rgba(255,255,255,0.65)";c.beginPath();c.arc(hx-1.3,yh-1.6,1.7,0,6.2832);c.fill();   // glossy dot
+  c.restore();
   c.restore();
   edDrawFoot(c,n);
   edSyncScroll();
@@ -869,16 +1009,27 @@ function edSyncScroll(){
 function edDrawTransition(t,dir){
   edLayout();
   const c=edCtx,W=edCanvas.width,n=edLanes().length;
-  const gBot=ED.HEADER+ED.gridH,BH=ED.gridH*edZoom;
+  const fbl=edModel.bars[edTransition.from].barlen,fblf=fbl[0]/fbl[1];
+  const BH=ED_FOCUS*ED.gridH*edZoom,ppw=BH/fblf,restY=edBaseY();
+  const gTop=ED.HEADER,gBot=ED.HEADER+ED.gridH,peek=ED.gridH*ED_PEEK;
+  // smooth vertical scroll: 'from' bar sits centered at t=0, target lands centered at t=1
+  const off=dir>0? t*BH : -t*BH, curBeat1=restY+off;
   c.clearRect(0,0,W,edCanvas.height);
   edDrawLanesBg(c,n);
   c.save();c.beginPath();c.rect(0,ED.HEADER,W,ED.gridH);c.clip();
-  let fromY,toY;
-  if(dir>0){fromY=gBot+t*BH;toY=gBot-BH+t*BH;}   // scroll down: next bar falls in from the top
-  else{fromY=gBot-t*BH;toY=gBot+BH-t*BH;}         // scroll up: prev bar rises in from the bottom
-  edDrawBarAt(c,edTransition.from,fromY,BH);
-  edDrawBarAt(c,edTransition.to,toY,BH);
+  edDrawGridBackdrop(c,curBeat1,ppw,gTop,gBot);
+  // draw a window of bars around the move so the scroll reads as one continuous strip;
+  // whichever bar is currently centered is the bright (focus) one.
+  for(let d=-2;d<=2;d++){const bi=edTransition.from+d;if(bi<0||bi>=edModel.bars.length)continue;
+    const b=edModel.bars[bi].barlen,bf=b[0]/b[1],y=curBeat1-d*BH;
+    if(y<gTop-BH||y-BH>gBot)continue;
+    edDrawBarAt(c,bi,y,ppw*bf,{dim:Math.abs(y-restY)>=BH*0.5});}
+  c.fillStyle="rgba(6,9,13,0.22)";
+  c.fillRect(edLaneStart(),gTop,edBlockRight()-edLaneStart(),peek);
+  c.fillRect(edLaneStart(),gBot-peek,edBlockRight()-edLaneStart(),peek);
   c.restore();
+  const badgeBar=t<0.5?edTransition.from:edTransition.to,badgeY=t<0.5?curBeat1:curBeat1-dir*BH;
+  edDrawBarBadge(c,badgeBar,badgeY);
   edDrawFoot(c,n);
 }
 function edGotoBar(nb){
@@ -913,6 +1064,7 @@ function edDrawScroll(playAbs){
   const yOf=absP=>gJudge-(absP-playAbs)*pxPerWhole;
   c.clearRect(0,0,W,edCanvas.height);
   edDrawLanesBg(c,n);
+  edDrawBarBadge(c,edBarAtAbs(playAbs),gJudge);
   c.save();c.beginPath();c.rect(0,gTop,W,ED.gridH);c.clip();
   const li={};edLanes().forEach((l,i)=>li[l]=i);
   // notes crossing the judgement line RIGHT NOW -> a hit splash so playback reads as a hit,
@@ -940,8 +1092,13 @@ function edDrawScroll(playAbs){
       if(heavy){c.fillStyle="#5b6b7d";c.fillText((Math.round(p*4)+1)+"",edLaneStart()-4,y-3);}}
     for(const nt of edModel.bars[b].notes){const i=li[nt.lane];if(i==null)continue;
       const y=yOf(bStart+nt.pos);if(y<gTop-8||y>gBot+8)continue;
-      const x=edLaneX(i)+3,w=ED.LANEW-6,h=11;
-      c.fillStyle=LANE_COLORS[nt.lane]||"#aaa";edRR(c,x,y-h/2,w,h,3);c.fill();}
+      const x=edLaneX(i)+3,w=ED.LANEW-6,h=12;
+      edDrawChip(c,x,y,w,h,LANE_COLORS[nt.lane]||"#aaa",{glow:4});
+      // overlay a foot silhouette on the pedal chips (BD=right foot, LP=left foot), like the game
+      const fo=edFootOver[nt.lane];
+      if(fo&&fo.complete&&fo.naturalWidth){
+        const fh=ED.LANEW*0.9,fw=fo.naturalWidth*fh/fo.naturalHeight;
+        c.globalAlpha=0.95;c.drawImage(fo,edLaneX(i)+(ED.LANEW-fw)/2,y-fh/2,fw,fh);c.globalAlpha=1;}}
   }
   c.restore();
   edDrawFoot(c,n);
@@ -954,16 +1111,29 @@ function edDrawScroll(playAbs){
   // hit splashes on the judgement line (drawn last so the glow blooms over everything)
   for(const s of splashes){
     const cx=edLaneX(s.i)+ED.LANEW/2,col=LANE_COLORS[s.lane]||"#fff",ease=1-s.t;
+    const fire=edFireImg[s.lane];
     c.save();
-    // brighten the judgement-line segment under the hit lane
-    c.globalAlpha=0.85*ease;c.strokeStyle="#fff";c.lineWidth=4;c.shadowColor=col;c.shadowBlur=14*ease;
-    c.beginPath();c.moveTo(edLaneX(s.i)+2,gJudge);c.lineTo(edLaneX(s.i)+ED.LANEW-2,gJudge);c.stroke();
-    // expanding ring
-    c.globalAlpha=0.5*ease;c.strokeStyle=col;c.lineWidth=2.5*ease+0.6;c.shadowBlur=0;
-    c.beginPath();c.arc(cx,gJudge,ED.LANEW*0.26+ED.LANEW*0.5*s.t,0,6.2832);c.stroke();
-    // bright core burst (fast fade)
-    c.globalAlpha=0.95*ease*ease;c.fillStyle="#fff";c.shadowColor=col;c.shadowBlur=18*ease;
-    c.beginPath();c.arc(cx,gJudge,ED.LANEW*0.15*ease+2,0,6.2832);c.fill();
+    if(fire&&fire.complete&&fire.naturalWidth){
+      // authentic DTXMania chip-fire burst, blended additively - punchy at impact, quick shrink+fade
+      c.globalCompositeOperation='lighter';
+      const sz=ED.LANEW*(1.25+0.55*s.t);            // starts big, expands slightly as it fades
+      c.globalAlpha=Math.min(1,ease*1.5);            // hot at t=0, gone by t=1
+      c.drawImage(fire,cx-sz/2,gJudge-sz/2,sz,sz);
+      // a second, smaller draw at full punch for extra crunch on the first frames
+      if(s.t<0.4){c.globalAlpha=(0.4-s.t)/0.4;const s2=ED.LANEW*0.8;c.drawImage(fire,cx-s2/2,gJudge-s2/2,s2,s2);}
+      c.globalCompositeOperation='source-over';
+      // crisp white flash on the judgement-line segment under the hit lane
+      c.globalAlpha=0.9*ease;c.strokeStyle="#fff";c.lineWidth=4.5;c.shadowColor=col;c.shadowBlur=16*ease;
+      c.beginPath();c.moveTo(edLaneX(s.i)+2,gJudge);c.lineTo(edLaneX(s.i)+ED.LANEW-2,gJudge);c.stroke();
+    }else{
+      // procedural fallback (no sprite yet): brighter ring + core burst
+      c.globalAlpha=0.85*ease;c.strokeStyle="#fff";c.lineWidth=4;c.shadowColor=col;c.shadowBlur=14*ease;
+      c.beginPath();c.moveTo(edLaneX(s.i)+2,gJudge);c.lineTo(edLaneX(s.i)+ED.LANEW-2,gJudge);c.stroke();
+      c.globalAlpha=0.5*ease;c.strokeStyle=col;c.lineWidth=2.5*ease+0.6;c.shadowBlur=0;
+      c.beginPath();c.arc(cx,gJudge,ED.LANEW*0.26+ED.LANEW*0.5*s.t,0,6.2832);c.stroke();
+      c.globalAlpha=0.95*ease*ease;c.fillStyle="#fff";c.shadowColor=col;c.shadowBlur=18*ease;
+      c.beginPath();c.arc(cx,gJudge,ED.LANEW*0.15*ease+2,0,6.2832);c.fill();
+    }
     c.restore();
   }
 }
@@ -1400,6 +1570,86 @@ function edStepBar(dir){
   if(edSongPlaying)edSchedStart(edModel.bars.map((_,i)=>i),bs);
   else{edScrollPx=edMaxScroll();edUpdateBarLabel();edDraw();edDrawMini();}
 }
+/* ---- cross-boundary note editing: move a note past the top/bottom of a bar into the
+   neighbouring bar, instead of clamping it at the edge. A hit charted late in bar N that
+   really belongs on the downbeat of bar N+1 can now be dragged (off the top) or nudged
+   (Alt+↑/↓) across the boundary. ---- */
+let edDragCrossGuard=false;   // set after a drag-cross; cleared when the pointer re-enters the grid
+function edLastSlotPos(bl){return Math.max(0,(Math.floor(bl*edGridN-1e-9))/edGridN);}
+/* enter a bar without wiping the current note selection (used when following a crossed note) */
+function edEnterBarKeepSel(to,landAtStart){
+  edBar=Math.max(0,Math.min(edModel.bars.length-1,to));
+  edMarquee=null;edHideCtxMenu();edPlayhead=0;
+  edScrollPx=landAtStart?0:edMaxScroll();      // downbeat sits at the bottom hit-line; tail sits at the top
+  edUpdateBarLabel();
+  if(edAudio){try{edAudio.currentTime=edBarStart(edBar);}catch(e){}}
+  edDraw();edDrawMini();updateTicker();
+}
+/* move the note currently being dragged across the boundary to bar edBar+dir. Returns true if
+   the drag should keep going (note is live in the new bar), false if it merged into an existing
+   note there (drag ends). */
+function edDragCross(dir){
+  const note=edDrag.note,from=edBar,to=from+dir;
+  if(to<0||to>=edModel.bars.length)return true;
+  const src=edModel.bars[from].notes,k=src.indexOf(note);if(k>=0)src.splice(k,1);
+  const tb=edModel.bars[to],tbl=tb.barlen[0]/tb.barlen[1];
+  const pos=dir>0?0:edLastSlotPos(tbl);        // up → next-bar downbeat; down → prev-bar last slot
+  note.n=Math.round(pos*edGridN);note.d=edGridN;note.pos=pos;
+  const merged=tb.notes.some(o=>o!==note&&o.lane===note.lane&&Math.abs(o.pos-pos)<1e-9);
+  if(!merged)tb.notes.push(note);
+  edBar=to;edScrollPx=0;edUpdateBarLabel();edDrawMini();
+  if(edClip)edComputeClipMatches();
+  return !merged;
+}
+/* Alt+↑ / Alt+↓ : nudge the selected note(s) by one grid step; at a bar edge they hop across
+   the boundary into the neighbouring bar. */
+function edNudgeSel(dir){
+  if(!edModel)return;
+  const notes=edSelNotes();if(!notes.length)return;
+  const bl=edBarlen(),step=1/edGridN,EPS=1e-9,last=edModel.bars.length-1;
+  const stay=[],cross=[];
+  notes.forEach(nt=>{const np=nt.pos+dir*step;
+    if(np>bl-EPS&&edBar<last)cross.push({nt,to:edBar+1});
+    else if(np<-EPS&&edBar>0)cross.push({nt,to:edBar-1});
+    else stay.push({nt,p:Math.max(0,Math.min(edLastSlotPos(bl),np))});});
+  if(!stay.length&&!cross.length)return;
+  edSnapshot();
+  const cur=edBarObj();
+  stay.forEach(({nt,p})=>{nt.n=Math.round(p*edGridN);nt.d=edGridN;nt.pos=p;});
+  cross.forEach(({nt,to})=>{
+    const i=cur.notes.indexOf(nt);if(i>=0)cur.notes.splice(i,1);
+    const tb=edModel.bars[to],tbl=tb.barlen[0]/tb.barlen[1];
+    const p=to>edBar?0:edLastSlotPos(tbl);      // downbeat of next / last slot of prev
+    nt.n=Math.round(p*edGridN);nt.d=edGridN;nt.pos=p;
+    if(!tb.notes.some(o=>o.lane===nt.lane&&Math.abs(o.pos-p)<EPS))tb.notes.push(nt);});
+  edDirty=true;edReviewDirty=true;if(edClip)edComputeClipMatches();
+  if(cross.length===1&&stay.length===0){                 // follow a single note across
+    const {nt,to}=cross[0];edSel=new Set([edNoteKey(nt)]);
+    edEnterBarKeepSel(to,to>edBar);
+  }else{
+    edSel=new Set([...stay,...cross.filter(c=>c.to===edBar)].map(o=>edNoteKey(o.nt)));
+    edDraw();edDrawMini();updateTicker();
+  }
+}
+/* current accent colour (so the bar-number readout matches the user's theme) */
+function edAccent(){try{const v=getComputedStyle(document.documentElement).getPropertyValue('--acc2')||getComputedStyle(document.documentElement).getPropertyValue('--acc');return (v||'').trim()||'#4fd1c5';}catch(e){return '#4fd1c5';}}
+/* which bar sits at the judgement line for a given absolute time (whole-notes) - playback readout */
+function edBarAtAbs(playAbs){let t=0;for(let i=0;i<edModel.bars.length;i++){const b=edModel.bars[i].barlen,bl=b[0]/b[1];if(playAbs<t+bl-1e-9)return i;t+=bl;}return edModel.bars.length-1;}
+/* current-bar number in BOTH side gutters at the downbeat - big and obvious. On the left it sits
+   just left of the beat "1" label; on the right it mirrors into the reserved right gutter (clear
+   of the scrollbar). Number only, in the accent colour. */
+function edDrawBarBadge(c,barIdx,beat1Y){
+  if(!edModel)return;
+  const y=(beat1Y!=null?beat1Y:ED.HEADER+ED.gridH)-3,num=String(barIdx+1);   // align to the beat-"1" baseline
+  const fs=num.length>=3?14:16;                // subtle: only a bit larger than the 10px beat labels
+  c.save();
+  c.globalAlpha=0.9;
+  c.textBaseline='alphabetic';c.font='700 '+fs+'px system-ui';c.fillStyle=edAccent();
+  c.textAlign='right';c.fillText(num,edLaneStart()-13,y);                    // left gutter, right next to beat "1"
+  const rGutMid=edBlockRight()+Math.max(10,(ED.RGUT-13)/2);                  // right gutter, clear of the 9px scrollbar
+  c.textAlign='center';c.fillText(num,rGutMid,y);
+  c.restore();
+}
 /* ---- scrub: drag the playhead in the left gutter; audio follows in BOTH directions.
    True reverse playback isn't possible with <audio>, so each move seeks to the pointer and
    plays a short burst AT that position - so dragging up plays later audio, dragging down
@@ -1502,6 +1752,9 @@ window.addEventListener('keydown',e=>{
   if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&!e.altKey&&(e.key==='v'||e.key==='V')){
     e.preventDefault();if(edSelClip)edPasteSel();else edPasteCurrent();return;  // selection paste > bar paste
   }
+  if(e.altKey&&!e.ctrlKey&&!e.metaKey&&(e.key==='ArrowUp'||e.key==='ArrowDown')){
+    if(edSelActive()){e.preventDefault();edNudgeSel(e.key==='ArrowUp'?1:-1);}return;   // Alt+↑/↓ = nudge note across bars
+  }
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   if(e.key==='Delete'||e.key==='Backspace'){if(edSelActive()){e.preventDefault();edDeleteSel();}return;}
   if(e.key==='Escape'){if(edSelActive()||!$('#edCtxMenu').classList.contains('hidden')){edClearSel();edHideCtxMenu();}return;}
@@ -1552,16 +1805,28 @@ edCanvas.addEventListener('mousedown',e=>{
   edHideCtxMenu();
   const lane=edXLane(x);if(lane<0){edDraw();return;}
   const hit=edFind(x,y);
-  if(hit){edSnapshot();edDrag={note:hit};}
+  if(hit){edSnapshot();edDrag={note:hit};edDragCrossGuard=false;}
   else{const sp=edSnap(y),ch=edLanes()[lane];
     if(!edBarObj().notes.some(nt=>nt.lane===ch&&Math.abs(nt.pos-sp.pos)<1e-9)){edSnapshot();edBarObj().notes.push({lane:ch,n:sp.n,d:sp.d,pos:sp.pos,slot:null});edDirty=true;}}
   edDraw();edDrawMini();updateTicker();});
 edCanvas.addEventListener('mousemove',e=>{
   if(edScrubbing){edScrubMove(edRel(e).y);return;}
   if(edMarquee){const {x,y}=edRel(e);edMarquee.x1=x;edMarquee.y1=y;edDraw();return;}
-  if(!edDrag||!edModel)return;const {x,y}=edRel(e);const lane=edXLane(x);const sp=edSnap(y);
-  if(lane>=0)edDrag.note.lane=edLanes()[lane];edDrag.note.n=sp.n;edDrag.note.d=sp.d;edDrag.note.pos=sp.pos;edDirty=true;edDraw();});
-window.addEventListener('mouseup',()=>{if(edScrubbing){edScrubEnd();}if(edMarquee){edMarqueeFinish();}if(edDrag){edDrag=null;edDraw();edDrawMini();updateTicker();}});
+  if(!edDrag||!edModel)return;const {x,y}=edRel(e);
+  const lane=edXLane(x);if(lane>=0)edDrag.note.lane=edLanes()[lane];
+  const gTop=ED.HEADER,gBot=ED.HEADER+ED.gridH,beat1=edBaseY(),endY=beat1-edBH();
+  // auto-scroll to reveal more of a zoomed-in bar as the pointer nears an edge
+  if(edMaxScroll()>0.5){
+    if(y<gTop+14)edScrollPx=Math.min(edMaxScroll(),edScrollPx+18);
+    else if(y>gBot-14)edScrollPx=Math.max(0,edScrollPx-18);
+  }
+  // cross into a neighbour once the pointer passes the current bar's boundary (into a peek band)
+  if(y>=endY-0.5&&y<=beat1+0.5)edDragCrossGuard=false;    // back inside the focus bar: re-arm
+  if(!edDragCrossGuard&&y<endY&&edBar<edModel.bars.length-1){edDragCrossGuard=true;if(!edDragCross(1))edDrag=null;}
+  else if(!edDragCrossGuard&&y>beat1&&edBar>0){edDragCrossGuard=true;if(!edDragCross(-1))edDrag=null;}
+  else if(edDrag&&y>=gTop&&y<=gBot){const sp=edSnap(y);edDrag.note.n=sp.n;edDrag.note.d=sp.d;edDrag.note.pos=sp.pos;}
+  edDirty=true;edDraw();});
+window.addEventListener('mouseup',()=>{if(edScrubbing){edScrubEnd();}if(edMarquee){edMarqueeFinish();}if(edDrag){edDrag=null;edDragCrossGuard=false;edDraw();edDrawMini();updateTicker();}});
 edCanvas.addEventListener('contextmenu',e=>{
   e.preventDefault();if(!edModel)return;const {x,y}=edRel(e);const hit=edFind(x,y);
   const onSel=hit&&edSel.has(edNoteKey(hit));

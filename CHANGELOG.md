@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.6.2
+
+Editor craft: a smoother highway, clearer bar tracking, authentic foot technique on
+falling pedals, and a modernized look across the whole app.
+
+- **Peek scrolling.** The editor now shows a slice of the previous and next bars above
+  and below the current one, with a faint grid so nothing reads blank - and playback
+  scrolls smoothly, then snaps the active bar to center, instead of jumping.
+- **Bar-number readout.** The current bar number rides next to its downbeat "1" (in your
+  accent color) in both gutters, and the top boundary is labelled as the *next* bar's "1"
+  and number - so you always know where you are.
+- **Edit across bar lines.** A note detected slightly early or late can now be dragged - or
+  nudged with Alt + ↑ / ↓ - across a bar boundary onto the neighbouring bar's downbeat.
+- **Authentic foot technique on the highway.** During playback the falling kick and
+  left-pedal chips carry the right-foot / left-foot silhouettes from DTXMania, so the
+  pedal work reads exactly like the game.
+- **Crunchier hit splash.** Notes burst with the game's own chip-fire art as they cross the
+  judgement line, so hits land with impact.
+- **Modernized interface.** Dimensional, glossy note chips; a glowing playhead with a
+  rounded scrubber handle; a 3D round play button; and depth, gradients and glossy
+  buttons across both light and dark themes.
+- **Exit button** to cleanly close the app, plus small label polish (SPEED / SCROLL
+  transport controls, "Drums in the Backing Track").
+
 ## v1.6.1
 
 Play-feel and real-sound polish, plus the ability to open existing charts.
