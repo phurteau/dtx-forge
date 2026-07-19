@@ -104,6 +104,8 @@
   .stop{flex:1;padding:16px 8px;font-size:15px;font-weight:700;background:#c0392b;color:#fff;border:none;border-radius:10px;cursor:pointer;letter-spacing:.5px}
   .stop:disabled{opacity:.4;cursor:not-allowed}
   .stop:hover:not(:disabled){background:#e04434}
+  .importbtn{width:100%;margin-top:10px;padding:12px;font-size:14px;font-weight:600;background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:10px;cursor:pointer;flex:0 0 auto}
+  .importbtn:hover{border-color:var(--acc2);color:var(--acc2)}
   header .ver{font-size:11px;color:var(--dim);letter-spacing:1px;align-self:flex-start;margin:3px 0 0 -4px}
   header .verstat{font-size:10px;font-weight:700;letter-spacing:.4px;padding:2px 8px;border-radius:10px;margin:2px 0 0 7px;align-self:flex-start;white-space:nowrap}
   header .verstat.latest{background:color-mix(in srgb,var(--acc2) 16%,transparent);color:var(--acc2);border:1px solid color-mix(in srgb,var(--acc2) 45%,transparent)}
@@ -255,7 +257,7 @@
   <button class="updx" id="updX" type="button" title="Dismiss">✕</button>
 </div>
 <header>
-  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.6.0</span><span class="verstat hidden" id="verStat"></span>
+  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.6.1</span><span class="verstat hidden" id="verStat"></span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
@@ -333,6 +335,8 @@
       <button class="go" id="genBtn">Generate</button>
       <button class="stop" id="stopBtn" disabled>Stop</button>
     </div>
+    <button class="importbtn" id="importBtn" type="button" title="Open an existing DTXMania chart in the editor. A bare .dtx edits silently; a .zip (or folder archive) with its audio plays back with sound.">📂 Edit an existing chart (.dtx or .zip)</button>
+    <input type="file" id="importFile" accept=".dtx,.zip" class="hidden">
   </section>
   <div class="wdiv" id="wdiv0"></div>
 
@@ -647,6 +651,24 @@ $('#genBtn').onclick=async()=>{
   catch(e){logline('ERROR: '+e);$('#genBtn').disabled=false;$('#stopBtn').disabled=true;$('#outh').textContent='Failed';}
 };
 function logline(t){const d=document.createElement('div');d.className='m';d.textContent='› '+t;$('#log').appendChild(d);$('#log').scrollTop=1e9;}
+/* Import an existing chart (.dtx or .zip) straight into the editor - reuses poll()'s done
+   handling since the imported job is created already-complete on the server. */
+async function importChart(file){
+  if(!file)return;
+  $('#genBtn').disabled=true;$('#stopBtn').disabled=true;stopped=false;
+  $('#done').classList.add('hidden');edModel=null;edModelJob=null;edShowPlaceholder();pkgState='';renderSteps([]);
+  $('#outh').innerHTML='<span class="spin"></span>Importing…';$('#log').innerHTML='';lastN=0;
+  logline('Importing '+file.name+' …');
+  const fd=new FormData();fd.append('file',file);
+  try{
+    const r=await fetch('/api/import',{method:'POST',body:fd});const j=await r.json();
+    if(j.error)throw new Error(j.error);
+    curJob=j.job_id;poll(j.job_id);
+  }catch(e){logline('Import failed: '+e);$('#genBtn').disabled=false;$('#outh').textContent='✗ Failed';alert('Could not import that chart:\n'+e);}
+}
+(function(){const b=$('#importBtn'),inp=$('#importFile');if(!b||!inp)return;
+  b.onclick=()=>inp.click();
+  inp.onchange=()=>{const f=inp.files&&inp.files[0];inp.value='';if(f)importChart(f);};})();
 let lastN=0;
 async function poll(id){
   if(stopped)return;
@@ -669,7 +691,9 @@ async function poll(id){
       const isAudio=s.source==='audio';
       const chg=[]; if(s.notes_moved)chg.push(s.notes_moved+' repositioned'); if(s.notes_dropped)chg.push(s.notes_dropped+' removed'); if(s.notes_added)chg.push(s.notes_added+' added');
       let fbadge;
-      if(isAudio){
+      if(s.source==='import'){
+        fbadge='<span class="badge info" title="Opened an existing chart for editing. Edit and re-download when done.">📂 Imported chart</span>';
+      }else if(isAudio){
         // audio-only: no faithfulness % - there is no reference chart to compare against
         fbadge='<span class="badge info" title="Drums were detected directly from the audio (beta). No faithfulness % applies - there is no reference chart to compare against.">🎧 Transcribed from audio (beta)</span>';
       }else{
@@ -891,6 +915,17 @@ function edDrawScroll(playAbs){
   edDrawLanesBg(c,n);
   c.save();c.beginPath();c.rect(0,gTop,W,ED.gridH);c.clip();
   const li={};edLanes().forEach((l,i)=>li[l]=i);
+  // notes crossing the judgement line RIGHT NOW -> a hit splash so playback reads as a hit,
+  // not a miss. Scanned independently of the falling-note cull so the flash lives its full
+  // ~160ms even after the note has dropped past the pads. Age is in whole-notes.
+  const splashW=0.16*(edModel.bpm||120)/240;
+  const splashes=[];
+  {let cc=0;for(let b=0;b<edModel.bars.length;b++){
+    const bl=edModel.bars[b].barlen[0]/edModel.bars[b].barlen[1],bs=cc;cc+=bl;
+    if(bs>playAbs+0.01)break;
+    if(cc<playAbs-splashW-bl-0.01)continue;
+    for(const nt of edModel.bars[b].notes){const age=playAbs-(bs+nt.pos);
+      if(age>=-1e-4&&age<=splashW){const i=li[nt.lane];if(i!=null)splashes.push({i,lane:nt.lane,t:Math.max(0,age)/splashW});}}}}
   let cum=0;
   for(let b=0;b<edModel.bars.length;b++){
     const bl=edModel.bars[b].barlen[0]/edModel.bars[b].barlen[1],bStart=cum;cum+=bl;
@@ -916,6 +951,21 @@ function edDrawScroll(playAbs){
   c.strokeStyle="#ffe27a";c.lineWidth=3;
   c.beginPath();c.moveTo(edLaneStart(),gJudge);c.lineTo(edBlockRight(),gJudge);c.stroke();
   c.restore();
+  // hit splashes on the judgement line (drawn last so the glow blooms over everything)
+  for(const s of splashes){
+    const cx=edLaneX(s.i)+ED.LANEW/2,col=LANE_COLORS[s.lane]||"#fff",ease=1-s.t;
+    c.save();
+    // brighten the judgement-line segment under the hit lane
+    c.globalAlpha=0.85*ease;c.strokeStyle="#fff";c.lineWidth=4;c.shadowColor=col;c.shadowBlur=14*ease;
+    c.beginPath();c.moveTo(edLaneX(s.i)+2,gJudge);c.lineTo(edLaneX(s.i)+ED.LANEW-2,gJudge);c.stroke();
+    // expanding ring
+    c.globalAlpha=0.5*ease;c.strokeStyle=col;c.lineWidth=2.5*ease+0.6;c.shadowBlur=0;
+    c.beginPath();c.arc(cx,gJudge,ED.LANEW*0.26+ED.LANEW*0.5*s.t,0,6.2832);c.stroke();
+    // bright core burst (fast fade)
+    c.globalAlpha=0.95*ease*ease;c.fillStyle="#fff";c.shadowColor=col;c.shadowBlur=18*ease;
+    c.beginPath();c.arc(cx,gJudge,ED.LANEW*0.15*ease+2,0,6.2832);c.fill();
+    c.restore();
+  }
 }
 function edResize(){
   if(!edCanvas)return;
@@ -1219,17 +1269,23 @@ const RATES=[0.25,0.5,0.75,1,1.25,1.5,2];let edRateI=3,edAudio=null,edRAF=null;
 let edPlayhead=0,edScrubbing=false,edSongPlaying=false,edSongRAF=null,edSongPlayFrac=-1,edPendingPlayhead=null;
 /* ---- drum-chip preview: play the charted kit one-shots as the playhead crosses notes ---- */
 const LANE_LABEL={'13':'bd','12':'sd','11':'hh','18':'ho','1B':'lp','14':'ht','15':'lt','17':'ft','16':'cy','1A':'cy','19':'rd'};
-let edAC=null,edKit={},edKitLoading=false,edSched=[],edSchedIdx=0;
+let edAC=null,edKit={},edKitJob=null,edKitLoading=false,edSched=[],edSchedIdx=0;
 function edChipOn(){const c=$('#edChip');return !c||c.checked;}
 function edEnsureAC(){if(!edAC){try{edAC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(edAC&&edAC.state==='suspended')edAC.resume();return edAC;}
 async function edLoadKit(){
-  if(edKitLoading||Object.keys(edKit).length)return;edKitLoading=true;
+  if(edKitLoading)return;
+  const forJob=curJob;
+  if(edKitJob===forJob&&Object.keys(edKit).length)return;   // already loaded for this chart
+  edKitLoading=true;edKit={};
   const ac=edEnsureAC();if(!ac){edKitLoading=false;return;}
+  /* per-job kit: real per-song sliced samples (generated) or the imported chart's own kit,
+     with a server-side fallback to the built-in synth sample per lane. */
+  const base=forJob?('/api/kit/'+encodeURIComponent(forJob)+'/'):'/api/kit/';
   const labels=['bd','sd','hh','ho','ht','lt','ft','cy','rd','lp'];
   await Promise.all(labels.map(async lab=>{
-    try{const r=await fetch('/api/kit/'+lab+'.wav');const ab=await r.arrayBuffer();edKit[lab]=await ac.decodeAudioData(ab);}catch(e){}
+    try{const r=await fetch(base+lab+'.wav');const ab=await r.arrayBuffer();edKit[lab]=await ac.decodeAudioData(ab);}catch(e){}
   }));
-  edKitLoading=false;
+  edKitJob=forJob;edKitLoading=false;
 }
 function edChip(lane){
   if(!edChipOn())return;const lab=LANE_LABEL[lane];if(!lab)return;

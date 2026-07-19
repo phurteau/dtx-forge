@@ -135,6 +135,25 @@ def kit_sample(name: str):
     return FileResponse(p, media_type="audio/wav")
 
 
+@app.get("/api/kit/{job_id}/{name}")
+def kit_sample_job(job_id: str, name: str):
+    """Serve the drum one-shot for a specific job - the real per-song sliced samples
+    (generated charts) or an imported chart's own bundled kit - falling back to the built-in
+    synth sample for any lane without a custom one. This is why the editor's Drum Sounds
+    preview matches the packaged chart instead of always playing the generic synth kit."""
+    if "/" in name or "\\" in name or ".." in name or not name.lower().endswith(".wav"):
+        return JSONResponse({"error": "bad name"}, status_code=400)
+    job = _jobs.get(job_id)
+    if job and job.get("result"):
+        kd = (job["result"].get("repack") or {}).get("kit_dir")
+        if kd and os.path.isfile(os.path.join(kd, name)):
+            return FileResponse(os.path.join(kd, name), media_type="audio/wav")
+    p = os.path.join(ASSETS, "drumkit", name)
+    if not os.path.isfile(p):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return FileResponse(p, media_type="audio/wav")
+
+
 @app.get("/api/search")
 def api_search(q: str):
     try:
@@ -243,6 +262,176 @@ async def api_generate(
     _jobs[job_id] = {"status": "running", "reporter": Reporter(), "result": None, "error": None}
     threading.Thread(target=_run_job, args=(job_id, opts, upload_paths), daemon=True).start()
     return {"job_id": job_id}
+
+
+def _import_custom_kit(wd, src_folder, meta):
+    """If an imported chart bundles its own drum one-shots, build a job-local kit dir that
+    overrides the built-in synth samples lane-by-lane, so the editor preview AND the
+    re-packaged chart use the source's real drum sounds. Falls back to the built-in kit for
+    any lane without a usable source sample. Returns (kit_dir, kit_files, sampled_lanes)."""
+    from dtxforge import dtx, drumkit, audio as _audio
+    builtin = os.path.join(ASSETS, "drumkit")
+    kit_files = drumkit.ensure_kit(builtin)             # {label: 'label.wav'}
+    wav_defs = meta.get("wav_defs") or {}
+    lane_slot = meta.get("lane_slot") or {}
+    if not src_folder or not wav_defs or not lane_slot:
+        return builtin, kit_files, []
+    disk = {}                                           # case-insensitive filename -> path
+    for root, _d, files in os.walk(src_folder):
+        for fn in files:
+            disk.setdefault(fn.lower(), os.path.join(root, fn))
+    job_kit = os.path.join(wd, "kit")
+    os.makedirs(job_kit, exist_ok=True)
+    for lab, fn in kit_files.items():                   # seed with the built-in kit
+        try:
+            shutil.copy2(os.path.join(builtin, fn), os.path.join(job_kit, fn))
+        except OSError:
+            pass
+    sampled = []
+    for lane, slot in lane_slot.items():                # override lanes that ship a real sample
+        lab = dtx.LANE_LABEL.get(lane)
+        src_name = wav_defs.get(str(slot).upper())
+        if not lab or not src_name:
+            continue
+        src = disk.get(os.path.basename(src_name).lower())
+        if not src or not os.path.isfile(src):
+            continue
+        dst = os.path.join(job_kit, lab + ".wav")
+        try:
+            if src.lower().endswith(".wav"):
+                shutil.copy2(src, dst)
+            else:
+                _audio.to_wav(src, dst)
+            sampled.append(lane)
+        except Exception:
+            try:
+                _audio.to_wav(src, dst)
+                sampled.append(lane)
+            except Exception:
+                pass
+    if not sampled:
+        return builtin, kit_files, []
+    return job_kit, kit_files, sorted(set(sampled))
+
+
+def _build_import_result(wd, dtx_text, bgm_src=None, image_src=None, src_folder=None):
+    """Turn a parsed .dtx into a _jobs result dict (chart + repack + stats) so the editor
+    endpoints (/api/chart, /api/save, /api/package, /api/audio) work on an imported chart
+    exactly as on a generated one. bgm_src: an audio file to play (zip import), or None for
+    a silent (notes-only) import. src_folder: the extracted chart folder (zip import) whose
+    bundled drum one-shots should override the built-in kit; None for a bare .dtx."""
+    import wave
+    from dtxforge import dtx, audio as _audio
+    events, barlens, bpm, meta = dtx.parse_dtx(dtx_text)
+    if not any(events):
+        raise ValueError("No drum notes found - only standard DTX drum channels (11–1C) are read.")
+    kit_dir, kit_files, sampled_lanes = _import_custom_kit(wd, src_folder, meta)
+    # BGM: real audio from a zip, else a second of silence so the track object exists
+    has_audio = False
+    bgm_file = os.path.join(wd, "bgm.ogg")
+    if bgm_src and os.path.exists(bgm_src):
+        try:
+            _audio.to_ogg(bgm_src, bgm_file); has_audio = True
+        except Exception:
+            has_audio = False
+    if not has_audio:
+        silent = os.path.join(wd, "silence.wav")
+        with wave.open(silent, "w") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(44100)
+            w.writeframes(b"\x00\x00" * 44100)
+        try:
+            _audio.to_ogg(silent, bgm_file)
+        except Exception:
+            bgm_file = silent
+    meta["bgm"] = os.path.basename(bgm_file)
+    if not image_src and meta.get("preimage"):
+        meta.pop("preimage", None)                      # referenced a jacket we don't have
+    tier_key = dtx.tier_from_score((meta.get("dlevel") or 50) / 100.0)
+    dtx_name, tier_label, tier_slot = dtx.tier_info(tier_key)
+    title = meta.get("title") or "Imported chart"
+    artist = meta.get("artist") or ""
+    song_name = (f"{pipeline._slug(artist)} - {pipeline._slug(title)}") if artist else pipeline._slug(title)
+    repack = dict(out_dir=os.path.join(wd, "dist"), song_name=song_name,
+                  bgm_file=bgm_file, kit_dir=kit_dir, kit_files=kit_files,
+                  dtx_name=dtx_name, set_label=tier_label, set_slot=tier_slot,
+                  image_file=image_src)
+    chart = dict(events=events, barlens=barlens, bpm=float(meta["bpm"]), meta=meta,
+                 has_audio=has_audio, review=dict(onsets=[]))
+    stats = dict(measures=len(events), chips=dtx.count_chips(events), bpm=meta["bpm"],
+                 drum_mode=("keep" if has_audio else "none"), removed_drums=False,
+                 has_audio=has_audio, audio_source="import",
+                 sampled_lanes=sampled_lanes, sampled_count=len(sampled_lanes),
+                 playability="imported", play_score=100, play_issues=0,
+                 faithfulness=100, notes_moved=0, notes_dropped=0, notes_added=0,
+                 dlevel=(meta.get("dlevel") or 50) / 100.0, dlevel_auto=False,
+                 dlevel_tier=tier_key, dtx_file=dtx_name, tier_manual=True,
+                 source="import", title=title, artist=artist)
+    return dict(folder=None, zip=None, stats=stats,
+                playability={"verdict": "imported", "score": 100, "issue_count": 0},
+                faithfulness={"percent": 100, "moved": 0, "dropped": 0, "added": 0},
+                chart=chart, repack=repack)
+
+
+@app.post("/api/import")
+async def api_import(file: UploadFile = File(...)):
+    """Import an existing chart for editing: a bare .dtx (notes only, silent playback) or a
+    .zip / DTXMania folder archive (.dtx + its bgm + jacket -> full playback)."""
+    job_id = uuid.uuid4().hex[:12]
+    wd = os.path.join(JOBS, job_id)
+    os.makedirs(wd, exist_ok=True)
+    name = file.filename or "chart.dtx"
+    ext = os.path.splitext(name)[1].lower()
+    raw = os.path.join(wd, "upload" + (ext or ".dtx"))
+    with open(raw, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    try:
+        if ext == ".zip":
+            import zipfile
+            ex = os.path.join(wd, "src")
+            os.makedirs(ex, exist_ok=True)
+            with zipfile.ZipFile(raw) as z:
+                z.extractall(ex)
+            dtx_path = None
+            for root, _dirs, files in os.walk(ex):
+                for fn in files:
+                    if fn.lower().endswith(".dtx"):
+                        p = os.path.join(root, fn)
+                        if dtx_path is None or os.path.getsize(p) > os.path.getsize(dtx_path):
+                            dtx_path = p
+            if not dtx_path:
+                return JSONResponse({"error": "No .dtx file found inside the zip."}, status_code=400)
+            with open(dtx_path, encoding="shift_jis", errors="replace") as fh:
+                dtx_text = fh.read()
+            folder = os.path.dirname(dtx_path)
+            from dtxforge import dtx as _dtx
+            _e, _b, _bpm, meta0 = _dtx.parse_dtx(dtx_text)
+            kit = {"bd.wav", "sd.wav", "hh.wav", "ho.wav", "ht.wav", "lt.wav",
+                   "ft.wav", "cy.wav", "rd.wav", "rb.wav", "lp.wav"}
+            # BGM: prefer the file named by #WAV01, else any audio that isn't a kit one-shot
+            bgm_src = None
+            if meta0.get("bgm"):
+                cand = os.path.join(folder, meta0["bgm"])
+                if os.path.exists(cand):
+                    bgm_src = cand
+            if not bgm_src:
+                for fn in sorted(os.listdir(folder)):
+                    if fn.lower().endswith((".ogg", ".mp3", ".wav", ".m4a")) and fn.lower() not in kit:
+                        bgm_src = os.path.join(folder, fn); break
+            image_src = None
+            if meta0.get("preimage"):
+                cand = os.path.join(folder, meta0["preimage"])
+                if os.path.exists(cand):
+                    dst = os.path.join(wd, os.path.basename(meta0["preimage"]))
+                    shutil.copyfile(cand, dst); image_src = dst
+            result = _build_import_result(wd, dtx_text, bgm_src=bgm_src, image_src=image_src, src_folder=folder)
+        else:
+            with open(raw, encoding="shift_jis", errors="replace") as fh:
+                dtx_text = fh.read()
+            result = _build_import_result(wd, dtx_text)
+        _jobs[job_id] = {"status": "done", "reporter": Reporter(), "result": result, "error": None}
+        return {"job_id": job_id, "editable": True}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 @app.get("/api/job/{job_id}")

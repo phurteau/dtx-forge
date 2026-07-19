@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.6.1
+
+Play-feel and real-sound polish, plus the ability to open existing charts.
+
+- **Real drum samples in the editor.** The Drum Sounds preview now plays each chart's own
+  kit - the per-song one-shots sliced from your track (generated charts) or an imported
+  chart's bundled samples - instead of the generic synth kit. Lanes without a real sample
+  still fall back to the built-in kit.
+- **Open an existing chart.** Import a `.dtx` (notes only) or a chart `.zip`/folder (with its
+  backing track and jacket) straight into the editor, then edit and re-download. Imported
+  charts keep their own drum sounds through both the preview and re-packaging.
+- **Hit splash at the judgement line.** Notes flash a colored burst as they cross the line
+  during playback, so hits read clearly instead of feeling like misses.
+
 ## v1.6.0
 
 A ground-up chart-editor overhaul: a standard transport, a self-review layer, and fast bulk

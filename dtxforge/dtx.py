@@ -33,6 +33,9 @@ LANE_DEFAULT_SLOT = {"13": "02", "12": "03", "11": "04", "18": "05", "14": "06",
                      "15": "07", "17": "08", "16": "09", "1A": "09", "19": "0A", "1B": "0C"}
 # Left→right column order for the editor (DTXMania-style drum lane layout).
 EDITOR_LANES = ["1A", "11", "18", "1B", "12", "14", "13", "15", "17", "16", "19"]
+# Kit one-shot label per lane (lane -> 'bd'/'sd'/…), via the lane's default WAV slot. Used to
+# override the built-in synth sample with a real per-song / imported one-shot in the editor.
+LANE_LABEL = {lane: dict(WAV_SLOTS)[slot] for lane, slot in LANE_DEFAULT_SLOT.items()}
 
 
 def chart_to_json(events, barlens, bpm, meta):
@@ -182,6 +185,103 @@ def emit_dtx(events, barlens, meta):
 
 def count_chips(events):
     return sum(len(sm) for ch in events for sm in ch.values())
+
+
+# DTX drum channels this editor understands. The CHANNEL identifies the lane (the DTX spec:
+# 11=hi-hat, 12=snare, ...), independent of which WAV slot a note references, so import keys
+# off the channel and re-assigns this app's own default slot per lane. 1C (2nd bass pedal)
+# has no dedicated editor lane, so its notes fold into the kick.
+_IMPORT_LANE = {ch: ch for ch in LANE_NAME}      # 11..19, 1A, 1B -> themselves
+_IMPORT_LANE["1C"] = "13"                          # left bass drum -> kick
+
+
+def parse_dtx(text):
+    """Parse a DTXManiaNX .dtx into (events, barlens, bpm, meta) - the inverse of emit_dtx.
+
+    Only drum channels are read (guitar/bass/BGA/etc. are ignored). Each note is keyed by its
+    channel to a lane and assigned this app's default WAV slot for that lane, so an imported
+    chart edits and re-packages through the built-in kit exactly like a generated one. meta
+    carries title/artist/bpm/dlevel/comment plus the referenced bgm filename and preimage
+    (for the caller to wire audio + jacket)."""
+    import re
+    from collections import Counter
+    title = artist = comment = preimage = bgm = ""
+    bpm = None
+    dlevel = 50
+    wav_defs = {}      # slot -> referenced wav filename (from #WAVxx headers)
+    lane_src = {}      # lane -> Counter of the source WAV slots its notes referenced
+    bar_notes = {}     # bar -> {lane -> {Fraction pos: slot}}
+    bar_len = {}       # bar -> Fraction
+    max_bar = 0
+
+    body_re = re.compile(r"^#(\d{3})([0-9A-Za-z]{2}):?\s*(\S+)")
+    head_re = re.compile(r"^#([A-Za-z][A-Za-z0-9]*):?\s*(.*)$")
+
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line or line.startswith(";") or not line.startswith("#"):
+            continue
+        mb = body_re.match(line)
+        if mb:
+            bar = int(mb.group(1)); ch = mb.group(2).upper(); data = mb.group(3)
+            max_bar = max(max_bar, bar)
+            if ch == "01":
+                continue                                   # BGM auto-play row
+            if ch == "02":                                 # bar-length change
+                try:
+                    bar_len[bar] = Fraction(data)
+                except (ValueError, ZeroDivisionError):
+                    pass
+                continue
+            lane = _IMPORT_LANE.get(ch)
+            if not lane:
+                continue                                   # non-drum / unsupported channel
+            cells = re.sub(r"[^0-9A-Za-z]", "", data)
+            n = len(cells) // 2
+            if n <= 0:
+                continue
+            slot = LANE_DEFAULT_SLOT.get(lane, "04")
+            cellmap = bar_notes.setdefault(bar, {}).setdefault(lane, {})
+            srccnt = lane_src.setdefault(lane, Counter())
+            for k in range(n):
+                tok = cells[2 * k:2 * k + 2]
+                if tok != "00":
+                    cellmap[Fraction(k, n)] = slot
+                    srccnt[tok.upper()] += 1
+            continue
+        mh = head_re.match(line)
+        if mh:
+            key = mh.group(1).upper(); val = mh.group(2).strip()
+            if key == "TITLE": title = val
+            elif key == "ARTIST": artist = val
+            elif key == "COMMENT": comment = val
+            elif key == "PREIMAGE": preimage = val
+            elif key == "BPM" and bpm is None:             # base tempo only (ignore #BPMxx)
+                try: bpm = float(val)
+                except ValueError: pass
+            elif key == "DLEVEL":
+                m = re.search(r"\d+", val)
+                if m: dlevel = int(m.group(0))
+            elif key.startswith("WAV") and len(key) == 5:
+                slot2 = key[3:5].upper()
+                wav_defs[slot2] = val
+                if slot2 == "01":
+                    bgm = val
+
+    n_bars = max_bar + 1
+    events = [dict() for _ in range(n_bars)]
+    barlens = [Fraction(1)] * n_bars
+    for bar in range(n_bars):
+        barlens[bar] = bar_len.get(bar, Fraction(1))
+        for lane, cellmap in bar_notes.get(bar, {}).items():
+            for pos, slot in cellmap.items():
+                events[bar].setdefault(lane, {})[pos] = slot
+
+    lane_slot = {lane: cnt.most_common(1)[0][0] for lane, cnt in lane_src.items() if cnt}
+    meta = dict(title=title, artist=artist, comment=comment, dlevel=dlevel,
+                bpm=round(float(bpm), 3) if bpm else 120.0, bgm=bgm, preimage=preimage,
+                wav_defs=wav_defs, lane_slot=lane_slot)
+    return events, barlens, meta["bpm"], meta
 
 
 def package(out_dir, song_name, dtx_text, bgm_src, kit_dir, kit_files,
