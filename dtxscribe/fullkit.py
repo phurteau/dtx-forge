@@ -10,7 +10,7 @@ Engines:
                 cymbals stem). ~160 MB, loads via the demucs library we already ship.
   * 'larsnet' - 5 stems (kick/snare/toms/hihat/cymbals). ~562 MB, vendored U-Nets.
 
-Model weights are downloaded on first use to %LOCALAPPDATA%/DTXForge/models - they
+Model weights are downloaded on first use to %LOCALAPPDATA%/DTXScribe/models - they
 are NOT bundled or redistributed. Licenses: inagoy DrumSep (unstated; personal use),
 LarsNet (CC BY-NC 4.0).
 """
@@ -22,7 +22,7 @@ from . import dtx, transcribe as T
 # ----------------------------------------------------------------------------- paths
 def models_dir():
     base = os.environ.get("LOCALAPPDATA") or os.path.join(os.path.expanduser("~"), ".cache")
-    d = os.path.join(base, "DTXForge", "models")
+    d = os.path.join(base, "DTXScribe", "models")
     os.makedirs(d, exist_ok=True)
     return d
 
@@ -32,7 +32,7 @@ def _download(url, dst, progress=None, label="model"):
     tmp = dst + ".part"
     if progress:
         progress(f"Downloading {label} (first use only)...")
-    req = urllib.request.Request(url, headers={"User-Agent": "DTXForge"})
+    req = urllib.request.Request(url, headers={"User-Agent": "DTXScribe"})
     with urllib.request.urlopen(req) as r, open(tmp, "wb") as f:
         total = int(r.headers.get("Content-Length", 0))
         got = 0; next_mark = 20 * 1024 * 1024

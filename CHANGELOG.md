@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.7.0
+
+**DTX Forge is now DTXScribe.** The app has been renamed to better reflect what it does -
+transcribe drums into DTXMania charts. Same tool, same workflow, new name.
+
+- **Rebrand to DTXScribe.** New name throughout the app, window title, and the standalone
+  build (`DTXScribe.exe`).
+- **Your downloads carry over.** On first launch the app automatically moves your existing
+  data folder (`%LOCALAPPDATA%\DTXForge` → `%LOCALAPPDATA%\DTXScribe`), so the ~1 GB of
+  drum-separation model weights you already downloaded are reused instead of re-fetched.
+- **Seamless update.** Updating from an older build through the in-app updater keeps working
+  - GitHub redirects the old release URLs to the renamed repository.
+
 ## v1.6.2
 
 Editor craft: a smoother highway, clearer bar tracking, authentic foot technique on

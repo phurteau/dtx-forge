@@ -1,7 +1,7 @@
 # tools - corpus grounding & calibration
 
 These scripts derive and verify the numbers the DTXMania cleanup runs on, straight from the real
-GITADORA/DrumMania chart corpus. They are how the thresholds in `dtxforge/` are *chosen* and kept
+GITADORA/DrumMania chart corpus. They are how the thresholds in `dtxscribe/` are *chosen* and kept
 honest - not hand-picked.
 
 Point them at a local corpus mirror via env vars (defaults shown):

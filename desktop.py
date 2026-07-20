@@ -1,4 +1,4 @@
-"""DTX Forge - native desktop window with automatic browser fallback.
+"""DTXScribe - native desktop window with automatic browser fallback.
 
 Starts the local server in a background thread and shows the UI in its own window
 via pywebview (Edge WebView2). If the native window can't start -- which can happen
@@ -19,17 +19,26 @@ if sys.stdout is None or sys.stderr is None:
     if sys.stderr is None:
         sys.stderr = _null
 
+# One-time rebrand data-folder migration (DTXForge -> DTXScribe) BEFORE anything
+# touches %LOCALAPPDATA%, so an updated install keeps its already-downloaded model
+# weights instead of re-fetching ~1 GB under the new name. Best-effort.
+try:
+    from dtxscribe import migrate_legacy_appdata
+    migrate_legacy_appdata()
+except Exception:
+    pass
+
 HOST, PORT = "127.0.0.1", 8765
 
 
 def _log_path():
     base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-    d = os.path.join(base, "DTXForge")
+    d = os.path.join(base, "DTXScribe")
     try:
         os.makedirs(d, exist_ok=True)
     except Exception:
         d = os.path.expanduser("~")
-    return os.path.join(d, "dtxforge.log")
+    return os.path.join(d, "dtxscribe.log")
 
 
 LOG = _log_path()
@@ -53,7 +62,7 @@ try:
 except Exception:
     pass
 
-log(f"=== DTX Forge starting (frozen={getattr(sys, 'frozen', False)}) ===")
+log(f"=== DTXScribe starting (frozen={getattr(sys, 'frozen', False)}) ===")
 log(f"python {sys.version}")
 log(f"log file: {LOG}")
 
@@ -108,7 +117,7 @@ def main():
     try:
         import webview
         log("imported webview OK; creating native window")
-        webview.create_window("DTX Forge", url, width=1040, height=880, min_size=(760, 640))
+        webview.create_window("DTXScribe", url, width=1040, height=880, min_size=(760, 640))
         webview.start()   # blocks until the window is closed
         log("webview.start() returned (window closed)")
         return
@@ -120,7 +129,7 @@ def main():
         log(f"opened browser at {url}")
     except Exception:
         log("webbrowser.open failed:\n" + traceback.format_exc())
-    print(f"DTX Forge is running -> {url}  (close this window to stop it)")
+    print(f"DTXScribe is running -> {url}  (close this window to stop it)")
     try:
         while True:
             time.sleep(3600)

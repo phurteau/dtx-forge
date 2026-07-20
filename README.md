@@ -1,4 +1,4 @@
-# DTX Forge
+# DTXScribe
 
 Turn a drum tab (or just audio) into a fully playable **DTXMania** chart - **no manual notation**.
 It fetches the tab, grabs the song, auto-syncs the audio, applies realistic foot technique,
@@ -6,21 +6,21 @@ verifies a human can actually play it, and packages a ready-to-drop `.dtx` zip.
 
 Built from a pipeline verified to place ~99% of charted notes within ±10–20 ms of the real recording.
 
-![DTX Forge](docs/screenshot.png)
+![DTXScribe](docs/screenshot.png)
 
 *Dark and light themes, with the built-in chart editor open.*
 
-![DTX Forge - light theme](docs/screenshot-light.png)
+![DTXScribe - light theme](docs/screenshot-light.png)
 
 ---
 
 ## Highlights
 
 - **Notation optional - audio is enough.** Paste a **Songsterr** URL, a **Guitar Pro** / **MIDI** URL,
-  an **ASCII drum tab**, or a file - or **leave notation blank** and DTX Forge transcribes the drums
+  an **ASCII drum tab**, or a file - or **leave notation blank** and DTXScribe transcribes the drums
   straight from the audio into a **full kit** (kick, snare, toms, open/closed hi-hat, ride, crash).
 - **Real audio from almost anywhere.** Paste a link from **YouTube, SoundCloud, Bandcamp, Vimeo** and
-  1000+ sites, a **direct audio-file URL**, or upload a file. DTX Forge auto-syncs it to the chart.
+  1000+ sites, a **direct audio-file URL**, or upload a file. DTXScribe auto-syncs it to the chart.
 - **Full song by default.** Keep the complete track, quiet the drums, or fully remove them (arcade feel).
 - **Difficulty tiers that rate, not restrict.** Pick a level - **Basic / Advanced / Extreme / Master** -
   or let **Auto** derive it from a 0.00–9.99 score rated against a skilled-player reference. The tier is a
@@ -57,11 +57,11 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 
 ## Install - pick ONE
 
-There are two independent ways to run DTX Forge. You don't need both.
+There are two independent ways to run DTXScribe. You don't need both.
 
 ### Option A - Standalone app (no Python)
-1. Download **`DTX-Forge-EXE.zip`** from the [Releases](../../releases) page and unzip it.
-2. Double-click **`DTX Forge.exe`**. That's it.
+1. Download **`DTXScribe-EXE.zip`** from the [Releases](../../releases) page and unzip it.
+2. Double-click **`DTXScribe.exe`**. That's it.
 
 ### Option B - From source (Python)
 1. Install **Python 3.10+** - use the installer from <https://www.python.org/downloads/> and
@@ -70,7 +70,7 @@ There are two independent ways to run DTX Forge. You don't need both.
 2. Double-click **`setup.cmd`** - installs dependencies and offers Demucs (needed for audio-only
    transcription and the *Quiet* / *Remove* drum modes, ~2 GB).
 3. Run it:
-   - **App window:** double-click **`DTX Forge.cmd`**, or
+   - **App window:** double-click **`DTXScribe.cmd`**, or
    - **Browser:** double-click **`run.cmd`** → opens <http://127.0.0.1:8765>.
 
 Full-kit separation models (~160 MB + ~515 MB) download automatically the first time you
@@ -87,9 +87,9 @@ Unzip the downloaded `Artist - Title.zip` into your DTXMania songs folder
 
 ## Uninstall / free up space
 
-DTX Forge is portable - to remove the app, just **delete its folder**. Nothing is written to the
+DTXScribe is portable - to remove the app, just **delete its folder**. Nothing is written to the
 registry or Program Files. The one thing left behind is the drum-separation **model weights** it
-downloads on first use (often **1 GB+**), which live in `%LOCALAPPDATA%\DTXForge`. To reclaim that
+downloads on first use (often **1 GB+**), which live in `%LOCALAPPDATA%\DTXScribe`. To reclaim that
 space, run **`uninstall.cmd`** - it asks first and touches nothing else (your charts and the app
 folder are untouched).
 
@@ -122,9 +122,9 @@ folder are untouched).
 
 ## Audio downloads & usability
 
-Most links download **anonymously, no login**. If a site bot-blocks the network (e.g. YouTube), DTX Forge
+Most links download **anonymously, no login**. If a site bot-blocks the network (e.g. YouTube), DTXScribe
 automatically borrows your browser's existing session for that site (Firefox/Chrome/Edge/Brave) - you
-never log into DTX Forge itself. If everything is blocked, **Upload file** always works.
+never log into DTXScribe itself. If everything is blocked, **Upload file** always works.
 
 ## Sources it can read
 
@@ -143,7 +143,7 @@ picture of notes. Photos/PDFs of sheet music aren't supported (that needs optica
 
 ### Audio-only drum detection *(automatic, when notation is blank)*
 
-DTX Forge runs two complementary separation models and fuses their strengths - there's **no engine to
+DTXScribe runs two complementary separation models and fuses their strengths - there's **no engine to
 pick**:
 
 | Piece | Recovered by |
@@ -151,7 +151,7 @@ pick**:
 | kick, snare, toms (high / low-mid / floor) | drum-body separation |
 | open & closed hi-hat, ride, crash | hat / cymbal separation |
 
-Models download once to `%LOCALAPPDATA%/DTXForge` and are **not** bundled; if they can't be fetched, a
+Models download once to `%LOCALAPPDATA%/DTXScribe` and are **not** bundled; if they can't be fetched, a
 fast built-in kick/snare/hat detector covers the basics. Toms are pitch-split into high/low-mid/floor and
 cymbals into crash/ride. See `LICENSE` for model attributions (one model's weights are CC BY-NC).
 
@@ -184,10 +184,10 @@ Audio-only and Foot Technique controls are handled for you.
 ## Layout
 
 ```
-dtx-forge/
+dtx-scribe/
   app.py  desktop.py           server + native window
-  DTX Forge.cmd  run.cmd  setup.cmd  uninstall.cmd
-  dtxforge/
+  DTXScribe.cmd  run.cmd  setup.cmd  uninstall.cmd
+  dtxscribe/
     songsterr.py  audio.py  autosync.py   fetch, download, align
     transcribe.py  dtx.py  humanize.py     notes, emit, foot technique
     playability.py  notes.py  report.py    checks, helpers, stage events

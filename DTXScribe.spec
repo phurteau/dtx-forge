@@ -1,4 +1,4 @@
-# PyInstaller spec for DTX Forge (onedir desktop app)
+# PyInstaller spec for DTXScribe (onedir desktop app)
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 import os
 
@@ -15,15 +15,15 @@ for pkg in ["demucs", "torch", "yt_dlp", "imageio_ffmpeg", "soundfile",
         pass
 
 hiddenimports += collect_submodules("uvicorn")
-hiddenimports += ["dtxforge", "dtxforge.songsterr", "dtxforge.audio",
-                  "dtxforge.transcribe", "dtxforge.dtx", "dtxforge.drumkit",
-                  "dtxforge.pipeline", "dtxforge.report", "dtxforge.notes",
-                  "dtxforge.humanize", "dtxforge.playability", "dtxforge.autosync",
-                  "dtxforge.sources", "dtxforge.faithfulness", "dtxforge.difficulty",
-                  "dtxforge.fullkit", "dtxforge.larsnet_engine",
-                  "dtxforge.standardize", "dtxforge.simplify", "dtxforge.dtxmania_style",
-                  "dtxforge.pattern_match", "dtxforge.groove_data",
-                  "dtxforge.vendor", "dtxforge.vendor.larsnet_unet",
+hiddenimports += ["dtxscribe", "dtxscribe.songsterr", "dtxscribe.audio",
+                  "dtxscribe.transcribe", "dtxscribe.dtx", "dtxscribe.drumkit",
+                  "dtxscribe.pipeline", "dtxscribe.report", "dtxscribe.notes",
+                  "dtxscribe.humanize", "dtxscribe.playability", "dtxscribe.autosync",
+                  "dtxscribe.sources", "dtxscribe.faithfulness", "dtxscribe.difficulty",
+                  "dtxscribe.fullkit", "dtxscribe.larsnet_engine",
+                  "dtxscribe.standardize", "dtxscribe.simplify", "dtxscribe.dtxmania_style",
+                  "dtxscribe.pattern_match", "dtxscribe.groove_data",
+                  "dtxscribe.vendor", "dtxscribe.vendor.larsnet_unet",
                   "guitarpro", "attr", "attrs",
                   "app", "anyio", "mido", "clr", "webview.platforms.winforms"]
 
@@ -56,7 +56,7 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz, a.scripts, [],
     exclude_binaries=True,
-    name="DTX Forge",
+    name="DTXScribe",
     debug=False,
     strip=False,
     upx=False,
@@ -65,5 +65,5 @@ exe = EXE(
 )
 coll = COLLECT(
     exe, a.binaries, a.zipfiles, a.datas,
-    strip=False, upx=False, name="DTX Forge",
+    strip=False, upx=False, name="DTXScribe",
 )

@@ -86,7 +86,7 @@ def run(opts, workdir, assets_dir, progress):
     auto_sync = bool(opts.get("auto_sync", True)) and asrc in ("url", "upload")
     need_stem = (drum_mode in ("remove", "quiet")) or (opts["tab_source"] == "audio")
     if opts["tab_source"] == "audio" and asrc == "none":
-        raise RuntimeError("No notation was provided, so DTX Forge needs audio to "
+        raise RuntimeError("No notation was provided, so DTXScribe needs audio to "
                            "transcribe the drums from - add a YouTube link or upload an audio file.")
 
     # ---------- 1. NOTATION ----------
@@ -402,8 +402,8 @@ def run(opts, workdir, assets_dir, progress):
 
     meta = dict(title=title, artist=artist, bpm=round(float(bpm), 3),
                 dlevel=dlevel_val,
-                comment=(f"Charted by {opts['author']} using DTX Forge."
-                         if opts.get("author") else "Charted using DTX Forge."),
+                comment=(f"Charted by {opts['author']} using DTXScribe."
+                         if opts.get("author") else "Charted using DTXScribe."),
                 bgm=os.path.basename(bgm_file))
     jacket_path = opts.get("jacket_path")
     if jacket_path and os.path.exists(jacket_path):

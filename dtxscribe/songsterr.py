@@ -1,7 +1,7 @@
 """Songsterr integration: search, metadata, drum notation JSON, tab-synced audio."""
 import json, gzip, io, urllib.parse, urllib.request
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DTXForge/1.0"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DTXScribe/1.0"
 NOTE_CDN = "https://dqsljvtekg760.cloudfront.net"
 AUDIO_HOST = "https://audio4-1.songsterr.com"
 

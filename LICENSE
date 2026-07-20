@@ -32,7 +32,7 @@ Third-party components used at runtime (not redistributed in this source repo):
 - FastAPI, Uvicorn, pywebview, mido, numpy - see requirements.txt
 
 Optional audio-only full-kit drum detection uses two separation models, downloaded
-at runtime to %LOCALAPPDATA%/DTXForge (NOT bundled or redistributed here) and run
+at runtime to %LOCALAPPDATA%/DTXScribe (NOT bundled or redistributed here) and run
 automatically when transcribing from audio with no tab:
 
 - inagoy DrumSep - a Demucs (HDemucs) checkpoint that separates a drum stem into
@@ -45,13 +45,13 @@ automatically when transcribing from audio with no tab:
 - LarsNet - Mezza, Giampiccolo, Bernardini, Sarti, "Toward deep drum source
   separation," Pattern Recognition Letters 183 (2024).
   Source: https://github.com/polimi-ispl/larsnet. The UNet architecture file is
-  vendored at dtxforge/vendor/larsnet_unet.py. The pretrained MODEL WEIGHTS are
+  vendored at dtxscribe/vendor/larsnet_unet.py. The pretrained MODEL WEIGHTS are
   licensed CC BY-NC 4.0 (NON-COMMERCIAL) and are downloaded at runtime, never
   bundled. Charts produced by audio-only transcription therefore inherit that
   non-commercial restriction on the model's contribution; supply your own notation
   (tab / MIDI / Guitar Pro) for a commercial-safe pipeline.
 
-DTX Forge's own source code remains MIT-licensed. The MIT license covers the
+DTXScribe's own source code remains MIT-licensed. The MIT license covers the
 code only, not the third-party model weights fetched at runtime.
 
 DTXMania is a separate project by its respective authors; this tool produces

@@ -10,7 +10,7 @@ env/
 build/
 *.spec.bak
 
-# ---- DTX Forge working + distribution artifacts ----
+# ---- DTXScribe working + distribution artifacts ----
 jobs/*
 !jobs/.keep
 dist/

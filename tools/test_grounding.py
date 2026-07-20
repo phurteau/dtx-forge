@@ -16,8 +16,8 @@ from collections import defaultdict
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CORPUS = os.environ.get("DTX_CORPUS", os.path.join(os.path.expanduser("~"), ".scout", "_gitadora_corpus", "gitadora_all", "charts"))
 sys.path.insert(0, REPO)
-from dtxforge import pattern_match as PM
-from dtxforge import dtxmania_style as S
+from dtxscribe import pattern_match as PM
+from dtxscribe import dtxmania_style as S
 
 TOL = 1.5               # shipped KEEP_PCT must be within this many F1 points of the tier's best
 PER_TIER = 60           # small sample for a fast test

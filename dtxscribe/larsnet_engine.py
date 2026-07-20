@@ -1,13 +1,13 @@
 """LarsNet full-kit engine: 5-stem neural drum separation (kick / snare / toms /
 hi-hat / cymbals). Because the hi-hat is isolated in its own stem, the cymbals
-stem is crash + ride only - which lets DTX Forge recover ride cymbal, unlike the
+stem is crash + ride only - which lets DTXScribe recover ride cymbal, unlike the
 inagoy engine.
 
 Upstream: https://github.com/polimi-ispl/larsnet (Mezza et al., 2024). The model
-WEIGHTS are CC BY-NC 4.0 and are fetched at runtime to %LOCALAPPDATA%/DTXForge,
-never bundled. The UNet architecture is vendored in dtxforge/vendor/larsnet_unet.py.
+WEIGHTS are CC BY-NC 4.0 and are fetched at runtime to %LOCALAPPDATA%/DTXScribe,
+never bundled. The UNet architecture is vendored in dtxscribe/vendor/larsnet_unet.py.
 
-We deliberately avoid importing torchaudio (not a DTX Forge dependency): the vendored
+We deliberately avoid importing torchaudio (not a DTXScribe dependency): the vendored
 UNetWaveform is pure torch and accepts a raw tensor, and we resample with our own
 ffmpeg path upstream, so audio arrives at 44.1 kHz already.
 """

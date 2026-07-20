@@ -5,7 +5,7 @@ di Milano, ISPL). Paper: "Toward deep drum source separation", Pattern Recogniti
 Letters 183 (2024) 86-91. https://doi.org/10.1016/j.patrec.2024.04.026
 
 The pretrained LarsNet model WEIGHTS are licensed CC BY-NC 4.0 (non-commercial) and
-are downloaded at runtime, NOT redistributed with DTX Forge. This architecture file
+are downloaded at runtime, NOT redistributed with DTXScribe. This architecture file
 is vendored unmodified except for this header. Pure PyTorch (no torchaudio).
 """
 import math

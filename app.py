@@ -1,4 +1,4 @@
-"""DTX Forge web app: FastAPI backend + background job runner."""
+"""DTXScribe web app: FastAPI backend + background job runner."""
 import os, sys, uuid, threading, traceback, shutil, re, json, subprocess, webbrowser, urllib.request
 
 
@@ -51,11 +51,13 @@ from fastapi import FastAPI, UploadFile, File, Form, Body
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from dtxforge import pipeline, songsterr
-from dtxforge.report import Reporter
-from dtxforge import __version__ as APP_VERSION
+from dtxscribe import pipeline, songsterr
+from dtxscribe.report import Reporter
+from dtxscribe import __version__ as APP_VERSION
+from dtxscribe import migrate_legacy_appdata as _migrate_legacy_appdata
+_migrate_legacy_appdata()   # one-time DTXForge -> DTXScribe data-folder move (browser/run.cmd path)
 
-GITHUB_REPO = "phurteau/dtx-forge"
+GITHUB_REPO = "phurteau/dtx-scribe"
 _updl = {}   # download id -> {status, received, total, name, saved, error}
 
 
@@ -69,7 +71,7 @@ def _latest_release(timeout=6):
     """Fetch the latest GitHub release JSON (public repo, no auth). Raises on failure."""
     url = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "DTX-Forge-Updater",
+        "User-Agent": "DTXScribe-Updater",
         "Accept": "application/vnd.github+json"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read().decode("utf-8"))
@@ -102,7 +104,7 @@ JOBS = os.path.join(HERE, "jobs")
 ASSETS = os.path.join(HERE, "assets")
 os.makedirs(JOBS, exist_ok=True)
 
-app = FastAPI(title="DTX Forge")
+app = FastAPI(title="DTXScribe")
 _jobs = {}   # id -> {status, reporter, result, error}
 
 
@@ -271,7 +273,7 @@ def _import_custom_kit(wd, src_folder, meta):
     overrides the built-in synth samples lane-by-lane, so the editor preview AND the
     re-packaged chart use the source's real drum sounds. Falls back to the built-in kit for
     any lane without a usable source sample. Returns (kit_dir, kit_files, sampled_lanes)."""
-    from dtxforge import dtx, drumkit, audio as _audio
+    from dtxscribe import dtx, drumkit, audio as _audio
     builtin = os.path.join(ASSETS, "drumkit")
     kit_files = drumkit.ensure_kit(builtin)             # {label: 'label.wav'}
     wav_defs = meta.get("wav_defs") or {}
@@ -323,7 +325,7 @@ def _build_import_result(wd, dtx_text, bgm_src=None, image_src=None, src_folder=
     a silent (notes-only) import. src_folder: the extracted chart folder (zip import) whose
     bundled drum one-shots should override the built-in kit; None for a bare .dtx."""
     import wave
-    from dtxforge import dtx, audio as _audio
+    from dtxscribe import dtx, audio as _audio
     events, barlens, bpm, meta = dtx.parse_dtx(dtx_text)
     if not any(events):
         raise ValueError("No drum notes found - only standard DTX drum channels (11–1C) are read.")
@@ -405,7 +407,7 @@ async def api_import(file: UploadFile = File(...)):
             with open(dtx_path, encoding="shift_jis", errors="replace") as fh:
                 dtx_text = fh.read()
             folder = os.path.dirname(dtx_path)
-            from dtxforge import dtx as _dtx
+            from dtxscribe import dtx as _dtx
             _e, _b, _bpm, meta0 = _dtx.parse_dtx(dtx_text)
             kit = {"bd.wav", "sd.wav", "hh.wav", "ho.wav", "ht.wav", "lt.wav",
                    "ft.wav", "cy.wav", "rd.wav", "rb.wav", "lp.wav"}
@@ -462,7 +464,7 @@ def api_chart(job_id: str):
     ch = job["result"].get("chart")
     if not ch:
         return JSONResponse({"error": "no chart model"}, status_code=404)
-    from dtxforge import dtx
+    from dtxscribe import dtx
     out = dtx.chart_to_json(ch["events"], ch["barlens"], ch["bpm"], ch["meta"])
     out["hasAudio"] = bool(ch.get("has_audio"))
     out["review"] = ch.get("review") or {"onsets": []}
@@ -471,7 +473,7 @@ def api_chart(job_id: str):
 
 def _apply_edits(job, bars_json):
     """Rebuild the in-memory chart events/barlens from the editor's edited bar list."""
-    from dtxforge import dtx
+    from dtxscribe import dtx
     ch = job["result"]["chart"]
     n_bars = len(ch["events"])
     events, barlens = dtx.events_from_json(bars_json, n_bars)
@@ -507,7 +509,7 @@ async def api_package(job_id: str, payload: dict = Body(None)):
     ch, rp = res.get("chart"), res.get("repack")
     if not ch or not rp:
         return JSONResponse({"error": "chart not packageable"}, status_code=400)
-    from dtxforge import dtx
+    from dtxscribe import dtx
     try:
         if payload and payload.get("bars") is not None:
             _apply_edits(job, payload["bars"])
@@ -594,7 +596,7 @@ def _run_update_download(dl_id, url, name):
     try:
         dst = _unique_in(_downloads_dir(), name)
         tmp = dst + ".part"
-        req = urllib.request.Request(url, headers={"User-Agent": "DTX-Forge-Updater"})
+        req = urllib.request.Request(url, headers={"User-Agent": "DTXScribe-Updater"})
         with urllib.request.urlopen(req, timeout=30) as r:
             prog["total"] = int(r.headers.get("Content-Length") or 0)
             got = 0
@@ -665,7 +667,7 @@ def api_open_external(payload: dict = Body(...)):
         u = urlparse(url)
         if (u.scheme in ("http", "https")
                 and u.netloc.lower() in ("github.com", "www.github.com")
-                and u.path.lower().startswith("/phurteau/dtx-forge")):
+                and u.path.lower().startswith("/phurteau/dtx-scribe")):
             webbrowser.open(url)
             return {"ok": True}
         return JSONResponse({"error": "url not allowed"}, status_code=400)
@@ -690,5 +692,5 @@ def api_quit():
 
 if __name__ == "__main__":
     import uvicorn
-    print("DTX Forge -> http://127.0.0.1:8765")
+    print("DTXScribe -> http://127.0.0.1:8765")
     uvicorn.run(app, host="127.0.0.1", port=8765, log_level="warning")

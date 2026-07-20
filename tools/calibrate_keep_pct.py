@@ -16,7 +16,7 @@ import os, re, glob, codecs, sys, random
 from fractions import Fraction
 from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from dtxforge import pattern_match as PM
+from dtxscribe import pattern_match as PM
 
 CORPUS = os.environ.get("DTX_CORPUS", os.path.join(os.path.expanduser("~"), ".scout", "_gitadora_corpus", "gitadora_all", "charts"))
 PER_TIER = 160          # charts sampled per tier

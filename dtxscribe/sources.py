@@ -10,7 +10,7 @@ Detection order:
 """
 import os, re, gzip, urllib.request
 
-UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DTXForge/1.0"
+UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) DTXScribe/1.0"
 GP_EXT = (".gp", ".gp3", ".gp4", ".gp5", ".gpx", ".gtp")
 MIDI_EXT = (".mid", ".midi")
 TXT_EXT = (".txt", ".tab", ".text")

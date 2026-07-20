@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DTX Forge</title>
+<title>DTXScribe</title>
 <style>
   :root{ --acc:#025500; --acc2:#03b200; --acc-ink:#fff; --radius:12px; }
   html[data-theme="dark"]{
@@ -39,7 +39,7 @@
     background:var(--bodyglow),var(--bg);transition:background .25s,color .25s;
     display:flex;flex-direction:column;overflow:hidden}
   header{flex:0 0 auto;padding:15px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;background:var(--headgrad)}
-  header .logo{font-size:26px} header h1{font-size:20px;margin:0;letter-spacing:2px}
+  header .logo{font-size:26px} header h1{font-size:20px;margin:0;letter-spacing:.5px}
   header .tag{color:var(--dim);font-size:13px;margin-left:auto}
   .tools{display:flex;align-items:center;gap:10px}
   .tbtn{display:flex;align-items:center;gap:7px;background:var(--btnface);border:1px solid var(--line);color:var(--txt);border-radius:20px;padding:7px 12px;cursor:pointer;font-size:13px;box-shadow:var(--btnhi);transition:transform .12s,border-color .15s}
@@ -281,7 +281,7 @@
   <button class="updx" id="updX" type="button" title="Dismiss">✕</button>
 </div>
 <header>
-  <h1>DTX&nbsp;FORGE</h1><span class="ver" id="verLbl">v1.6.2</span><span class="verstat hidden" id="verStat"></span>
+  <h1>DTXScribe</h1><span class="ver" id="verLbl">v1.7.0</span><span class="verstat hidden" id="verStat"></span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
@@ -293,7 +293,7 @@
         <div class="pickrow"><span class="swatch big" id="pickPreview"></span><input type="text" id="hexInput" class="hexbox" maxlength="7" spellcheck="false"></div>
         <button class="reset" id="resetBtn">Reset to default</button></div>
     </div>
-    <button class="hdrexit" id="exitBtn" type="button" title="Close DTX Forge and release the app">✕ Exit</button>
+    <button class="hdrexit" id="exitBtn" type="button" title="Close DTXScribe and release the app">✕ Exit</button>
   </div>
 </header>
 
@@ -624,7 +624,7 @@ $('#resetForm').onclick=resetForm;
 async function quitApp(){
   if(edDirty&&!confirm('You have unsaved chart edits. Exit without saving?'))return;
   try{await fetch('/api/quit',{method:'POST'});}catch(e){}
-  document.documentElement.innerHTML='<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0e13;color:#8fa0b3;font:15px system-ui;letter-spacing:.3px">DTX Forge has closed - you can close this window.</body>';
+  document.documentElement.innerHTML='<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#0b0e13;color:#8fa0b3;font:15px system-ui;letter-spacing:.3px">DTXScribe has closed - you can close this window.</body>';
   setTimeout(()=>{try{window.close();}catch(e){}},250);
 }
 $('#exitBtn').onclick=quitApp;
@@ -1854,12 +1854,12 @@ async function checkUpdate(){
     return;
   }
   // A newer version exists -> mark the header and (unless dismissed) show the download banner.
-  if(vs){ vs.textContent='● Update available'; vs.title='DTX Forge v'+j.latest+' is available.';
+  if(vs){ vs.textContent='● Update available'; vs.title='DTXScribe v'+j.latest+' is available.';
     vs.classList.remove('hidden','latest'); vs.classList.add('behind'); }
   const bar=$('#updBar'),msg=$('#updMsg'),dl=$('#updDl'),notes=$('#updNotes');
   if(vs) vs.onclick=()=>bar.classList.remove('hidden');   // clicking the pill re-opens a dismissed banner
   if(localStorage.getItem('dtx_upd_dismiss')===j.latest)return;   // this version was dismissed
-  msg.textContent=`DTX Forge v${j.latest} is available (you have v${j.current}).`;
+  msg.textContent=`DTXScribe v${j.latest} is available (you have v${j.current}).`;
   if(j.html_url){notes.classList.remove('hidden');
     notes.onclick=e=>{e.preventDefault();fetch('/api/open-external',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url:j.html_url})});};}
   else notes.classList.add('hidden');
@@ -1873,7 +1873,7 @@ async function checkUpdate(){
       let p; try{ p=await (await fetch('/api/update-download/'+s.dl_id)).json(); }catch(e){ return; }
       if(p.status==='downloading'){dl.textContent=p.total?`Downloading… ${p.pct}%`:'Downloading…';}
       else if(p.status==='done'){clearInterval(tick);dl.textContent='✓ Saved to Downloads';
-        msg.textContent=`Saved ${p.saved_name} to your Downloads folder - unzip it and run “DTX Forge.exe” to update.`;}
+        msg.textContent=`Saved ${p.saved_name} to your Downloads folder - unzip it and run “DTXScribe.exe” to update.`;}
       else if(p.status==='error'){clearInterval(tick);dl.disabled=false;dl.textContent='⬇ Download update';msg.textContent='Update download failed: '+(p.error||'unknown error');}
     },600);
   };

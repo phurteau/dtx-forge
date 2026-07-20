@@ -12,9 +12,9 @@ yourself from source:
 
 ## Build
 ```bat
-python -m PyInstaller --noconfirm --clean DTXForge.spec
+python -m PyInstaller --noconfirm --clean DTXScribe.spec
 ```
-Output lands in `dist/DTX Forge/` - a folder containing `DTX Forge.exe` plus an
+Output lands in `dist/DTXScribe/` - a folder containing `DTXScribe.exe` plus an
 `_internal/` folder with all dependencies (torch, ffmpeg, deno, the web UI, and
 the drum-kit samples). Zip that whole folder to distribute.
 
@@ -22,9 +22,9 @@ The build is **onedir** (a folder, not a single file) because the PyTorch payloa
 doesn't pack cleanly into a one-file exe. Total size is ~750 MB unzipped.
 
 ## Notes
-- `DTXForge.spec` lists the hidden imports and bundled data. If you add a new
-  `dtxforge/` module, add it to the `hiddenimports` list.
+- `DTXScribe.spec` lists the hidden imports and bundled data. If you add a new
+  `dtxscribe/` module, add it to the `hiddenimports` list.
 - The torch "sharding_spec not found" warnings during build are harmless
   (deprecated optional submodules).
 - UI-only changes (edits to `web/index.html`) don't need a full rebuild - just
-  copy the file into `dist/DTX Forge/_internal/web/` and re-zip.
+  copy the file into `dist/DTXScribe/_internal/web/` and re-zip.

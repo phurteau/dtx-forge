@@ -1,5 +1,5 @@
 @echo off
-REM DTX Forge - one-time setup
+REM DTXScribe - one-time setup
 cd /d "%~dp0"
 
 echo Installing core dependencies...
@@ -19,5 +19,5 @@ set /p yn="Install Demucs now for drum separation? [y/N] "
 if /i "%yn%"=="y" python -m pip install demucs soundfile
 echo.
 
-echo Setup complete. Run  "DTX Forge.cmd"  ^(app window^) or  run.cmd  ^(browser^).
+echo Setup complete. Run  "DTXScribe.cmd"  ^(app window^) or  run.cmd  ^(browser^).
 pause
