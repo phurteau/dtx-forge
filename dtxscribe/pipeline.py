@@ -321,12 +321,12 @@ def run(opts, workdir, assets_dir, progress):
     # ---------- 6c. NOTES STYLE (DTXMania regularization - any source, tab or audio) ----------
     if notes_style == "dtxmania":
         from . import dtxmania_style, pattern_match
-        group_cym = str(opts.get("group_cymbals", "true")).lower() != "false"
+        # Cymbal grouping is handled uniformly by the Lane-grouping post-step (6d-2), so the
+        # DTXMania regularizer no longer folds cymbals itself.
         events, nchg = dtxmania_style.apply(events, barlens, bpm, tier_key,
-                                            aggressive=True, group_cymbals=group_cym)
-        log(f"DTXMania style: whole groove rewritten to real GITADORA patterns"
-            f"{' + right cymbals grouped' if group_cym else ''}; tom fills, crashes and feet "
-            f"kept as the fill layer ({nchg} edits).")
+                                            aggressive=True, group_cymbals=False)
+        log(f"DTXMania style: whole groove rewritten to real GITADORA patterns; "
+            f"tom fills, crashes and feet kept as the fill layer ({nchg} edits).")
         # Authentic charts add left-foot technique, tier-gated (real data: Basic/Advanced
         # ~none, Extreme double bass, Master hi-hat chick + double bass). Feet fill the
         # gaps now that the hands are regularized, so no manual toggle is needed.
@@ -365,6 +365,21 @@ def run(opts, workdir, assets_dir, progress):
     events, thinned = simplify.thin_for_tier(events, tier_key)
     if thinned:
         log(f"Removed {thinned} redundant timekeeper notes (hi-hat/ride played together).")
+
+    # ---------- 6d-2. LANE GROUPING (Advanced preset: Full / Standard / Custom) ----------
+    # Fold drum lanes onto DTXMania's standard combined lanes, per the user's grouping preset.
+    # This is the single, style-independent grouping control (the DTXMania-style regularizer's
+    # own cymbal fold is disabled above so grouping happens only here). "full" = no fold.
+    folds = dtx.folds_from_opts(
+        opts.get("lane_grouping", "full"),
+        ride=str(opts.get("grp_ride", "false")).lower() == "true",
+        openhat=str(opts.get("grp_openhat", "false")).lower() == "true",
+        lp=str(opts.get("grp_lp", "false")).lower() == "true")
+    if folds:
+        gmoved = dtx.group_lanes(events, folds)
+        if gmoved:
+            _names = {"ride": "ride→cymbal", "openhat": "open+closed hi-hat", "lp": "left pedal→bass"}
+            log(f"Lane grouping ({', '.join(_names.get(f, f) for f in folds)}): {gmoved} notes folded.")
 
     # Re-rate after style + thinning so the shown score and #DLEVEL match the emitted notes.
     if dlevel_auto:

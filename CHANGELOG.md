@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.8.0
+
+Editor flexibility and cleaner charts: rearrange the lanes to your taste, group drum voices
+the way a DTXMania kit reads them, and hear the song play through its outro.
+
+- **Rearrange the lanes.** A new **Arrange lanes** mode in the editor lets you drag the lane
+  columns into whatever left-to-right order you're used to - the columns **glide smoothly** as
+  you drag, so you can see exactly where a lane will land before you drop it. It's a per-you
+  view preference (remembered between runs) and **never changes the chart or the exported
+  file** - a kick is still a kick. Normal note editing is locked while arranging, so you can't
+  nudge a lane by accident, and a **Reset** eases the columns back to the default GITADORA order.
+- **Lane grouping.** A new **Lane Grouping** control in Advanced combines drum lanes the way a
+  DTXMania kit reads them: **Full (11 lanes)** keeps everything separate, **Standard (9 lanes)**
+  folds the ride and open hi-hat like the default kit, and **Custom** lets you pick each fold
+  (ride→cymbal, open+closed hi-hat→one, left pedal→bass). The editor's one-click **Group &
+  clean** menu now offers the same folds after the fact, all undoable.
+- **Full-length playback in the editor.** When the backing track has an outro after the last
+  charted note, the editor now plays through it (the playhead parks on the last bar) instead of
+  cutting off - matching how the packaged chart already plays in-game.
+
 ## v1.7.0
 
 **DTX Forge is now DTXScribe.** The app has been renamed to better reflect what it does -

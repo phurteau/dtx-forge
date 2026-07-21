@@ -198,6 +198,7 @@
   .edtools .tbtnx:hover:not(:disabled){border-color:var(--acc2)}
   .edtools .tbtnx:disabled{opacity:.4;cursor:not-allowed}
   .edtools .tbtnx.warn{color:#f2c058;border-color:#5c4a1e}.edtools .tbtnx.warn:hover:not(:disabled){border-color:#f2a33c}
+  .edtools .tbtnx.active{background:var(--acc);color:var(--acc-ink);border-color:var(--acc);box-shadow:var(--btnhi),0 3px 12px color-mix(in srgb,var(--acc2) 28%,transparent)}
   .bulkmenu{position:absolute;top:calc(100% + 6px);right:0;z-index:20;min-width:230px;background:var(--panel);border:1px solid var(--line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);padding:6px;display:flex;flex-direction:column;gap:2px}
   .bulkmenu.hidden{display:none}
   .bulkmenu-hdr{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.4px;padding:5px 8px 3px}
@@ -246,6 +247,8 @@
   .edclip-x{margin-left:auto;background:transparent;border:none;color:var(--dim);font-size:14px;cursor:pointer;padding:2px 6px}
   .edclip-x:hover{color:var(--txt)}
   .edcanvas-wrap{position:relative;flex:1 1 auto;min-height:0;overflow:hidden}
+  .edcanvas-wrap.arranging canvas{cursor:grab}
+  .edcanvas-wrap.arranging.dragging canvas{cursor:grabbing}
   .edmini-hdr{flex:0 0 auto;margin:8px 16px 4px;font-size:10px;color:var(--dim);letter-spacing:.5px;text-transform:uppercase}
   .edmini-wrap{position:relative;flex:0 0 auto;margin:0 16px 6px;border:1px solid var(--line);border-radius:8px;background:#0d1016;overflow:hidden}
   .edmini-wrap canvas{display:block;width:100%;height:94px;cursor:pointer}
@@ -281,7 +284,7 @@
   <button class="updx" id="updX" type="button" title="Dismiss">✕</button>
 </div>
 <header>
-  <h1>DTXScribe</h1><span class="ver" id="verLbl">v1.7.0</span><span class="verstat hidden" id="verStat"></span>
+  <h1>DTXScribe</h1><span class="ver" id="verLbl">v1.8.0</span><span class="verstat hidden" id="verStat"></span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
@@ -353,8 +356,19 @@
         <div class="seg" id="stdseg" style="margin-top:10px"><button data-v="raw">Raw</button><button data-v="standardize" class="active">Clean Up</button></div>
         <div class="hint" id="stdLock" style="margin-top:8px;display:none"><b>DTXMania</b> style is selected above - it always uses the cleaned-up base, so this setting doesn't apply.</div></div>
       <div class="adv" id="dtxopts" style="display:none"><div class="head">DTXMania Chart Options</div>
-        <label class="chk" style="margin-top:6px"><input type="checkbox" id="ohLpToggle"><span><b>Open hi-hat to LP</b> <span class="hint" style="margin:0">- moves open hi-hats to the left-foot pedal. Rare, but some players prefer it.</span></span></label>
-        <label class="chk" style="margin-top:10px"><input type="checkbox" id="groupCymToggle" checked><span><b>Group cymbals together</b> <span class="hint" style="margin:0">- folds the ride into the right cymbal, like most DTXMania kits. The left crash stays separate.</span></span></label></div>
+        <label class="chk" style="margin-top:6px"><input type="checkbox" id="ohLpToggle"><span><b>Open hi-hat to LP</b> <span class="hint" style="margin:0">- moves open hi-hats to the left-foot pedal. Rare, but some players prefer it.</span></span></label></div>
+      <div class="adv"><div class="head">Lane Grouping</div>
+        <div class="hint">Combine drum lanes the way a DTXMania kit reads them. This changes the chart's lanes, not how faithfully the notes are placed.</div>
+        <select id="laneGroupSel" style="margin-top:10px">
+          <option value="full" selected>Full - 11 lanes (no grouping)</option>
+          <option value="standard">Standard - 9 lanes (ride + open hi-hat folded)</option>
+          <option value="custom">Custom…</option>
+        </select>
+        <div id="laneGroupCustom" style="display:none;margin-top:10px">
+          <label class="chk"><input type="checkbox" id="grpRide"><span><b>Ride → cymbal</b> <span class="hint" style="margin:0">- fold the ride (RD) onto the right-cymbal lane (CY).</span></span></label>
+          <label class="chk" style="margin-top:8px"><input type="checkbox" id="grpOpenhat"><span><b>Open + closed hi-hat → one</b> <span class="hint" style="margin:0">- fold the open hi-hat (HO) onto the hi-hat lane (HH).</span></span></label>
+          <label class="chk" style="margin-top:8px"><input type="checkbox" id="grpLp"><span><b>Left pedal → bass</b> <span class="hint" style="margin:0">- fold the left-foot pedal (LP) onto the kick (BD).</span></span></label>
+        </div></div>
     </div>
     <div class="gorow">
       <button class="go" id="genBtn">Generate</button>
@@ -386,15 +400,21 @@
         <span class="tlbl" style="margin-left:12px">Zoom</span>
         <span class="stepper"><button id="edZoomOut" class="stepbtn" title="Zoom out">−</button><button id="edZoomLbl" class="steplbl" title="Reset zoom">100%</button><button id="edZoomIn" class="stepbtn" title="Zoom in">+</button></span>
         <span class="bulkwrap" style="margin-left:auto;position:relative">
-          <button id="edBulkBtn" class="tbtnx" title="One-click fixes applied to the whole chart">✦ Cleanup ▾</button>
+          <button id="edBulkBtn" class="tbtnx" title="Group voices or clean up - whole-chart, one click, undoable">✦ Group &amp; clean ▾</button>
           <div class="bulkmenu hidden" id="edBulkMenu">
-            <div class="bulkmenu-hdr">Whole-chart cleanups · undoable</div>
-            <button class="bulkitem" id="bulk-ride2crash">All rides → crash <span class="bulk-n">-</span></button>
+            <div class="bulkmenu-hdr">Group voices · whole chart · undoable</div>
+            <button class="bulkitem" id="bulk-allcym2crash">All cymbals → crash <span class="bulk-n">-</span></button>
+            <button class="bulkitem" id="bulk-ride2crash">Ride → crash <span class="bulk-n">-</span></button>
             <button class="bulkitem" id="bulk-lc2crash">Left crash → crash <span class="bulk-n">-</span></button>
+            <button class="bulkitem" id="bulk-openhat2closed">Open + closed hi-hat → one <span class="bulk-n">-</span></button>
+            <button class="bulkitem" id="bulk-lp2kick">Left pedal → kick <span class="bulk-n">-</span></button>
+            <div class="bulkmenu-hdr">Clean up</div>
             <button class="bulkitem" id="bulk-thinhats">Thin hi-hats by half <span class="bulk-n">-</span></button>
             <button class="bulkitem" id="bulk-cleartoms">Clear all toms <span class="bulk-n">-</span></button>
           </div>
         </span>
+        <button id="edArrangeBtn" class="tbtnx" title="Rearrange the lane columns to a layout you prefer - a view-only preference, it never changes the chart or the exported file">⇄ Arrange lanes</button>
+        <button id="edArrangeReset" class="tbtnx hidden" title="Restore the default GITADORA lane order">↺ Reset</button>
         <button id="edReviewBtn" class="tbtnx warn" title="Jump to the next spot worth checking" disabled>⚠ Review</button>
       </div>
       <div class="edtransport" id="edPlayRow">
@@ -576,6 +596,10 @@ function syncAudLock(){const dtxm=noteStyle==='dtxmania';
   $('#audstyle').classList.toggle('locked',dtxm);$('#stdLock').style.display=dtxm?'block':'none';
   $('#dtxopts').style.display=dtxm?'block':'none';}
 syncAudLock();
+/* Lane-grouping preset: reveal the Custom toggles only for "custom" */
+(function(){const sel=$('#laneGroupSel'),cus=$('#laneGroupCustom');if(!sel||!cus)return;
+  const sync=()=>{cus.style.display=(sel.value==='custom')?'block':'none';};
+  sel.addEventListener('change',sync);sync();})();
 /* a BPM the user types is theirs - stop auto-fill from overwriting it */
 $('#bpm').addEventListener('input',()=>{$('#bpm').dataset.auto='';$('#bpmHint').textContent='(optional)';});
 /* same for difficulty: a typed value is respected; blank => auto-rated */
@@ -671,7 +695,11 @@ $('#genBtn').onclick=async()=>{
   if(tabSource==='url'&&_url)fd.append('songsterr_url',_url);
   if(tabSource==='file'&&_tabFile)fd.append('tab_file',_tabFile);
   fd.append('audio_source',audSource);fd.append('drum_mode',drumMode);
-  fd.append('auto_sync',$('#autoSync').checked);fd.append('style',stdMode);fd.append('standardize',stdMode==='raw'?'false':'true');fd.append('notes_style',noteStyle);fd.append('group_cymbals',$('#groupCymToggle').checked?'true':'false');fd.append('openhat_lp',$('#ohLpToggle').checked?'true':'false');
+  fd.append('auto_sync',$('#autoSync').checked);fd.append('style',stdMode);fd.append('standardize',stdMode==='raw'?'false':'true');fd.append('notes_style',noteStyle);fd.append('openhat_lp',$('#ohLpToggle').checked?'true':'false');
+  {const g=$('#laneGroupSel')?$('#laneGroupSel').value:'full';fd.append('lane_grouping',g);
+   fd.append('grp_ride',($('#grpRide')&&$('#grpRide').checked)?'true':'false');
+   fd.append('grp_openhat',($('#grpOpenhat')&&$('#grpOpenhat').checked)?'true':'false');
+   fd.append('grp_lp',($('#grpLp')&&$('#grpLp').checked)?'true':'false');}
   fd.append('title',$('#title').value);fd.append('artist',$('#artist').value);
   if($('#jacket').files[0])fd.append('image_file',$('#jacket').files[0]);
   fd.append('bpm',$('#bpm').value);fd.append('dlevel',$('#dlevel').value);
@@ -806,6 +834,27 @@ function edRedo(){
 }
 const ED={GUTTER:42,RGUT:0,LANEW:0,OX:0,HEADER:28,PADB:12,FOOT:0,gridH:0,LANE_MIN:34,LANE_MAX:112};
 function edLanes(){return edModel?edModel.lanes:[];}
+/* ---- lane arranger: user-reorderable editor columns. VIEW ONLY - the order is a per-user
+   display preference persisted in localStorage and is NEVER written into the chart/.dtx (DTX is
+   channel-keyed, so column order can't affect output). Guarded behind an explicit Arrange mode so
+   normal click-to-add / drag-note editing can never reorder a lane by accident. ---- */
+let edArrangeMode=false,edLaneDrag=null;      // edLaneDrag={laneId,curX,grabDX}
+let edLaneAnimX=null,edArrangeRAF=null;       // per-lane animated centre x (id->x) + its rAF handle
+const ED_LANEORDER_KEY='dtx_lane_order';
+function edLaneOrderGet(){try{const s=localStorage.getItem(ED_LANEORDER_KEY);if(!s)return null;const a=JSON.parse(s);return Array.isArray(a)&&a.length?a:null;}catch(e){return null;}}
+function edLaneOrderSave(order){try{localStorage.setItem(ED_LANEORDER_KEY,JSON.stringify(order));}catch(e){}}
+function edLaneOrderClear(){try{localStorage.removeItem(ED_LANEORDER_KEY);}catch(e){}}
+/* Reorder edModel.lanes to the saved custom order, reconciled with the lanes actually present:
+   saved order filtered to present lanes, then any present lane missing from the saved order is
+   appended (keeps working even if the lane set ever differs from what was saved). */
+function edApplyLaneOrder(){
+  if(!edModel||!Array.isArray(edModel.lanes))return;
+  const saved=edLaneOrderGet();if(!saved)return;
+  const present=edModel.lanes.slice(),setP=new Set(present);
+  const ordered=saved.filter(l=>setP.has(l)),seen=new Set(ordered);
+  present.forEach(l=>{if(!seen.has(l))ordered.push(l);});
+  if(ordered.length===present.length)edModel.lanes=ordered;
+}
 function edBarObj(){return edModel.bars[edBar];}
 function edBarlen(){const b=edBarObj().barlen;return b[0]/b[1];}
 function edLayout(){const n=edLanes().length||1;
@@ -819,7 +868,14 @@ function edLayout(){const n=edLanes().length||1;
   ED.gridH=edCanvas.height-ED.HEADER-ED.FOOT-ED.PADB;}
 function edLaneStart(){return ED.OX+ED.GUTTER;}
 function edBlockRight(){return edLaneStart()+edLanes().length*ED.LANEW;}
-function edLaneX(i){return edLaneStart()+i*ED.LANEW;}
+function edLaneCenterSlot(i){return edLaneStart()+i*ED.LANEW+ED.LANEW/2;}   // static slot centre for index i
+/* left x of the column at index i. During an arrange animation each lane rides an eased centre x
+   (edLaneAnimX, keyed by lane id) so columns GLIDE between slots instead of snapping; otherwise the
+   static slot is used. Everything (headers, notes, pads) draws through this, so the whole column moves. */
+function edLaneX(i){
+  if(edArrangeMode&&edLaneAnimX){const id=edLanes()[i];const cx=edLaneAnimX[id];if(cx!=null)return cx-ED.LANEW/2;}
+  return edLaneStart()+i*ED.LANEW;
+}
 /* vertical zoom + scroll: BH = logical bar height; beat 1 anchored at the hit-line (bottom), rises upward */
 let edZoom=1,edScrollPx=0,edTransition=null;const ED_ZMIN=1,ED_ZMAX=6;
 /* review overlay: onsets the app detected in the audio + weak-voice attention flags.
@@ -878,10 +934,30 @@ function edDrawChip(c,x,y,w,h,color,opts){
 }
 
 function edDrawLanesBg(c,n){
-  for(let i=0;i<n;i++){const x=edLaneX(i),lane=edLanes()[i];
+  const heldId=(edArrangeMode&&edLaneDrag)?edLaneDrag.laneId:null;
+  let heldIdx=-1;
+  const drawLane=(i)=>{
+    const x=edLaneX(i),lane=edLanes()[i],held=heldId&&lane===heldId;
     c.fillStyle=(i%2)?"#12161d":"#0f1319";c.fillRect(x,ED.HEADER,ED.LANEW,ED.gridH);
-    c.fillStyle=LANE_COLORS[lane]||"#888";c.font="bold 11px system-ui";c.textAlign="center";
-    c.fillText((edModel.laneNames&&edModel.laneNames[lane])||lane,x+ED.LANEW/2,18);}
+    if(held){c.fillStyle='rgba(127,140,160,0.10)';c.fillRect(x,ED.HEADER,ED.LANEW,ED.gridH);} // lifted column tint
+    if(edArrangeMode){                                   // arrange-mode header affordance
+      if(held){                                          // the picked-up lane: filled, accent-bordered, shadowed
+        c.save();c.shadowColor='rgba(0,0,0,0.55)';c.shadowBlur=9;c.shadowOffsetY=2;
+        c.fillStyle=edShade(LANE_COLORS[lane]||'#888',-0.12);c.fillRect(x+1,1,ED.LANEW-2,ED.HEADER-2);c.restore();
+        c.strokeStyle=edAccent();c.lineWidth=2;c.strokeRect(x+1.5,1.5,ED.LANEW-3,ED.HEADER-3);
+      }else{                                             // the rest: faint slot outline + grip dots
+        c.fillStyle='rgba(127,140,160,0.12)';c.fillRect(x+1,2,ED.LANEW-2,ED.HEADER-4);
+        c.strokeStyle=edAccent();c.lineWidth=1;c.strokeRect(x+1.5,2.5,ED.LANEW-3,ED.HEADER-5);
+        c.fillStyle='#7f8ca0';
+        for(let gx=-3;gx<=3;gx+=3)for(let gy=-2;gy<=2;gy+=4){c.beginPath();c.arc(x+ED.LANEW/2+gx,9+gy,0.9,0,6.2832);c.fill();}
+      }
+    }
+    c.fillStyle=held?'#0b0e13':(LANE_COLORS[lane]||"#888");   // held header is colour-filled -> ink label for contrast
+    c.font="bold 11px system-ui";c.textAlign="center";c.textBaseline="alphabetic";
+    c.fillText((edModel.laneNames&&edModel.laneNames[lane])||lane,x+ED.LANEW/2,18);
+  };
+  for(let i=0;i<n;i++){if(heldId&&edLanes()[i]===heldId){heldIdx=i;continue;}drawLane(i);}  // others first
+  if(heldIdx>=0)drawLane(heldIdx);                                                          // held lane on top
 }
 function edDrawFoot(c,n){
   c.strokeStyle="#33404f";c.lineWidth=1.4;c.beginPath();c.moveTo(edLaneStart(),ED.HEADER+ED.gridH);c.lineTo(edBlockRight(),ED.HEADER+ED.gridH);c.stroke();
@@ -1377,6 +1453,9 @@ function edBulkCount(op){
   for(const bar of edModel.bars){
     if(op==='ride2crash')c+=bar.notes.filter(n=>n.lane==='19').length;
     else if(op==='lc2crash')c+=bar.notes.filter(n=>n.lane==='1A').length;
+    else if(op==='allcym2crash')c+=bar.notes.filter(n=>n.lane==='19'||n.lane==='1A').length;
+    else if(op==='openhat2closed')c+=bar.notes.filter(n=>n.lane==='18').length;
+    else if(op==='lp2kick')c+=bar.notes.filter(n=>n.lane==='1B').length;
     else if(op==='cleartoms')c+=bar.notes.filter(n=>n.lane==='14'||n.lane==='15'||n.lane==='17').length;
     else if(op==='thinhats'){const h=bar.notes.filter(n=>n.lane==='11'||n.lane==='18');c+=Math.floor(h.length/2);}
   }
@@ -1389,6 +1468,9 @@ function edBulkApply(op){
   for(const bar of edModel.bars){
     if(op==='ride2crash'){for(const n of bar.notes)if(n.lane==='19'){n.lane='16';n.slot=null;}edDedupeBar(bar);}
     else if(op==='lc2crash'){for(const n of bar.notes)if(n.lane==='1A'){n.lane='16';n.slot=null;}edDedupeBar(bar);}
+    else if(op==='allcym2crash'){for(const n of bar.notes)if(n.lane==='19'||n.lane==='1A'){n.lane='16';n.slot=null;}edDedupeBar(bar);}
+    else if(op==='openhat2closed'){for(const n of bar.notes)if(n.lane==='18'){n.lane='11';n.slot=null;}edDedupeBar(bar);}
+    else if(op==='lp2kick'){for(const n of bar.notes)if(n.lane==='1B'){n.lane='13';n.slot=null;}edDedupeBar(bar);}
     else if(op==='cleartoms'){bar.notes=bar.notes.filter(n=>!(n.lane==='14'||n.lane==='15'||n.lane==='17'));}
     else if(op==='thinhats'){
       for(const lane of ['11','18']){
@@ -1410,7 +1492,8 @@ function edDedupeBar(bar){
   bar.notes=keep;
 }
 function edSyncBulkMenu(){
-  const items=[['ride2crash','All rides → crash'],['lc2crash','Left crash → crash'],
+  const items=[['allcym2crash','All cymbals → crash'],['ride2crash','Ride → crash'],['lc2crash','Left crash → crash'],
+               ['openhat2closed','Open + closed hi-hat → one'],['lp2kick','Left pedal → kick'],
                ['thinhats','Thin hi-hats by half'],['cleartoms','Clear all toms']];
   for(const [op,label] of items){
     const b=document.getElementById('bulk-'+op);if(!b)continue;
@@ -1426,6 +1509,11 @@ async function openEditor(){
   if(edModel&&edModelJob===curJob){edShowEditor();edResize();edMiniResize();edShowBar();updateTicker();return;}
   try{const r=await fetch('/api/chart/'+curJob);const j=await r.json();if(j.error)throw new Error(j.error);
     edModel=j;edModelJob=curJob;edBar=0;edDirty=false;edZoom=1;edScrollPx=0;$('#edZoomLbl').textContent='100%';
+    edModel.lanesDefault=j.lanes.slice();   // server order = the default GITADORA layout (for Reset)
+    edApplyLaneOrder();          // apply the user's saved lane arrangement (view-only)
+    edArrangeMode=false;edLaneDrag=null;    // fresh chart always opens in normal edit mode
+    {const ab=$('#edArrangeBtn');if(ab)ab.classList.remove('active');const rb=$('#edArrangeReset');if(rb)rb.classList.add('hidden');
+     const wr=document.querySelector('.edcanvas-wrap');if(wr)wr.classList.remove('arranging','dragging');}
     edUndoStack=[];edRedoStack=[];edPendingPlayhead=null;edUndoBtnSync();edReviewDirty=false;edBuildReview();
     edClip=null;edClipMatches=[];edClipNear=false;{const cn=$('#edClipNear');if(cn)cn.checked=false;}edShowClipBar();
     edSel=new Set();edSelClip=null;edMarquee=null;edHideCtxMenu();
@@ -1437,6 +1525,11 @@ async function openEditor(){
 /* ---- per-bar audio playback + draggable scrubber/playhead ---- */
 const RATES=[0.25,0.5,0.75,1,1.25,1.5,2];let edRateI=3,edAudio=null,edRAF=null;
 let edPlayhead=0,edScrubbing=false,edSongPlaying=false,edSongRAF=null,edSongPlayFrac=-1,edPendingPlayhead=null;
+/* Full-length editor playback: the backing track can run PAST the last charted bar (an outro
+   after the final note). edAudioDur is the audio's true length; playback continues to it and
+   parks the playhead on the last bar through the outro, instead of cutting off at chart length.
+   (The packaged .dtx already plays the full BGM to its end in-game.) */
+function edAudioDur(){return (edAudio&&isFinite(edAudio.duration)&&edAudio.duration>0)?edAudio.duration:edSongTotal();}
 /* ---- drum-chip preview: play the charted kit one-shots as the playhead crosses notes ---- */
 const LANE_LABEL={'13':'bd','12':'sd','11':'hh','18':'ho','1B':'lp','14':'ht','15':'lt','17':'ft','16':'cy','1A':'cy','19':'rd'};
 let edAC=null,edKit={},edKitJob=null,edKitLoading=false,edSched=[],edSchedIdx=0;
@@ -1518,7 +1611,7 @@ function edPlaySong(){
   edStopAudio();
   edSongPlaying=true;edSetPlayIcon(true);
   edAudio.playbackRate=RATES[edRateI];
-  let startT=edAbsSec();if(startT>=edSongTotal()-0.03)startT=0;
+  let startT=edAbsSec();if(startT>=edAudioDur()-0.03)startT=0;   // at/after the end -> restart from the top
   try{edAudio.currentTime=startT;}catch(e){}
   edEnsureAC();
   edSchedStart(edModel.bars.map((_,i)=>i),startT);
@@ -1542,8 +1635,16 @@ function edSongLoop(){
     edDrawScroll(edCumW(edBar)+edPlayhead);
     edSongRAF=requestAnimationFrame(edSongLoop);return;
   }
-  if(cur>=edSongTotal()-0.005){edStopSong();edLandAt(edSongTotal());return;}
+  if(cur>=edAudioDur()-0.005){edStopSong();edLandAt(edSongTotal());return;}   // stop at the TRUE end of the audio (incl. any outro)
   edFireChips(cur);
+  const chartLen=edSongTotal();
+  if(cur>=chartLen-1e-6){                               // OUTRO: past the last bar but audio still playing - park on the last bar
+    const lastB=edModel.bars.length-1;if(edBar!==lastB){edBar=lastB;edUpdateBarLabel();}
+    edPlayhead=edModel.bars[lastB].barlen[0]/edModel.bars[lastB].barlen[1];
+    edSongPlayFrac=cur/edWhole();edDrawMini(false);
+    edDrawScroll(cur/edWhole());
+    edSongRAF=requestAnimationFrame(edSongLoop);return;
+  }
   const playAbs=cur/edWhole();
   const b=edBarAtTime(cur);
   edPlayhead=Math.max(0,Math.min(edModel.bars[b].barlen[0]/edModel.bars[b].barlen[1],(cur-edBarStart(b))/edWhole()));
@@ -1555,10 +1656,10 @@ function edSongLoop(){
 /* seek by ± seconds - works while playing OR paused */
 function edSeekBy(delta){
   if(!edAudio||!edModel)return;
-  const t=Math.max(0,Math.min(edSongTotal()-0.03,edAbsSec()+delta));
+  const t=Math.max(0,Math.min(edAudioDur()-0.03,edAbsSec()+delta));
   try{edAudio.currentTime=t;}catch(e){}
   if(edSongPlaying)edSchedStart(edModel.bars.map((_,i)=>i),t);
-  else edLandAt(t);
+  else edLandAt(Math.min(edSongTotal(),t));
 }
 /* jump a whole bar (prev/next) */
 function edStepBar(dir){
@@ -1726,7 +1827,9 @@ $('#edReviewBtn').onclick=edGotoReview;
 $('#edCopyBar').onclick=edCopyBar;
 $('#edRedo').onclick=edRedo;
 $('#edBulkBtn').onclick=e=>{e.stopPropagation();edToggleBulk();};
-['ride2crash','lc2crash','thinhats','cleartoms'].forEach(op=>{const b=$('#bulk-'+op);if(b)b.onclick=()=>edBulkApply(op);});
+$('#edArrangeBtn').onclick=edArrangeToggle;
+$('#edArrangeReset').onclick=edArrangeReset;
+['allcym2crash','ride2crash','lc2crash','openhat2closed','lp2kick','thinhats','cleartoms'].forEach(op=>{const b=$('#bulk-'+op);if(b)b.onclick=()=>edBulkApply(op);});
 document.addEventListener('mousedown',e=>{const w=e.target.closest&&e.target.closest('.bulkwrap');if(!w)edCloseBulk();});
 $('#edClipPaste').onclick=edPasteCurrent;
 $('#edClipPasteAll').onclick=edPasteAll;
@@ -1795,8 +1898,96 @@ edCanvas.addEventListener('wheel',e=>{
   });
   window.addEventListener('mouseup',()=>{if(drag){drag=null;th.classList.remove('grab');}});
 })();
+/* ---- arrange mode: drag a lane header horizontally to reorder columns ---- */
+function edArrangeSet(on){
+  edArrangeMode=!!on;edLaneDrag=null;edArrangeAnimStop();
+  if(edArrangeMode){edClearSel&&edClearSel(false);if(edSongPlaying)edStopSong();}
+  const b=$('#edArrangeBtn');if(b)b.classList.toggle('active',edArrangeMode);
+  const rb=$('#edArrangeReset');if(rb)rb.classList.toggle('hidden',!edArrangeMode);
+  const wrap=document.querySelector('.edcanvas-wrap');if(wrap){wrap.classList.toggle('arranging',edArrangeMode);wrap.classList.remove('dragging');}
+  edDraw();
+}
+function edArrangeToggle(){edArrangeSet(!edArrangeMode);}
+function edLaneDragStart(e){
+  const {x,y}=edRel(e);
+  if(y>ED.HEADER)return;                                 // only the header band starts a reorder (accident guard)
+  const i=Math.floor((x-edLaneStart())/ED.LANEW);
+  if(i<0||i>=edLanes().length)return;
+  const id=edLanes()[i];
+  edLaneDrag={laneId:id,curX:x,grabDX:x-edLaneCenterSlot(i)};   // remember grab offset so the lane doesn't jump
+  edArrangeAnimInit();                                   // seed every lane's animated centre at its current slot
+  const wrap=document.querySelector('.edcanvas-wrap');if(wrap)wrap.classList.add('dragging');
+  edArrangeAnimStart();
+}
+function edLaneDragMove(e){
+  if(!edLaneDrag)return;
+  const {x}=edRel(e);edLaneDrag.curX=x;
+  const n=edLanes().length;
+  const visC=x-edLaneDrag.grabDX;                        // where the held lane's CENTRE currently reads
+  let t=Math.floor((visC-edLaneStart())/ED.LANEW);       // slot it's over
+  t=Math.max(0,Math.min(n-1,t));
+  const cur=edModel.lanes.indexOf(edLaneDrag.laneId);
+  if(cur!==-1&&t!==cur){                                 // LIVE reorder: held lane takes slot t, others slide over
+    const arr=edModel.lanes;arr.splice(cur,1);arr.splice(t,0,edLaneDrag.laneId);
+    edDrawMini();
+  }
+  edArrangeAnimStart();                                  // ensure the easing loop is running
+}
+function edLaneDragEnd(){
+  const wrap=document.querySelector('.edcanvas-wrap');if(wrap)wrap.classList.remove('dragging');
+  if(!edLaneDrag){return;}
+  edLaneDrag=null;
+  edLaneOrderSave(edModel.lanes.slice());                // model already in final order - persist it
+  edArrangeAnimStart();                                  // let the held lane glide home, then the loop self-stops
+  edDrawMini();
+}
+/* ---- arrange animation: ease each lane's centre toward its target so columns slide, not snap ---- */
+function edArrangeAnimInit(){
+  edLaneAnimX={};
+  edLanes().forEach((id,i)=>{edLaneAnimX[id]=edLaneCenterSlot(i);});
+}
+function edArrangeAnimStart(){
+  if(edArrangeRAF)return;
+  if(!edLaneAnimX)edArrangeAnimInit();
+  edArrangeRAF=requestAnimationFrame(edArrangeTick);
+}
+function edArrangeTick(){
+  edArrangeRAF=null;
+  if(!edLaneAnimX){edDraw();return;}
+  const n=edLanes().length;let moving=false;
+  const minC=edLaneStart()+ED.LANEW/2,maxC=edLaneStart()+(n-0.5)*ED.LANEW;
+  for(let i=0;i<n;i++){
+    const id=edLanes()[i];
+    let tgt;
+    if(edLaneDrag&&id===edLaneDrag.laneId){tgt=Math.max(minC,Math.min(maxC,edLaneDrag.curX-edLaneDrag.grabDX));} // held follows cursor
+    else{tgt=edLaneCenterSlot(i);}                       // others ease to their slot
+    const cur=(edLaneAnimX[id]!=null)?edLaneAnimX[id]:tgt;
+    let nx=cur+(tgt-cur)*0.35;                            // ease
+    if(Math.abs(tgt-nx)<0.4)nx=tgt;                       // snap when close enough
+    if(nx!==cur)moving=true;
+    edLaneAnimX[id]=nx;
+  }
+  edDraw();
+  if(edLaneDrag||moving){edArrangeRAF=requestAnimationFrame(edArrangeTick);}
+  else{edLaneAnimX=null;edDraw();edDrawMini();}          // settled + not dragging -> back to static positions
+}
+function edArrangeAnimStop(){
+  if(edArrangeRAF){cancelAnimationFrame(edArrangeRAF);edArrangeRAF=null;}
+  edLaneAnimX=null;
+}
+function edArrangeReset(){
+  edLaneOrderClear();
+  if(edModel&&edModel.lanesDefault){
+    edArrangeAnimInit();                                 // seed at current spots, then glide to the default order
+    edModel.lanes=edModel.lanesDefault.slice();
+    edArrangeAnimStart();
+  }
+  edDrawMini();
+}
 edCanvas.addEventListener('mousedown',e=>{
-  if(e.button!==0||!edModel)return;const {x,y}=edRel(e);
+  if(e.button!==0||!edModel)return;
+  if(edArrangeMode){edLaneDragStart(e);return;}          // arrange mode: reorder lanes, no note editing
+  const {x,y}=edRel(e);
   if(x<edLaneStart()){edScrubStart(y);return;}          // left gutter = scrubber track
   if(edSongPlaying){edStopSong();return;}               // clicking the chart pauses; edit on the next click
   if(y>ED.HEADER+ED.gridH)return;                        // below the grid = instrument-pad band (not editable)
@@ -1810,6 +2001,7 @@ edCanvas.addEventListener('mousedown',e=>{
     if(!edBarObj().notes.some(nt=>nt.lane===ch&&Math.abs(nt.pos-sp.pos)<1e-9)){edSnapshot();edBarObj().notes.push({lane:ch,n:sp.n,d:sp.d,pos:sp.pos,slot:null});edDirty=true;}}
   edDraw();edDrawMini();updateTicker();});
 edCanvas.addEventListener('mousemove',e=>{
+  if(edArrangeMode){if(edLaneDrag)edLaneDragMove(e);return;}
   if(edScrubbing){edScrubMove(edRel(e).y);return;}
   if(edMarquee){const {x,y}=edRel(e);edMarquee.x1=x;edMarquee.y1=y;edDraw();return;}
   if(!edDrag||!edModel)return;const {x,y}=edRel(e);
@@ -1826,9 +2018,9 @@ edCanvas.addEventListener('mousemove',e=>{
   else if(!edDragCrossGuard&&y>beat1&&edBar>0){edDragCrossGuard=true;if(!edDragCross(-1))edDrag=null;}
   else if(edDrag&&y>=gTop&&y<=gBot){const sp=edSnap(y);edDrag.note.n=sp.n;edDrag.note.d=sp.d;edDrag.note.pos=sp.pos;}
   edDirty=true;edDraw();});
-window.addEventListener('mouseup',()=>{if(edScrubbing){edScrubEnd();}if(edMarquee){edMarqueeFinish();}if(edDrag){edDrag=null;edDragCrossGuard=false;edDraw();edDrawMini();updateTicker();}});
+window.addEventListener('mouseup',()=>{if(edLaneDrag){edLaneDragEnd();return;}if(edScrubbing){edScrubEnd();}if(edMarquee){edMarqueeFinish();}if(edDrag){edDrag=null;edDragCrossGuard=false;edDraw();edDrawMini();updateTicker();}});
 edCanvas.addEventListener('contextmenu',e=>{
-  e.preventDefault();if(!edModel)return;const {x,y}=edRel(e);const hit=edFind(x,y);
+  e.preventDefault();if(!edModel||edArrangeMode)return;const {x,y}=edRel(e);const hit=edFind(x,y);
   const onSel=hit&&edSel.has(edNoteKey(hit));
   if(onSel||edSelClip){edShowCtxMenu(e.clientX,e.clientY);return;}   // selection/clip present -> menu
   if(hit){edSnapshot();const a=edBarObj().notes,k=a.indexOf(hit);if(k>=0)a.splice(k,1);edDirty=true;edReviewDirty=true;if(edClip)edComputeClipMatches();edDraw();edDrawMini();updateTicker();}});  // else quick-delete

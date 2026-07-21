@@ -80,6 +80,58 @@ def events_from_json(bars_json, n_bars):
     return events, barlens
 
 
+# Lane-grouping folds: each maps a source drum channel onto a destination lane, matching the
+# editor's "Group voices" folds and DTXMania's standard combined lanes. The moved note takes
+# the destination lane's default sample. A tick already occupied on the destination wins (no
+# duplicate). This is chart-data folding (it changes the emitted chart) - the "9-lane"/"11-lane"
+# choice at generation and the editor bulk folds share this exact behavior.
+GROUP_FOLDS = {
+    "ride":    ("19", "16"),   # ride  -> right cymbal (CY)
+    "openhat": ("18", "11"),   # open hi-hat -> closed hi-hat (one HH lane)
+    "lp":      ("1B", "13"),   # left pedal  -> bass drum (BD)
+}
+# Preset -> which folds are active. "custom" is resolved from explicit flags by the caller.
+GROUP_PRESETS = {
+    "full":     (),                         # 11 lanes: nothing folded
+    "standard": ("ride", "openhat"),        # 9 lanes: ride+open-hat folded, LP kept separate
+}
+
+
+def group_lanes(events, folds):
+    """Fold drum lanes in-place per ``folds`` (an iterable of GROUP_FOLDS keys). Returns the
+    number of notes moved. Idempotent and order-independent; safe to run on any chart."""
+    active = [GROUP_FOLDS[f] for f in folds if f in GROUP_FOLDS]
+    if not active:
+        return 0
+    moved = 0
+    for bar in events:
+        for src, dst in active:
+            srcmap = bar.get(src)
+            if not srcmap:
+                continue
+            dstmap = bar.setdefault(dst, {})
+            dslot = LANE_DEFAULT_SLOT.get(dst, "04")
+            for pos in list(srcmap.keys()):
+                if pos not in dstmap:
+                    dstmap[pos] = dslot
+                moved += 1
+            bar.pop(src, None)
+    return moved
+
+
+def folds_from_opts(preset, ride=False, openhat=False, lp=False):
+    """Resolve a grouping preset (full/standard/custom) + custom flags into a fold-key list."""
+    p = str(preset or "full").strip().lower()
+    if p in GROUP_PRESETS:
+        return list(GROUP_PRESETS[p])
+    folds = []                                   # custom
+    if ride: folds.append("ride")
+    if openhat: folds.append("openhat")
+    if lp: folds.append("lp")
+    return folds
+
+
+
 # DTXMania / GITADORA difficulty tiers, keyed by the 0.00-9.99 auto-difficulty score.
 # Each: (key, .dtx filename, set.def label, set.def Ln slot, low, high)  -- range is [low, high)
 DIFF_TIERS = [
