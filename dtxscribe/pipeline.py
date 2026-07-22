@@ -137,6 +137,7 @@ def run(opts, workdir, assets_dir, progress):
     raw_audio = None
     audio_onsets = []   # raw per-lane onset positions for the editor review overlay (audio path only)
     sampled_lanes = []  # drum lanes voiced from real one-shots sliced from THIS song (audio path)
+    lead_in_barlens = []  # empty intro bars to prepend after rating (audio-only, full-song intro)
     if asrc == "none":
         skp("audio")
     else:
@@ -189,12 +190,24 @@ def run(opts, workdir, assets_dir, progress):
                 drum_stem, bpm=bpm, progress=log, standardize=do_std)
             kit_samples = {}
         bpm = bpm or bpm2
-        # The transcription puts the first detected hit at chart t=0; trim the
-        # backing track to start there too so chart and BGM stay in sync.
+        # The transcription puts the first detected hit at chart t=0. Rather than trimming
+        # the intro off the backing track, keep the FULL song and represent the intro as
+        # empty "lead-in" bars prepended to the chart (applied after rating, section 6f) so
+        # the first note still lands on the first real drum hit. Any planning issue falls
+        # back to the original trim-to-first-hit behavior so audio and chart stay in sync.
         if audio_anchor and audio_anchor > 0.05:
-            log(f"Aligning backing track to first drum hit (trim {audio_anchor:.2f}s).")
-            full_wav = audio.trim_start(full_wav, os.path.join(workdir, "full_trim.wav"), audio_anchor)
-            drum_stem = audio.trim_start(drum_stem, os.path.join(workdir, "drums_trim.wav"), audio_anchor)
+            try:
+                lead_in_barlens = notes.plan_leadin(barlens, bpm, audio_anchor)
+            except Exception as e:
+                lead_in_barlens = []
+                log(f"Intro lead-in planning failed ({str(e)[:60]}); trimming instead.")
+            if lead_in_barlens:
+                log(f"Keeping the full song: the {audio_anchor:.2f}s intro becomes "
+                    f"{len(lead_in_barlens)} lead-in bar(s); the chart still starts on the first hit.")
+            else:
+                log(f"Aligning backing track to first drum hit (trim {audio_anchor:.2f}s).")
+                full_wav = audio.trim_start(full_wav, os.path.join(workdir, "full_trim.wav"), audio_anchor)
+                drum_stem = audio.trim_start(drum_stem, os.path.join(workdir, "drums_trim.wav"), audio_anchor)
 
         # ---------- 3c. PER-SONG DRUM VOICING ----------
         # Voice the chart with one-shots sliced from THIS song's isolated stems (so toms,
@@ -396,6 +409,22 @@ def run(opts, workdir, assets_dir, progress):
     # ---------- 6e. FAITHFULNESS (final chart vs the original source) ----------
     fscore = faith.compare(original_events, events)
     log(faith.summary_line(fscore, "audio" if opts["tab_source"] == "audio" else "tab"))
+
+    # ---------- 6f. INTRO LEAD-IN (audio-only, full-song intro) ----------
+    # Rating is done on the played content, so now prepend the empty intro bars planned at
+    # section 3b. The full (untrimmed) BGM keeps the song's real intro; these bars push the
+    # first note to the first drum hit so chart and audio line up. The editor sees the bars
+    # too, so it plays the intro for free. No-op on the tab/MIDI paths.
+    if lead_in_barlens:
+        n_lead = len(lead_in_barlens)
+        events = [dict() for _ in lead_in_barlens] + events
+        barlens = list(lead_in_barlens) + list(barlens)
+        # Keep the review-overlay onsets aligned: their bar indices were computed against
+        # the pre-lead-in chart (first hit = bar 0), so shift each by the lead-in count.
+        for o in audio_onsets:
+            if isinstance(o, dict) and o.get("bar") is not None:
+                o["bar"] += n_lead
+        log(f"Added {n_lead} intro lead-in bar(s); the chart now plays from the song's start.")
 
     dtx_name, tier_label, tier_slot = dtx.tier_info(tier_key)
     setdata("dlevel_tier", tier_key)

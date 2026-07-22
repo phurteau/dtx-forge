@@ -88,10 +88,14 @@ Unzip the downloaded `Artist - Title.zip` into your DTXMania songs folder
 ## Uninstall / free up space
 
 DTXScribe is portable - to remove the app, just **delete its folder**. Nothing is written to the
-registry or Program Files. The one thing left behind is the drum-separation **model weights** it
-downloads on first use (often **1 GB+**), which live in `%LOCALAPPDATA%\DTXScribe`. To reclaim that
-space, run **`uninstall.cmd`** - it asks first and touches nothing else (your charts and the app
-folder are untouched).
+registry or Program Files.
+
+The one thing left outside the folder is the drum-separation **model weights** it downloads on first
+use (often **1 GB+**), under `%LOCALAPPDATA%\DTXScribe`. For a thorough cleanup, run
+**`uninstall.cmd`** - it lists everything DTXScribe put on your PC (model weights, cache, logs, any
+older pre-rebrand data, Demucs weights and shortcuts) with sizes, asks before removing anything, and
+can optionally delete the program folder itself at the end. Your saved `.dtx` charts are never
+touched.
 
 ---
 

@@ -114,6 +114,25 @@ def index():
         return f.read()
 
 
+@app.get("/favicon.png")
+def favicon_png():
+    """The browser-UI favicon (assets/favicon.png)."""
+    p = os.path.join(ASSETS, "favicon.png")
+    if os.path.isfile(p):
+        return FileResponse(p, media_type="image/png", headers={"Cache-Control": "max-age=86400"})
+    return JSONResponse({"error": "not found"}, status_code=404)
+
+
+@app.get("/favicon.ico")
+def favicon_ico():
+    """Fallback .ico for browsers that request /favicon.ico directly."""
+    for name, mt in (("icon.ico", "image/x-icon"), ("favicon.png", "image/png")):
+        p = os.path.join(ASSETS, name)
+        if os.path.isfile(p):
+            return FileResponse(p, media_type=mt, headers={"Cache-Control": "max-age=86400"})
+    return JSONResponse({"error": "not found"}, status_code=404)
+
+
 @app.get("/pads/{name}")
 def pad_icon(name: str):
     """Serve the DTXMania lane pad icons (web/pads/*.png)."""

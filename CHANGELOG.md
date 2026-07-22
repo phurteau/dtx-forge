@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.9.0
+
+Full-length songs, a new app icon, and a proper uninstaller.
+
+- **The whole song is now in the chart.** Audio-only charts keep the complete backing track -
+  the intro before the first drum hit and the outro after the last note - instead of trimming to
+  the first hit. The chart rides on the full song with lead-in bars, so the first note still lands
+  exactly on the first real hit, and the editor plays the intro and outro too.
+- **More reliable YouTube downloads.** DTXScribe now tries several YouTube players when fetching
+  audio, so it gets past the intermittent "confirm you're not a bot" check far more often with no
+  login. If a video still needs a sign-in, staying signed in with Firefox (or using **Upload file**)
+  works reliably.
+- **New app icon.** A distinctive DTXScribe mark on the app window, the taskbar, and the browser tab.
+- **Full uninstaller.** `uninstall.cmd` now finds and removes everything DTXScribe puts on your PC -
+  the downloaded model weights, cache and logs, any older pre-rebrand data, and shortcuts - after
+  listing them with sizes and asking first. It can optionally delete the program folder itself at
+  the end, and it never touches your saved charts.
+
 ## v1.8.0
 
 Editor flexibility and cleaner charts: rearrange the lanes to your taste, group drum voices

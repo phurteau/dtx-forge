@@ -25,25 +25,35 @@ def to_ogg(src, dst, q=5):
 def download_audio_url(url, out_base, progress=None):
     """Download audio from ANY yt-dlp-supported URL (YouTube, SoundCloud, Bandcamp,
     Vimeo, X/Twitter, a direct .mp3/.wav/.m4a link, and 1000+ more sites), tiered:
-      1) anonymous (works for most users / IPs / sites)
-      2) auto browser cookies (Firefox/Chrome/Edge/Brave) - reuses the user's
-         existing site session, snapshotting the DB to dodge file-locks
+      1) anonymous, trying several YouTube player clients - the mobile/tv clients use
+         different endpoints that usually sail past the "confirm you're not a bot" gate
+         with no login at all
+      2) auto browser cookies (Firefox/Chrome/Edge/Brave) - reuses the user's existing
+         site session; Firefox's DB can be snapshotted while open, but a RUNNING Chromium
+         browser (Chrome/Edge/Brave) locks its cookie DB exclusively, so those work only
+         when that browser is fully closed
       3) raise a friendly error suggesting Upload file
-    Requires a JS runtime (deno) + EJS solver for sites (e.g. YouTube) that need it."""
+    Requires a JS runtime (deno, bundled) + EJS solver for sites (e.g. YouTube) that need it."""
     import yt_dlp
 
+    # Player-client fallbacks for YouTube. 'default' + the mobile/tv clients hit different
+    # API endpoints; when the web client is bot-gated, tv/ios/android typically still return
+    # playable audio, so we don't need cookies for the common case. Harmless for non-YouTube
+    # sites (the youtube extractor args are simply ignored elsewhere).
     common = {
         "format": "bestaudio/best",
         "outtmpl": out_base + ".%(ext)s",
         "quiet": True, "no_warnings": True, "noprogress": True,
-        # enable the JS challenge solver (needed for YouTube signatures)
-        "extractor_args": {"youtube": {"jsc_runtime": ["deno"]}},
+        "extractor_args": {"youtube": {
+            "jsc_runtime": ["deno"],
+            "player_client": ["default", "tv", "ios", "android", "web_safari", "mweb"],
+        }},
         "remote_components": ["ejs:github"],
     }
 
     def _try(opts, label):
         if progress:
-            progress(f"YouTube: trying {label}...")
+            progress(f"Fetching audio: trying {label}...")
         try:
             with yt_dlp.YoutubeDL(opts) as ydl:
                 ydl.download([url])
@@ -51,15 +61,16 @@ def download_audio_url(url, out_base, progress=None):
             return max(hits, key=os.path.getsize) if hits else None
         except Exception as e:
             if progress:
-                progress(f"YouTube {label} failed: {str(e)[:120]}")
+                progress(f"…{label} didn't work: {str(e)[:120]}")
             return None
 
-    # 1) anonymous
-    got = _try(dict(common), "anonymous")
+    # 1) anonymous (multi-client) - no login needed for most videos/sites
+    got = _try(dict(common), "no login")
     if got:
         return got
 
-    # 2) auto browser cookies (snapshot to avoid locked DBs)
+    # 2) auto browser cookies - reuse a signed-in session for gated/age-restricted videos
+    locked_browser = False
     for browser in ("firefox", "chrome", "edge", "brave"):
         snap = _snapshot_cookiefile(browser)
         opts = dict(common)
@@ -67,14 +78,33 @@ def download_audio_url(url, out_base, progress=None):
             opts["cookiefile"] = snap
         else:
             opts["cookiesfrombrowser"] = (browser,)
-        got = _try(opts, f"{browser} session cookies")
+        got = _try(opts, f"{browser} sign-in")
         if got:
             return got
+        # note if a Chromium browser blocked us because it's open (exclusive DB lock)
+        if browser in ("chrome", "edge", "brave") and _browser_running(browser):
+            locked_browser = True
 
+    hint = (" A browser that's open can't share its login cookies - fully closing "
+            f"{'/'.join(b.title() for b in ('chrome','edge','brave') if _browser_running(b)) or 'the browser'} "
+            "and trying again can help.") if locked_browser else ""
     raise RuntimeError(
-        "Couldn't download audio from that link. If it's a site that needs a login "
-        "(e.g. YouTube), make sure you're signed in to it in your browser, or use the "
-        "'Upload file' option to add the audio directly.")
+        "Couldn't download audio from that link. If it needs a login or is age-restricted "
+        "(e.g. some YouTube videos), sign in to it in Firefox, or use the 'Upload file' "
+        "option to add the audio directly." + hint)
+
+
+def _browser_running(browser):
+    """True if a Chromium browser (whose cookie DB would be exclusively locked) is running."""
+    exe = {"chrome": "chrome.exe", "edge": "msedge.exe", "brave": "brave.exe"}.get(browser)
+    if not exe:
+        return False
+    try:
+        out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {exe}", "/NH"],
+                             capture_output=True, text=True, timeout=6)
+        return exe.lower() in (out.stdout or "").lower()
+    except Exception:
+        return False
 
 
 def _snapshot_cookiefile(browser):

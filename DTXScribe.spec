@@ -61,7 +61,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=False,          # no console window (native app)
-    icon=None,
+    icon=os.path.join(os.getcwd(), "assets", "icon.ico"),
 )
 coll = COLLECT(
     exe, a.binaries, a.zipfiles, a.datas,
