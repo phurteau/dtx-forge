@@ -12,6 +12,8 @@ Built from a pipeline verified to place ~99% of charted notes within ±10–20 m
 
 ![DTXScribe - light theme](docs/screenshot-light.png)
 
+**Coming next:** record your own charts by playing an electronic drum kit - see the [Roadmap](ROADMAP.md).
+
 ---
 
 ## Highlights
