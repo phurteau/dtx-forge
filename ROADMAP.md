@@ -9,7 +9,7 @@ and dates/scope may change.
 
 The next major feature. Instead of transcribing a chart from audio or a tab, you connect your
 electronic drum module, play, and DTXScribe turns your performance straight into a playable
-DTXManiaNX chart - then opens it in the editor for cleanup.
+DTXMania chart - then opens it in the editor for cleanup.
 
 **Two ways to record:**
 

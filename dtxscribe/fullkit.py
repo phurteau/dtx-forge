@@ -461,7 +461,7 @@ def from_audio_fullkit(drum_wav, bpm=None, progress=None, standardize=True):
         if progress: progress("Using LarsNet only (inagoy unavailable).")
     else:
         sr = ina_sr; stems = ina; isolated_hat = False
-        if progress: progress("Using inagoy only (LarsNet unavailable - no ride).")
+        if progress: progress("Using inagoy only (LarsNet unavailable, no ride).")
 
     return transcribe_stems(stems, sr, bpm=bpm, progress=progress,
                             has_isolated_hat=isolated_hat, standardize=standardize)

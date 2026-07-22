@@ -12,7 +12,7 @@ rather than an artificially low "easy". Blends five signals:
   * variety   - how much of the kit is used (toms/cymbals/ride richness)
 
 Each maps to 0..1, is weighted, then scaled to 0..9.99. Returns hundredths (int),
-matching DTXManiaNX's stored value (e.g. 6.40 -> 640).
+matching DTXMania's stored value (e.g. 6.40 -> 640).
 """
 from . import notes as N
 

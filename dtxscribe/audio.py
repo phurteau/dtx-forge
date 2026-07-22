@@ -85,7 +85,7 @@ def download_audio_url(url, out_base, progress=None):
         if browser in ("chrome", "edge", "brave") and _browser_running(browser):
             locked_browser = True
 
-    hint = (" A browser that's open can't share its login cookies - fully closing "
+    hint = (" A browser that's open can't share its login cookies. Fully closing "
             f"{'/'.join(b.title() for b in ('chrome','edge','brave') if _browser_running(b)) or 'the browser'} "
             "and trying again can help.") if locked_browser else ""
     raise RuntimeError(

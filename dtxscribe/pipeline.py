@@ -9,7 +9,7 @@ class Cancelled(Exception):
 
 def normalize_dlevel(text, default="50"):
     """Accept '0-99' (tens scale, 50->5.00) or '0.00-9.99' (literal). Emit the
-    DTXManiaNX hundredths integer that displays that difficulty (5.55 -> 555)."""
+    DTXMania hundredths integer that displays that difficulty (5.55 -> 555)."""
     s = str(text).strip() or str(default)
     try:
         if "." in s:
@@ -20,7 +20,7 @@ def normalize_dlevel(text, default="50"):
     except ValueError:
         d = 5.0
     d = max(0.0, min(9.99, d))
-    return int(round(d * 100))           # hundredths; DTXManiaNX shows d
+    return int(round(d * 100))           # hundredths; DTXMania shows d
 
 
 def _slug(s):
@@ -87,7 +87,7 @@ def run(opts, workdir, assets_dir, progress):
     need_stem = (drum_mode in ("remove", "quiet")) or (opts["tab_source"] == "audio")
     if opts["tab_source"] == "audio" and asrc == "none":
         raise RuntimeError("No notation was provided, so DTXScribe needs audio to "
-                           "transcribe the drums from - add a YouTube link or upload an audio file.")
+                           "transcribe the drums from. Add a YouTube link or upload an audio file.")
 
     # ---------- 1. NOTATION ----------
     stg("notation", "Resolving notation source...")

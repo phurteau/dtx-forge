@@ -1,4 +1,4 @@
-"""DTXScribe - automated DTXManiaNX chart generator."""
+"""DTXScribe - automated DTXMania chart generator."""
 import os as _os, shutil as _shutil
 
 __version__ = "1.9.0"

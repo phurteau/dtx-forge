@@ -85,7 +85,7 @@ Fill in **Title** and **Artist** (both required), pick your sources, hit **Gener
 ## Install a chart
 
 Unzip the downloaded `Artist - Title.zip` into your DTXMania songs folder
-(e.g. `DTXManiaNX\...\Songs\`). Launch DTXMania → it rescans → play.
+(e.g. `DTXMania\...\Songs\`). Launch DTXMania → it rescans → play.
 
 ## Uninstall / free up space
 

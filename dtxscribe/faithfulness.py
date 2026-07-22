@@ -67,7 +67,7 @@ def summary_line(f, source="tab"):
         bits.append(f"{f['added']} added")
     if source == "audio":
         if bits:
-            return "Transcribed from audio (beta) - cleanup changes: " + "; ".join(bits) + "."
-        return "Transcribed from audio (beta) - notes exactly as detected."
+            return "Transcribed from audio (beta), cleanup changes: " + "; ".join(bits) + "."
+        return "Transcribed from audio (beta), notes exactly as detected."
     detail = ("; ".join(bits)) if bits else "tab untouched"
     return f"Tab faithfulness: {f['percent']:.1f}% ({detail})."

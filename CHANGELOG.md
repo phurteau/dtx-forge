@@ -48,7 +48,7 @@ transcribe drums into DTXMania charts. Same tool, same workflow, new name.
 - **Your downloads carry over.** On first launch the app automatically moves your existing
   data folder (`%LOCALAPPDATA%\DTXForge` → `%LOCALAPPDATA%\DTXScribe`), so the ~1 GB of
   drum-separation model weights you already downloaded are reused instead of re-fetched.
-- **Seamless update.** Updating from an older build through the in-app updater keeps working
+- **Updates keep working.** Updating from an older build through the in-app updater keeps working
   - GitHub redirects the old release URLs to the renamed repository.
 
 ## v1.6.2
