@@ -1,60 +1,76 @@
-"""Auto difficulty rating (DTXMania 0.00–9.99 scale).
+"""Auto difficulty rating (DTXMania 0.00-9.99 scale).
 
-Estimates how hard a chart is to PLAY, rated from a skilled-drummer reference so
-the number is honest - a beginner reading it gets a realistic sense of the demand,
-rather than an artificially low "easy". Blends five signals:
+Driven by the published level reference table in docs/difficulty-levels.md. Every level
+from 1.0 to 9.5 is anchored to two measurable quantities:
 
-  * density   - overall notes per second
-  * burst     - busiest 1-second window (fills / bursts)
-  * feet      - fastest sustained single-foot rate (double-bass pressure)
-  * hands     - fastest sustained hand-stream rate
-  * coord     - how often 3+ limbs fire together + double-bass presence
-  * variety   - how much of the kit is used (toms/cymbals/ride richness)
+  * avg density - notes per second across the whole chart
+  * 2-sec peak  - notes per second in the busiest 2-second window (fills and bursts)
 
-Each maps to 0..1, is weighted, then scaled to 0..9.99. Returns hundredths (int),
-matching DTXMania's stored value (e.g. 6.40 -> 640).
+Both rise monotonically with level, so each column is an invertible lookup. A chart is
+rated by measuring its own density and 2-sec peak, mapping each back onto the table to
+get a level, then averaging the two. The score a chart gets is therefore the level whose
+density and burst load it actually matches. The skill descriptions in the table (double
+bass, rolls, and so on) are the qualitative context behind those two rate columns; the
+rates already climb as those skills appear, so measuring them is enough.
+
+Returns hundredths (int), matching DTXMania stored values (e.g. 6.40 -> 640).
 """
 from . import notes as N
 
-# calibration anchors (rate = hits/sec). Tuned so a plain rock groove reads ~3,
-# a busy idol/pop chart ~6–7, and relentless double-bass metal ~8.5–9.5.
-_NPS_LO, _NPS_HI   = 2.0, 13.0
-_BURST_LO, _BURST_HI = 5.0, 22.0
-_FOOT_LO, _FOOT_HI = 3.0, 12.0
-_HAND_LO, _HAND_HI = 4.0, 14.0
-SIMUL_EPS = 0.012
+# Level anchors from docs/difficulty-levels.md: (level, avg_density_nps, peak_2s_nps).
+_LEVEL_ANCHORS = [
+    (1.0, 1.7, 3.0),
+    (1.5, 1.9, 3.5),
+    (2.0, 2.2, 4.0),
+    (2.5, 2.5, 4.5),
+    (3.0, 2.8, 5.0),
+    (3.5, 3.5, 6.0),
+    (4.0, 4.2, 7.0),
+    (4.5, 4.9, 8.0),
+    (5.0, 5.6, 8.5),
+    (5.5, 6.1, 10.0),
+    (6.0, 6.8, 10.5),
+    (6.5, 7.5, 12.0),
+    (7.0, 8.4, 13.5),
+    (7.5, 9.1, 14.5),
+    (8.0, 9.6, 16.0),
+    (8.5, 10.4, 17.5),
+    (9.0, 11.3, 19.0),
+    (9.5, 12.8, 22.5),
+]
+_DENSITY_WEIGHT = 0.5   # avg density and 2-sec peak contribute equally
+_FLOOR = 1.0            # easiest defined level; a non-empty chart never rates below it
 
 
-def _clamp01(x):
-    return 0.0 if x < 0 else (1.0 if x > 1 else x)
-
-
-def _fast_rate(times, frac=0.10):
-    """Sustained fast rate for a limb: median of the fastest `frac` of gaps -> hits/s.
-    Using a robust percentile (not the single min gap) avoids one grace note
-    inflating difficulty."""
-    ts = sorted(times)
-    gaps = [ts[i] - ts[i-1] for i in range(1, len(ts)) if ts[i] - ts[i-1] > SIMUL_EPS]
-    if not gaps:
-        return 0.0
-    gaps.sort()
-    k = max(1, int(len(gaps) * frac))
-    fastest = gaps[:k]
-    med = fastest[len(fastest) // 2]
-    return 1.0 / med if med > 0 else 0.0
-
-
-def _peak_nps(times, win=1.0):
-    """Max notes in any `win`-second sliding window, as notes/sec."""
+def _peak_nps(times, win=2.0):
+    """Max notes in any win-second sliding window, expressed as notes/sec."""
     ts = sorted(times)
     if not ts:
         return 0.0
-    best = 0; j = 0
+    best = 0
+    j = 0
     for i in range(len(ts)):
         while ts[i] - ts[j] > win:
             j += 1
         best = max(best, i - j + 1)
     return best / win
+
+
+def _interp_level(value, idx):
+    """Invert one column of the anchor table: given a measured metric, return the level
+    it corresponds to. idx=1 reads avg density, idx=2 reads the 2-second peak. Below the
+    first anchor the line runs down to (0 metric, 0 level); above the last anchor it keeps
+    the final segment slope, so a very busy chart can still climb toward 9.99."""
+    pts = [(a[idx], a[0]) for a in _LEVEL_ANCHORS]     # (metric, level), ascending
+    m0, l0 = pts[0]
+    if value <= m0:
+        return (value / m0 * l0) if m0 > 0 else l0
+    for (ma, la), (mb, lb) in zip(pts, pts[1:]):
+        if ma <= value <= mb:
+            return la if mb == ma else la + (value - ma) / (mb - ma) * (lb - la)
+    (ma, la), (mb, lb) = pts[-2], pts[-1]
+    slope = (lb - la) / (mb - ma) if mb != ma else 0.0
+    return lb + (value - mb) * slope
 
 
 def compute(events, barlens, bpm):
@@ -69,65 +85,21 @@ def compute(events, barlens, bpm):
     span = max(times) - min(times)
     span = span if span > 1e-6 else 1.0
 
-    foot_t = [n["t"] for n in flat if n["ch"] in N.FOOT_LANES]
-    rf_t   = [n["t"] for n in flat if n["ch"] == N.BD]
-    lf_t   = [n["t"] for n in flat if n["ch"] == N.LP]
-    hand_t = [n["t"] for n in flat if n["ch"] in N.HAND_LANES]
+    avg_density = total / span
+    peak_2s = _peak_nps(times, win=2.0)
 
-    nps   = total / span
-    burst = _peak_nps(times)
-    foot  = max(_fast_rate(rf_t), _fast_rate(lf_t), _fast_rate(foot_t) * 0.6)
-    hands = _fast_rate(hand_t)
+    lvl_density = _interp_level(avg_density, 1)
+    lvl_peak = _interp_level(peak_2s, 2)
+    level = _DENSITY_WEIGHT * lvl_density + (1.0 - _DENSITY_WEIGHT) * lvl_peak
 
-    # coordination: share of simultaneous clusters that need 3+ limbs
-    clusters = _cluster(sorted(flat, key=lambda n: n["t"]))
-    heavy = sum(1 for c in clusters if _limbs_needed(c) >= 3)
-    coord = heavy / max(1, len(clusters))
-    if lf_t:                                   # any real double-bass adds pressure
-        coord = min(1.0, coord + 0.15)
-
-    # kit variety: distinct lanes used, 3 (kick/snare/hat) .. 9+
-    lanes = len(set(n["ch"] for n in flat))
-    variety = _clamp01((lanes - 3) / 6.0)
-
-    f_density = _clamp01((nps   - _NPS_LO)   / (_NPS_HI   - _NPS_LO))
-    f_burst   = _clamp01((burst - _BURST_LO) / (_BURST_HI - _BURST_LO))
-    f_feet    = _clamp01((foot  - _FOOT_LO)  / (_FOOT_HI  - _FOOT_LO))
-    f_hands   = _clamp01((hands - _HAND_LO)  / (_HAND_HI  - _HAND_LO))
-
-    raw = (0.26 * f_density + 0.20 * f_burst + 0.20 * f_feet
-           + 0.17 * f_hands + 0.11 * coord + 0.06 * variety)
-
-    # skilled-drummer reference: a genuine full-kit groove is never "trivial",
-    # so lift the floor a touch and let the top reach 9.99 for extreme charts.
-    display = round(min(9.99, 0.6 + raw * 9.4), 2)
+    display = round(max(_FLOOR, min(9.99, level)), 2)
     return {
         "value": int(round(display * 100)),
         "display": display,
         "factors": {
-            "nps": round(nps, 2), "burst": round(burst, 1),
-            "foot_rate": round(foot, 1), "hand_rate": round(hands, 1),
-            "coord": round(coord, 2), "lanes": lanes,
+            "avg_density": round(avg_density, 2),
+            "peak_2s": round(peak_2s, 1),
+            "level_density": round(lvl_density, 2),
+            "level_peak": round(lvl_peak, 2),
         },
     }
-
-
-def _limbs_needed(cluster):
-    h = sum(1 for n in cluster if n["ch"] in N.HAND_LANES)
-    need = min(2, h)
-    if any(n["ch"] == N.BD for n in cluster):
-        need += 1
-    if any(n["ch"] == N.LP for n in cluster):
-        need += 1
-    return need
-
-
-def _cluster(sorted_notes):
-    clusters, cur = [], []
-    for n in sorted_notes:
-        if cur and n["t"] - cur[-1]["t"] > SIMUL_EPS:
-            clusters.append(cur); cur = []
-        cur.append(n)
-    if cur:
-        clusters.append(cur)
-    return clusters

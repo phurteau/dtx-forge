@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.9.5
+
+Public preview. Record mode, a finer difficulty scale, and remappable keyboard keys. This is a preview build, so some rough edges and bugs may still be present.
+
+- **Record mode.** Play a take on an electronic drum kit over MIDI, or on your computer keyboard, and DTXScribe turns it into a chart. Set a tempo, play, then edit the result like any other chart. Play-along to a song, a count-in, tap tempo, and per-device latency calibration are built in.
+- **Learn my kit.** A short walkthrough maps your module's pads, so kits that send non-standard notes still chart correctly.
+- **Remappable keyboard keys.** In Record mode you can reassign which key hits which drum. Your layout is saved, with a reset button to restore the defaults.
+- **Finer difficulty scale.** Charts are rated on a 1.0 to 9.99 scale that tracks note density and peak bursts, shown in the output and used to pick the DTXMania difficulty tier.
+- **Clean exit.** Closing the app, by the Exit button or the window X, shuts everything down with nothing left running in the background.
+- **Fixes.** Hardened against malformed input and edge cases found in testing.
+
 ## v1.9.0
 
 Full-length songs, a new app icon, and a proper uninstaller.

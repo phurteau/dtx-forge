@@ -401,9 +401,9 @@ def run(opts, workdir, assets_dir, progress):
         dlevel_display = dscore["display"]
         fa = dscore["factors"]
         log(f"Auto-difficulty: {dlevel_display:.2f}/9.99 "
-            f"(density {fa.get('nps')}/s, peak {fa.get('burst')}/s, "
-            f"foot {fa.get('foot_rate')}/s, hands {fa.get('hand_rate')}/s, "
-            f"{fa.get('lanes')} lanes). Rated for a player with some drum skill.")
+            f"(density {fa.get('avg_density')}/s -> lvl {fa.get('level_density')}, "
+            f"2-sec peak {fa.get('peak_2s')}/s -> lvl {fa.get('level_peak')}). "
+            f"Rated against the level reference table.")
         setdata("dlevel", dlevel_display)
 
     # ---------- 6e. FAITHFULNESS (final chart vs the original source) ----------

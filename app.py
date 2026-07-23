@@ -114,6 +114,184 @@ def index():
         return f.read()
 
 
+# --- e-drum Record proof-of-concept (dev preview; not wired into the main flow yet) ---
+@app.get("/record-poc", response_class=HTMLResponse)
+def record_poc():
+    p = os.path.join(WEB, "record-poc.html")
+    if not os.path.isfile(p):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    with open(p, encoding="utf-8") as f:
+        return f.read()
+
+
+def _parse_hits(raw):
+    """Normalize a captured stream into a list of (time_s, note, velocity) tuples."""
+    hits = []
+    for h in (raw or []):
+        t, n = float(h[0]), int(h[1])
+        v = int(h[2]) if len(h) > 2 else 127
+        hits.append((t, n, v))
+    return hits
+
+
+def _parse_sig(sig):
+    """Accept a '4/4' string or a [num, den] pair; return (num, den) ints."""
+    sig = sig or [4, 4]
+    if isinstance(sig, str):
+        num, den = (int(x) for x in sig.split("/"))
+    else:
+        num, den = int(sig[0]), int(sig[1])
+    return num, den
+
+
+@app.post("/api/record/quantize")
+def api_record_quantize(payload: dict = Body(...)):
+    """Turn a captured live note-on stream into a chart via the real record.quantize_live,
+    and return the editor chart JSON (no server job -- used for a quick preview). hits:
+    [[time_s, midi_note(, velocity)], ...]."""
+    from dtxscribe import record, dtx
+    try:
+        hits = _parse_hits(payload.get("hits"))
+        bpm = float(payload.get("bpm") or 120)
+        cal = float(payload.get("calibration_ms") or 0.0)
+        count_in = int(payload.get("count_in_bars") or 0)
+        start = float(payload.get("start_time") or 0.0)
+        num, den = _parse_sig(payload.get("time_sig"))
+        remap = payload.get("profile_remap") or None
+        if remap:
+            remap = {int(k): int(v) for k, v in remap.items()}
+        events, barlens, n_bars = record.quantize_live(
+            hits, bpm, calibration_ms=cal, start_time=start, count_in_bars=count_in,
+            time_sig=(num, den), profile=remap)
+        meta = dict(title=payload.get("title", "Recording"), artist=payload.get("artist", ""))
+        chart = dtx.chart_to_json(events, barlens, bpm, meta)
+        chart["chips"] = dtx.count_chips(events)
+        chart["captured"] = len(hits)
+        chart["hasAudio"] = False
+        return chart
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/record/create")
+async def api_record_create(
+    hits: str = Form("[]"),
+    bpm: float = Form(120),
+    calibration_ms: float = Form(0.0),
+    count_in_bars: int = Form(0),
+    start_time: float = Form(0.0),
+    time_sig: str = Form("4/4"),
+    title: str = Form("Recording"),
+    artist: str = Form(""),
+    profile_remap: str = Form(""),
+    audio: UploadFile = File(None),
+):
+    """Finalize a recorded take into a real editable/exportable job. Quantizes the captured
+    hits, builds a full job result (chart + repack + stats), and returns the job id so the
+    editor and the Save/Download path work exactly as for a generated chart. An optional
+    uploaded audio file (play-along) becomes the chart's backing track."""
+    from dtxscribe import record
+    job_id = uuid.uuid4().hex[:12]
+    wd = os.path.join(JOBS, job_id)
+    os.makedirs(wd, exist_ok=True)
+    try:
+        parsed = _parse_hits(json.loads(hits or "[]"))
+        num, den = _parse_sig(time_sig)
+        remap = None
+        if profile_remap.strip():
+            remap = {int(k): int(v) for k, v in json.loads(profile_remap).items()}
+        events, barlens, n_bars = record.quantize_live(
+            parsed, float(bpm), calibration_ms=float(calibration_ms),
+            start_time=float(start_time), count_in_bars=int(count_in_bars),
+            time_sig=(num, den), profile=remap)
+        if parsed and not any(events):
+            # Hits WERE captured, but none matched a known drum pad (an off-brand module whose
+            # notes are outside General MIDI). Point the user at the mapping tools instead of the
+            # generic empty-take message.
+            raise ValueError(
+                f"Captured {len(parsed)} hits, but none matched a known drum pad. "
+                "Pick your module under Kit Mapping, or run Learn my kit to map it.")
+        bgm_src = None
+        if audio is not None and audio.filename:
+            ext = os.path.splitext(audio.filename)[1].lower() or ".mp3"
+            bgm_src = os.path.join(wd, "song" + ext)
+            with open(bgm_src, "wb") as f:
+                shutil.copyfileobj(audio.file, f)
+        meta = dict(title=title, artist=artist)
+        result = _build_recording_result(wd, events, barlens, float(bpm), meta, bgm_src=bgm_src)
+        _jobs[job_id] = {"status": "done", "reporter": Reporter(), "result": result, "error": None}
+        return {"job_id": job_id, "editable": True,
+                "chips": result["stats"]["chips"], "captured": len(parsed),
+                "bars": len(events), "hasAudio": result["chart"]["has_audio"]}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@app.post("/api/record/detect-bpm")
+async def api_record_detect_bpm(audio: UploadFile = File(...)):
+    """Estimate the tempo of an uploaded song for play-along. Decodes to a mono WAV and runs
+    the transcription tempo tracker. The user confirms or overrides the result."""
+    from dtxscribe import record, audio as _audio
+    tmp = os.path.join(JOBS, "bpm_" + uuid.uuid4().hex[:8])
+    os.makedirs(tmp, exist_ok=True)
+    try:
+        ext = os.path.splitext(audio.filename or "song.mp3")[1].lower() or ".mp3"
+        src = os.path.join(tmp, "src" + ext)
+        with open(src, "wb") as f:
+            shutil.copyfileobj(audio.file, f)
+        wav = os.path.join(tmp, "decoded.wav")   # distinct from src so a .wav upload never self-encodes
+        _audio.to_wav(src, wav)
+        bpm = record.detect_bpm(wav)
+        return {"bpm": bpm}
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+@app.get("/api/record/profiles")
+def api_record_profiles():
+    """List saved learn-my-kit profiles plus per-device calibration and the last-used name."""
+    from dtxscribe import record
+    store = record.load_store()
+    return {"profiles": store["profiles"], "calibration": store["calibration"],
+            "last_profile": store.get("last_profile"),
+            "brands": list(record.BRAND_PROFILES.keys())}
+
+
+@app.post("/api/record/profiles")
+def api_record_save_profile(payload: dict = Body(...)):
+    """Save a named profile from the learn wizard. captures: {gm_note: raw_note_or_null}."""
+    from dtxscribe import record
+    name = (payload.get("name") or "").strip()
+    if not name:
+        return JSONResponse({"error": "A profile name is required."}, status_code=400)
+    captures = {}
+    for k, v in (payload.get("captures") or {}).items():
+        captures[int(k)] = (None if v is None else int(v))
+    remap, skipped = record.build_profile_from_captures(captures)
+    saved = record.save_profile(name, remap, skipped, device=payload.get("device", ""))
+    return {"ok": True, "name": name, "profile": saved}
+
+
+@app.delete("/api/record/profiles/{name}")
+def api_record_delete_profile(name: str):
+    from dtxscribe import record
+    return {"ok": record.delete_profile(name)}
+
+
+@app.post("/api/record/calibration")
+def api_record_set_calibration(payload: dict = Body(...)):
+    """Persist input-latency calibration for a device (keyed by its MIDI name)."""
+    from dtxscribe import record
+    device = payload.get("device") or "default"
+    ms = float(payload.get("ms") or 0.0)
+    return {"ok": True, "calibration": record.set_calibration(device, ms)}
+
+
+
+
+
 @app.get("/favicon.png")
 def favicon_png():
     """The browser-UI favicon (assets/favicon.png)."""
@@ -353,7 +531,7 @@ def _build_import_result(wd, dtx_text, bgm_src=None, image_src=None, src_folder=
     from dtxscribe import dtx, audio as _audio
     events, barlens, bpm, meta = dtx.parse_dtx(dtx_text)
     if not any(events):
-        raise ValueError("No drum notes found - only standard DTX drum channels (11–1C) are read.")
+        raise ValueError("No drum notes found. Only standard DTX drum channels (11–1C) are read.")
     kit_dir, kit_files, sampled_lanes = _import_custom_kit(wd, src_folder, meta)
     # BGM: real audio from a zip, else a second of silence so the track object exists
     has_audio = False
@@ -397,6 +575,71 @@ def _build_import_result(wd, dtx_text, bgm_src=None, image_src=None, src_folder=
                  source="import", title=title, artist=artist)
     return dict(folder=None, zip=None, stats=stats,
                 playability={"verdict": "imported", "score": 100, "issue_count": 0},
+                faithfulness={"percent": 100, "moved": 0, "dropped": 0, "added": 0},
+                chart=chart, repack=repack)
+
+
+def _build_recording_result(wd, events, barlens, bpm, meta, bgm_src=None):
+    """Turn a live recording's quantized events into a _jobs result dict (chart + repack +
+    stats), mirroring _build_import_result so /api/save, /api/package, /api/download and the
+    editor all work on a recorded take. Freeplay passes bgm_src=None (a silent BGM plus the
+    built-in synth kit); play-along passes the uploaded song, which becomes the chart BGM.
+    Difficulty is auto-rated from the take, exactly as a generated chart is."""
+    import wave
+    from dtxscribe import dtx, drumkit, difficulty, audio as _audio
+    if not any(events):
+        raise ValueError("No drum notes were captured, so there is nothing to chart.")
+    builtin = os.path.join(ASSETS, "drumkit")
+    kit_files = drumkit.ensure_kit(builtin)             # {label: 'label.wav'}
+    kit_dir = builtin
+    has_audio = False
+    bgm_file = os.path.join(wd, "bgm.ogg")
+    if bgm_src and os.path.exists(bgm_src):
+        try:
+            _audio.to_ogg(bgm_src, bgm_file); has_audio = True
+        except Exception:
+            has_audio = False
+    if not has_audio:
+        silent = os.path.join(wd, "silence.wav")
+        with wave.open(silent, "w") as w:
+            w.setnchannels(1); w.setsampwidth(2); w.setframerate(44100)
+            w.writeframes(b"\x00\x00" * 44100)
+        try:
+            _audio.to_ogg(silent, bgm_file)
+        except Exception:
+            bgm_file = silent
+    meta = dict(meta or {})
+    meta["bpm"] = float(bpm)
+    meta["bgm"] = os.path.basename(bgm_file)
+    title = meta.get("title") or "Recording"
+    artist = meta.get("artist") or ""
+    meta["title"], meta["artist"] = title, artist
+    # auto-rate difficulty from the performance (same rater generate uses)
+    try:
+        score = float(difficulty.compute(events, barlens, float(bpm))["display"])
+    except Exception:
+        score = 5.0
+    meta["dlevel"] = int(round(score * 100))
+    tier_key = dtx.tier_from_score(score)
+    dtx_name, tier_label, tier_slot = dtx.tier_info(tier_key)
+    song_name = (f"{pipeline._slug(artist)} - {pipeline._slug(title)}") if artist else pipeline._slug(title)
+    repack = dict(out_dir=os.path.join(wd, "dist"), song_name=song_name,
+                  bgm_file=bgm_file, kit_dir=kit_dir, kit_files=kit_files,
+                  dtx_name=dtx_name, set_label=tier_label, set_slot=tier_slot,
+                  image_file=None)
+    chart = dict(events=events, barlens=barlens, bpm=float(bpm), meta=meta,
+                 has_audio=has_audio, review=dict(onsets=[]))
+    stats = dict(measures=len(events), chips=dtx.count_chips(events), bpm=meta["bpm"],
+                 drum_mode=("keep" if has_audio else "none"), removed_drums=False,
+                 has_audio=has_audio, audio_source=("play-along" if has_audio else "freeplay"),
+                 sampled_lanes=[], sampled_count=0,
+                 playability="recorded", play_score=100, play_issues=0,
+                 faithfulness=100, notes_moved=0, notes_dropped=0, notes_added=0,
+                 dlevel=score, dlevel_auto=True,
+                 dlevel_tier=tier_key, dtx_file=dtx_name, tier_manual=False,
+                 source="record", title=title, artist=artist)
+    return dict(folder=None, zip=None, stats=stats,
+                playability={"verdict": "recorded", "score": 100, "issue_count": 0},
                 faithfulness={"percent": 100, "moved": 0, "dropped": 0, "added": 0},
                 chart=chart, repack=repack)
 
@@ -717,5 +960,10 @@ def api_quit():
 
 if __name__ == "__main__":
     import uvicorn
+    try:
+        from dtxscribe import winjob
+        winjob.enable_kill_on_close()   # same bulletproof cleanup for a direct `python app.py`
+    except Exception:
+        pass
     print("DTXScribe -> http://127.0.0.1:8765")
     uvicorn.run(app, host="127.0.0.1", port=8765, log_level="warning")

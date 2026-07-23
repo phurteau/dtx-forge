@@ -19,6 +19,17 @@ if sys.stdout is None or sys.stderr is None:
     if sys.stderr is None:
         sys.stderr = _null
 
+# Bind the whole process tree into a Windows Job Object that dies with us, so no child
+# (uvicorn, a mid-encode ffmpeg, a yt-dlp/deno download, the WebView2 window) can ever be
+# left running after DTXScribe exits -- by the Exit button, the window's X, or a crash. This
+# runs before the server thread and before any subprocess could spawn. Best-effort, no-op off
+# Windows.
+try:
+    from dtxscribe import winjob
+    winjob.enable_kill_on_close()
+except Exception:
+    pass
+
 # One-time rebrand data-folder migration (DTXForge -> DTXScribe) BEFORE anything
 # touches %LOCALAPPDATA%, so an updated install keeps its already-downloaded model
 # weights instead of re-fetching ~1 GB under the new name. Best-effort.

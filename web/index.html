@@ -93,9 +93,13 @@
   .card h2 .tagpill{text-transform:none;letter-spacing:0;font-size:10px;font-weight:600;color:var(--dim);border:1px solid var(--line);border-radius:10px;padding:2px 7px;margin-left:8px}
   .card h2 .tagpill.req{color:var(--acc2);border-color:var(--acc2)}
   label{display:block;font-size:13px;color:var(--dim);margin:10px 0 4px}
-  input[type=text],input[type=number],input[type=file],select{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;box-shadow:var(--inset);transition:border-color .15s,box-shadow .15s}
+  input[type=text],input[type=number],input[type=file],select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;box-shadow:var(--inset);transition:border-color .15s,box-shadow .15s}
   select{cursor:pointer;height:42px}
-  input[type=file]{padding:8px} input:focus,select:focus{border-color:var(--acc2);box-shadow:var(--inset),0 0 0 3px color-mix(in srgb,var(--acc2) 22%,transparent)}
+  input[type=file]{padding:8px} input:focus,select:focus,textarea:focus{border-color:var(--acc2);box-shadow:var(--inset),0 0 0 3px color-mix(in srgb,var(--acc2) 22%,transparent)}
+  /* #url doubles as a URL box and a multiline ASCII-tab paste area: monospace keeps tab
+     columns aligned, it auto-grows to fit a pasted tab, and horizontal scroll handles wide tabs. */
+  #url{display:block;min-height:42px;max-height:240px;line-height:1.45;resize:vertical;
+    font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;white-space:pre;overflow:auto}
   .seg{display:flex;flex-wrap:wrap;gap:8px}
   .seg button{flex:1;min-width:105px;background:var(--btnface);border:1px solid var(--line);color:var(--dim);padding:11px;border-radius:8px;cursor:pointer;font-size:14px;box-shadow:var(--btnhi);transition:transform .12s,border-color .15s,box-shadow .15s,color .15s}
   .seg button.active{background:linear-gradient(180deg,color-mix(in srgb,var(--acc2) 30%,var(--acc)),var(--acc));border-color:var(--acc2);color:var(--acc-ink);font-weight:600;box-shadow:var(--btnhi),0 3px 12px color-mix(in srgb,var(--acc2) 28%,transparent)}
@@ -285,7 +289,7 @@
   <button class="updx" id="updX" type="button" title="Dismiss">✕</button>
 </div>
 <header>
-  <h1>DTXScribe</h1><span class="ver" id="verLbl">v1.9.0</span><span class="verstat hidden" id="verStat"></span>
+  <h1>DTXScribe</h1><span class="ver" id="verLbl">v1.9.5</span><span class="verstat hidden" id="verStat"></span>
   <span class="tag">tab / audio → DTXMania chart</span>
   <div class="tools">
     <button class="hdrreset" id="resetForm" type="button" title="Clear everything and start over">↻ Reset</button>
@@ -301,9 +305,144 @@
   </div>
 </header>
 
+<style>
+  /* ---- Record mode (additive; Generate/editor untouched unless mode=record) ---- */
+  .modeswitch{display:flex;gap:4px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:10px;padding:4px;margin-bottom:12px}
+  .modeswitch button{flex:1;background:transparent;border:0;color:var(--dim);border-radius:7px;
+    padding:8px 6px;cursor:pointer;font-size:13px;font-weight:700}
+  .modeswitch button.active{background:var(--acc);color:#fff;box-shadow:var(--btnhi)}
+  .modeswitch button:hover:not(.active){color:var(--txt)}
+  .recdev{font-size:12px;padding:8px 10px;border-radius:8px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--dim)}
+  .recdev.ok{border-color:var(--acc2);color:var(--txt)}
+  .reclegend{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12px;margin-top:8px}
+  .reclegend .k{background:var(--panel2);border:1px solid var(--line);border-radius:6px;
+    padding:1px 7px;text-align:center;font-weight:700;min-width:34px;color:var(--txt);
+    font-family:inherit;font-size:12px;cursor:pointer}
+  .reclegend .k:hover{border-color:var(--acc2)}
+  .reclegend .k.listening{background:var(--acc);color:#fff;border-color:var(--acc2)}
+  .reclegendctl{display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .recstage{display:flex;flex-direction:column;height:100%;min-height:0}
+  .recstage.hidden{display:none}
+  .rectransport{display:flex;align-items:center;gap:10px;padding:10px 4px 12px}
+  .recbtn{background:var(--acc);border:1px solid var(--acc2);color:#fff;border-radius:8px;
+    padding:9px 18px;font-size:14px;font-weight:700;cursor:pointer}
+  .recbtn.stop{background:var(--panel2);border-color:var(--line);color:var(--txt)}
+  .recbtn:disabled{opacity:.4;cursor:not-allowed}
+  .recclock{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--dim);font-size:13px}
+  .reccanvas-wrap{flex:1 1 auto;min-height:0;border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;background:var(--bg2)}
+  #recCanvas{display:block;width:100%;height:100%}
+  #recHits div{padding:2px 0;border-bottom:1px solid var(--line);color:var(--dim);
+    font-size:12px;font-variant-numeric:tabular-nums}
+  /* calibration slider follows the app accent (theme green by default, or the user's picked
+     color via the Color picker, since --acc2 is what that picker updates). */
+  #recCal{accent-color:var(--acc2);cursor:pointer}
+  .recmini{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+    border-radius:8px;padding:8px 10px;font-size:13px;font-weight:600;cursor:pointer}
+  .recmini:hover:not(:disabled){border-color:var(--acc2);color:var(--acc2)}
+  .recmini:disabled{opacity:.45;cursor:not-allowed}
+  .recmini.go{background:var(--acc);border-color:var(--acc2);color:#fff}
+  .segrow{display:flex;gap:4px;background:var(--panel2);border:1px solid var(--line);
+    border-radius:8px;padding:3px}
+  .segrow .seg{flex:1;background:transparent;border:0;color:var(--dim);border-radius:6px;
+    padding:7px 6px;cursor:pointer;font-size:13px;font-weight:600}
+  .segrow .seg.active{background:var(--acc);color:#fff}
+  .recwiz{position:fixed;inset:0;background:rgba(0,0,0,.62);display:flex;align-items:center;
+    justify-content:center;z-index:50}
+  .recwiz.hidden{display:none}
+  .recwiz-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:22px;width:min(420px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .recwiz-card h3{margin:0 0 6px;font-size:16px}
+  .recwiz-prompt{font-size:20px;margin:10px 0 4px}
+  .recwiz-prompt b{color:var(--acc2)}
+  .recwiz-note{font-size:13px;color:var(--dim);min-height:18px}
+  .recwiz-steps{display:flex;flex-wrap:wrap;gap:5px;margin:14px 0}
+  .recwiz-steps .st{font-size:11px;padding:2px 8px;border-radius:20px;border:1px solid var(--line);
+    color:var(--dim)}
+  .recwiz-steps .st.done{border-color:var(--acc2);color:var(--txt)}
+  .recwiz-steps .st.cur{background:var(--acc);color:#fff;border-color:var(--acc2)}
+  .recwiz-steps .st.skip{opacity:.5;text-decoration:line-through}
+  .recwiz-btns{display:flex;gap:8px;margin-top:8px}
+  .recwiz-btns .recmini{width:auto;flex:1}
+</style>
 <main class="workspace">
   <!-- DETAILS -->
   <section class="wcol details" id="wcol-details">
+    <div class="modeswitch" id="modeSwitch">
+      <button data-mode="generate" class="active">Generate</button>
+      <button data-mode="record">Record</button>
+      <button data-mode="open">Open</button>
+    </div>
+    <div class="card recgen" id="recSetup" style="display:none">
+      <h2><span class="n">R</span>Record from your drum kit</h2>
+      <label>Input Device <span class="hint">(e-drum module over MIDI)</span></label>
+      <div class="recdev" id="recDev">Scanning for e-drums...</div>
+      <div class="row" style="margin-top:8px">
+        <div><label>Kit Mapping</label>
+          <select id="recProfile"><option value="">General MIDI (default)</option></select></div>
+        <div><label style="visibility:hidden">Learn</label>
+          <button type="button" class="recmini" id="recLearnBtn">Learn my kit</button></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Title</label><input type="text" id="recTitle" placeholder="Recording"></div>
+        <div><label>Artist <span class="hint">(optional)</span></label><input type="text" id="recArtist"></div>
+      </div>
+      <label style="margin-top:10px">Mode</label>
+      <div class="segrow" id="recModeSeg">
+        <button type="button" class="seg active" data-rec="freeplay">Freeplay</button>
+        <button type="button" class="seg" data-rec="playalong">Play Along</button>
+      </div>
+      <div id="recPlayBox" class="hidden" style="margin-top:8px">
+        <label>Song <span class="hint">(becomes the chart BGM)</span></label>
+        <input type="file" id="recSong" accept="audio/*">
+        <div class="row" style="margin-top:6px">
+          <div><button type="button" class="recmini" id="recDetectBpm" disabled>Detect BPM</button></div>
+          <div><button type="button" class="recmini" id="recTap">Tap Tempo</button></div>
+        </div>
+        <div class="hint" id="recPlayHint" style="margin-top:4px">Upload a song, detect its tempo, then play the click to check it lines up before you record.</div>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <div><label>BPM <span class="hint">(required)</span></label><input type="number" id="recBpm" value="120" min="40" max="300"></div>
+        <div><label>Time Signature</label>
+          <select id="recSig">
+            <option value="4/4" selected>4/4</option><option value="3/4">3/4</option>
+            <option value="6/8">6/8</option><option value="2/4">2/4</option>
+            <option value="5/4">5/4</option><option value="7/8">7/8</option>
+          </select></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <div><label>Count-in</label>
+          <select id="recCountin"><option value="1" selected>1 bar</option><option value="2">2 bars</option><option value="0">none</option></select></div>
+        <div><label>Metronome</label>
+          <select id="recMetro"><option value="monitor" selected>Click while recording</option><option value="off">Off</option></select></div>
+      </div>
+      <label style="margin-top:10px">Calibration: input latency <span id="recCalVal">0</span> ms</label>
+      <input type="range" id="recCal" min="-60" max="120" value="0">
+      <button type="button" class="recmini" id="recConfirmClick" style="margin-top:8px">Play the click</button>
+      <div class="hint" style="margin-top:6px">Freeplay: set a tempo and play. Your kit's own sounds are your monitor and the app records your hits. Play along to a song by switching Mode above.</div>
+      <h2 style="margin-top:16px"><span class="n">K</span>Keyboard to pads <span class="hint">(no kit? try it)</span></h2>
+      <div class="reclegend" id="recLegend"></div>
+      <div class="reclegendctl"><button type="button" class="recmini" id="recKeyReset">Reset keys</button><span class="hint" id="recKeyHint">Click a key, then press a new one to reassign it.</span></div>
+    </div>
+    <div class="recwiz hidden" id="recWiz">
+      <div class="recwiz-card">
+        <h3>Learn my kit</h3>
+        <div class="recwiz-prompt" id="recWizPrompt">Hit your <b>kick</b>.</div>
+        <div class="recwiz-note" id="recWizNote">Waiting for a hit...</div>
+        <div class="recwiz-steps" id="recWizSteps"></div>
+        <div class="recwiz-name hidden" id="recWizNameRow" style="display:none;gap:8px;margin:6px 0 10px">
+          <input type="text" id="recWizName" placeholder="Name this kit" value="My kit" style="flex:1">
+        </div>
+        <div class="recwiz-btns">
+          <button type="button" class="recmini" id="recWizSkip">Skip this pad</button>
+          <button type="button" class="recmini go hidden" id="recWizSave">Save profile</button>
+          <button type="button" class="recmini" id="recWizCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h2><span class="n">1</span>Details<span class="tagpill req">required</span></h2>
       <div class="row"><div><label>Title <span class="hint">(required)</span></label><input type="text" id="title"></div>
@@ -341,7 +480,7 @@
       <h2><span class="n">3</span>Notation source<span class="tagpill">optional</span></h2>
       <div class="seg" id="tabseg"><button data-v="url" class="active">URL / Paste</button><button data-v="file">Upload File</button></div>
       <div id="src-url"><label>Tab URL or pasted tab</label>
-        <input type="text" id="url" placeholder="Songsterr link · Guitar Pro / MIDI URL · or paste an ASCII tab"></div>
+        <textarea id="url" rows="1" placeholder="Songsterr link · Guitar Pro / MIDI URL · or paste an ASCII tab"></textarea></div>
       <div id="src-file" class="hidden"><label>Tab file</label><input type="file" id="tabfile" accept=".gp,.gp3,.gp4,.gp5,.gpx,.gtp,.mid,.midi,.txt,.tab">
         <div class="hint">Guitar Pro, MIDI, or a plain-text drum tab.</div></div>
       <div class="hint" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><b>Leave notation blank to transcribe the drums from the audio</b> - it separates the track into a full kit. Models download once on first use. <i>(Beta.)</i></div>
@@ -383,6 +522,15 @@
   <!-- EDITOR (middle) -->
   <section class="wcol editor" id="wcol-editor">
     <div class="edplaceholder" id="edPlaceholder"><div><b>Your chart appears here</b></div></div>
+    <div class="recstage hidden" id="recStage">
+      <div class="rectransport">
+        <button class="recbtn" id="recStart">● Start</button>
+        <button class="recbtn stop" id="recStop" disabled>■ Stop</button>
+        <span id="recStatus" style="color:var(--dim)">Set a tempo, then Start.</span>
+        <span class="recclock" id="recClock">bar 0 · 0.0s · 0 hits</span>
+      </div>
+      <div class="reccanvas-wrap"><canvas id="recCanvas"></canvas></div>
+    </div>
     <div class="edbox hidden" id="edBox">
       <div class="edhead">
         <h3 id="edTitle">Edit notes</h3>
@@ -464,6 +612,7 @@
         <div class="steps" id="steps"></div>
       </div>
       <h3 id="outh">Console</h3>
+      <div id="recHitsPanel" class="hidden"><div class="lbl" style="margin-bottom:6px">Inputs</div><div id="recHits"></div></div>
       <div id="log"><div class="ready">Ready <span class="cur"></span></div></div>
       <div id="done" class="hidden">
         <div id="stats" style="margin-top:14px"></div>
@@ -481,7 +630,7 @@
 <script>
 const $=s=>document.querySelector(s);
 const STAGES=[["notation","Notation"],["audio","Audio"],["separate","Drum Separation"],["align","Auto-sync"],["playability","Playability"],["editing","Editing"],["package","Package"]];
-const ICON={pending:"",active:"",done:"✓",skipped:"–",error:"✕",editing:"✎"};
+const ICON={pending:"",active:"",done:"✓",skipped:"-",error:"✕",editing:"✎"};
 let pkgState='',lastStages=[];
 function renderSteps(stages){
   if(stages!==undefined)lastStages=stages||[];
@@ -623,6 +772,7 @@ function resetView(){
 }
 function resetPage(){
   ['#title','#artist','#jacket','#dlevel','#bpm','#yt','#url','#audio','#tabfile'].forEach(s=>{const e=$(s);if(e)e.value='';});
+  urlAutoGrow();
   {const jp=$('#jacketPrev');if(jp){jp.src='';jp.classList.add('hidden');}}
   $('#dtier').value='auto';
   ['#bpm','#dlevel','#dtier'].forEach(s=>{const e=$(s);if(e)e.dataset.auto='';});
@@ -637,6 +787,15 @@ function resetPage(){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 $('#makeAnother').onclick=resetPage;
+/* #url is a textarea so a pasted multiline ASCII tab keeps its rows. Auto-grow it to fit the
+   pasted content (up to a cap), and shrink back on reset. Function declaration is hoisted, so
+   resetPage above can call it safely. */
+function urlAutoGrow(){ const u=$('#url'); if(!u)return; u.style.height='auto'; u.style.height=Math.min(u.scrollHeight,240)+'px'; }
+(function(){ const u=$('#url'); if(!u)return;
+  u.addEventListener('input',urlAutoGrow);
+  u.addEventListener('paste',()=>setTimeout(urlAutoGrow,0));
+  urlAutoGrow();
+})();
 /* Always-visible Reset (tab bar): clear the form + start over; confirm only if a chart/edits exist. */
 async function resetForm(){
   if((curJob||edDirty)&&!confirm('Start over? This clears the form and discards the current chart.'))return;
@@ -2073,6 +2232,438 @@ async function checkUpdate(){
   bar.classList.remove('hidden');
 }
 checkUpdate();
+
+/* =====================================================================================
+   RECORD MODE: capture live e-drum (or keyboard) hits, quantize, hand off to the editor.
+   Additive: Generate/Open flows are untouched; Record only activates when its mode is on.
+   ===================================================================================== */
+const REC_LANES=[
+  {key:'r',gm:49,ch:'16',tag:'CY',label:'Crash',  color:'#2386c7'},
+  {key:'j',gm:42,ch:'11',tag:'HH',label:'Hi-Hat', color:'#2f94c4'},
+  {key:'k',gm:46,ch:'18',tag:'HO',label:'Open HH',color:'#8fd4e8'},
+  {key:'d',gm:48,ch:'14',tag:'HT',label:'Hi Tom', color:'#57ec33'},
+  {key:'f',gm:38,ch:'12',tag:'SD',label:'Snare',  color:'#fee92d'},
+  {key:'g',gm:45,ch:'15',tag:'LT',label:'Low Tom',color:'#fe2d2e'},
+  {key:' ',gm:36,ch:'13',tag:'BD',label:'Kick',   color:'#6b54c9'},
+  {key:'h',gm:41,ch:'17',tag:'FT',label:'Floor',  color:'#fea62d'},
+  {key:'u',gm:51,ch:'19',tag:'RD',label:'Ride',   color:'#3358cf'},
+];
+const REC_KEYMAP={};REC_LANES.forEach((L,i)=>REC_KEYMAP[L.key]=i);
+const recKeyName=k=>k===' '?'Space':k.toUpperCase();
+// --- remappable keyboard-to-pad keys (persisted in localStorage) ---
+const REC_KEY_DEFAULTS=REC_LANES.map(L=>L.key);   // original keys, for Reset
+let recRebindLane=-1;                              // lane index awaiting a new key, or -1
+function recKeymapRebuild(){ for(const k in REC_KEYMAP)delete REC_KEYMAP[k]; REC_LANES.forEach((L,i)=>{ if(L.key)REC_KEYMAP[L.key]=i; }); }
+function recKeysSaveAll(){ const m={}; REC_LANES.forEach(L=>m[L.ch]=L.key); try{localStorage.setItem('dtxscribe.reckeys',JSON.stringify(m));}catch(_){} }
+function recKeysApplyStored(){ let ov={}; try{ov=JSON.parse(localStorage.getItem('dtxscribe.reckeys')||'{}')||{};}catch(_){ov={};}
+  const seen={}; REC_LANES.forEach(L=>{ const k=ov[L.ch]; if(typeof k==='string'&&k&&!(k in seen)){ L.key=k; seen[k]=1; } }); recKeymapRebuild(); }
+function recKeyHintSet(t){ const h=document.getElementById('recKeyHint'); if(h)h.textContent=t; }
+function recRenderLegend(){ const leg=document.getElementById('recLegend'); if(!leg)return;
+  leg.innerHTML=REC_LANES.map((L,i)=>`<button type="button" class="k${i===recRebindLane?' listening':''}" data-lane="${i}" title="Reassign the ${L.label} key">${i===recRebindLane?'…':recKeyName(L.key)}</button><div>${L.label}</div>`).join('');
+  leg.querySelectorAll('.k').forEach(b=>b.onclick=()=>recStartRebind(+b.dataset.lane)); }
+function recStartRebind(i){ recRebindLane=(recRebindLane===i)?-1:i; recRenderLegend();
+  recKeyHintSet(recRebindLane<0?'Click a key, then press a new one to reassign it.':`Press a key for ${REC_LANES[i].label}\u2026 (Esc to cancel)`); }
+function recBindKey(i,key){ key=(key===' ')?' ':key.toLowerCase(); const oldKey=REC_LANES[i].key; const other=REC_KEYMAP[key];
+  if(other!==undefined&&other!==i)REC_LANES[other].key=oldKey;   // swap: the displaced lane inherits this lane's old key
+  REC_LANES[i].key=key; recRebindLane=-1; recKeymapRebuild(); recKeysSaveAll(); recRenderLegend();
+  recKeyHintSet(`${REC_LANES[i].label} \u2192 ${recKeyName(key)}`); }
+function recKeysReset(){ REC_LANES.forEach((L,i)=>L.key=REC_KEY_DEFAULTS[i]); recRebindLane=-1; recKeymapRebuild();
+  try{localStorage.removeItem('dtxscribe.reckeys');}catch(_){} recRenderLegend(); recKeyHintSet('Keys reset to default.'); }
+let recMode='generate';
+let recState='idle';          // idle | countin | recording | done
+let recT0=0;                  // master-clock time (s) of the musical downbeat
+let recHitsArr=[];            // {t, lane, gm, vel}  (t relative to the downbeat)
+let recAC=null;               // AudioContext for metronome beeps only (never the clock)
+let recRAF=0, recCiTimer=0;
+let recAcStart=0, recMetroBeat=0, recCiBeats=0, recMetroMonitor=true;
+let recProfileRemap=null;      // {raw_note: gm_note} from the active learn-my-kit profile
+let recDevName='';             // current MIDI device name (for calibration persistence)
+let recPlayAlong=false;        // play-along mode: record over an uploaded song
+let recPlayFile=null;          // the uploaded song File (play-along BGM)
+let recAudioEl=null;           // <audio> element playing the song in play-along
+let recCaptures=null;          // learn-my-kit wizard: {gm_note: raw_note_or_null}
+let recWizLane=-1;             // learn wizard current lane index (-1 = not running)
+const recFlash={};
+const REC_PX_PER_SEC=130;
+const recMnow=()=>performance.now()/1000;
+const recNum=()=>{const v=(document.getElementById('recSig')||{}).value||'4/4';return Math.max(1,parseInt(v.split('/')[0],10)||4);};
+const recBpmVal=()=>Math.max(40,+(document.getElementById('recBpm')||{}).value||120);
+
+function recBeep(when,hi){ if(!recAC)return; const o=recAC.createOscillator(),g=recAC.createGain();
+  o.frequency.value=hi?1400:900; o.connect(g); g.connect(recAC.destination);
+  g.gain.setValueAtTime(0.0001,when); g.gain.exponentialRampToValueAtTime(0.4,when+0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001,when+0.08); o.start(when); o.stop(when+0.09); }
+function recSchedMetro(){ if(!recAC)return; const beat=60/recBpmVal(), horizon=recAC.currentTime+0.3;
+  while(recAcStart+recMetroBeat*beat<horizon){ const b=recMetroBeat;
+    if(b<recCiBeats||recMetroMonitor) recBeep(recAcStart+b*beat,(b%recNum())===0); recMetroBeat++; } }
+
+function recCanvasEl(){return document.getElementById('recCanvas');}
+function recFit(){ const cv=recCanvasEl(); if(!cv)return; const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;
+  if(r.width<2||r.height<2)return; cv.width=r.width*d; cv.height=r.height*d;
+  const g=cv.getContext('2d'); g.setTransform(d,0,0,d,0,0); }
+
+function recStartTake(){
+  if(recState==='countin'||recState==='recording')return;        // allow restart from idle OR done
+  recStopConfirmClick();
+  try{ recAC=recAC||new (window.AudioContext||window.webkitAudioContext)(); if(recAC.state==='suspended')recAC.resume(); }catch(e){ recAC=null; }
+  const bpm=recBpmVal(), num=recNum(), beat=60/bpm, bars=+(document.getElementById('recCountin')||{}).value;
+  recMetroMonitor=((document.getElementById('recMetro')||{}).value||'monitor')==='monitor';
+  const ci=bars*num*beat, lead=0.15; recCiBeats=bars*num; recMetroBeat=0;
+  recHitsArr=[]; document.getElementById('recHits').innerHTML=''; document.getElementById('recStart').blur();
+  recState=bars>0?'countin':'recording';
+  document.getElementById('recStart').disabled=true; document.getElementById('recStop').disabled=false;
+  const startM=recMnow()+lead; recT0=startM+ci;
+  recAcStart=recAC?recAC.currentTime+lead:0; recSchedMetro();
+  if(recPlayAlong&&recAudioEl){ try{recAudioEl.currentTime=0; setTimeout(()=>{try{recAudioEl.play();}catch(_){}}, lead*1000);}catch(_){} }
+  document.getElementById('recStatus').textContent=bars?'Count-in, get ready...':'Recording, play!';
+  clearTimeout(recCiTimer);
+  if(bars>0)recCiTimer=setTimeout(()=>{ if(recState==='countin'){recState='recording';document.getElementById('recStatus').textContent='Recording, play!';} },(lead+ci)*1000);
+  cancelAnimationFrame(recRAF);
+  const tick=()=>{ if(recState==='countin'&&recMnow()>=recT0){recState='recording';document.getElementById('recStatus').textContent='Recording, play!';}
+    if(recState==='countin'||recState==='recording'){ recSchedMetro(); recDraw(); recRAF=requestAnimationFrame(tick); } };
+  tick();
+}
+function recStopTake(){
+  if(recState!=='countin'&&recState!=='recording')return;
+  clearTimeout(recCiTimer); cancelAnimationFrame(recRAF);
+  if(recAudioEl){ try{recAudioEl.pause();}catch(_){} }
+  recState='done'; document.getElementById('recStart').disabled=false; document.getElementById('recStop').disabled=true;
+  if(!recHitsArr.length){ document.getElementById('recStatus').textContent='No hits captured. Set a tempo, play, then Stop.'; recDraw(); return; }
+  document.getElementById('recStatus').textContent='Building chart...'; recBuildChart();
+}
+function recAbort(){
+  // Cancel an in-progress take WITHOUT building a chart, and stop everything it started
+  // (draw loop, count-in timer, metronome audio, play-along). Called when leaving Record
+  // mode mid-take so nothing keeps ticking. Safe no-op when idle/done.
+  if(recState!=='countin'&&recState!=='recording')return;
+  clearTimeout(recCiTimer); cancelAnimationFrame(recRAF);
+  try{ if(recAudioEl) recAudioEl.pause(); }catch(_){}
+  try{ if(recAC && recAC.state==='running') recAC.suspend(); }catch(_){}
+  recState='idle';
+  const sb=document.getElementById('recStart'), tb=document.getElementById('recStop');
+  if(sb)sb.disabled=false; if(tb)tb.disabled=true;
+}
+function recHitRegister(li,gm,vel){
+  recFlash[li]=recMnow();
+  if(recState==='recording'){ const t=recMnow()-recT0; recHitsArr.push({t,lane:li,gm,vel:vel||127});
+    const lg=document.createElement('div'); lg.textContent=`${t.toFixed(2)}s  ${REC_LANES[li].label}`;
+    const box=document.getElementById('recHits'); box.prepend(lg); while(box.childElementCount>60)box.removeChild(box.lastChild); }
+}
+function recRoundRect(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r);
+  g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+function recDraw(){
+  const cv=recCanvasEl(); if(!cv)return; const g=cv.getContext('2d');
+  const rc=cv.getBoundingClientRect(), W=rc.width, H=rc.height; if(W<2||H<2)return;
+  g.clearRect(0,0,W,H);
+  const n=REC_LANES.length, colW=W/n, jy=H*0.82, tnow=recMnow()-recT0;
+  const bpm=recBpmVal(), num=recNum(), beat=60/bpm;
+  g.strokeStyle='#1b1b1f'; g.lineWidth=1;
+  const firstBeat=Math.floor((tnow-(H-jy)/REC_PX_PER_SEC)/beat)-1;
+  for(let b=firstBeat;b*beat<=tnow+0.5;b++){ if(b<0)continue; const y=jy-(tnow-b*beat)*REC_PX_PER_SEC;
+    if(y<-2||y>H)continue; g.globalAlpha=(b%num===0)?0.9:0.35; g.beginPath(); g.moveTo(0,y); g.lineTo(W,y); g.stroke(); }
+  g.globalAlpha=1;
+  for(let i=0;i<n;i++){ const x=i*colW;
+    g.fillStyle='rgba(255,255,255,.03)'; g.fillRect(x+3,0,colW-6,H);
+    const fl=recFlash[i]!=null?Math.max(0,1-(recMnow()-recFlash[i])/0.12):0;
+    if(fl>0){ g.fillStyle=REC_LANES[i].color; g.globalAlpha=0.22*fl; g.fillRect(x+3,jy,colW-6,H-jy); g.globalAlpha=1; }
+    g.fillStyle=fl>0?REC_LANES[i].color:'#8a8a90'; g.font='600 11px sans-serif'; g.textAlign='center';
+    g.fillText(REC_LANES[i].tag,x+colW/2,16);
+  }
+  for(const h of recHitsArr){ const age=tnow-h.t, y=jy-age*REC_PX_PER_SEC; if(y<-10)continue;
+    const x=h.lane*colW+colW/2; g.fillStyle=REC_LANES[h.lane].color;
+    recRoundRect(g,x-colW*0.32,y-7,colW*0.64,14,4); g.fill(); }
+  g.strokeStyle='#6f6'; g.lineWidth=3; g.shadowColor='#6f6'; g.shadowBlur=12;
+  g.beginPath(); g.moveTo(0,jy); g.lineTo(W,jy); g.stroke(); g.shadowBlur=0;
+  g.textAlign='center';
+  if(recState==='countin'){ const remain=recT0-recMnow(), cnt=Math.max(1,Math.ceil(remain/beat));
+    g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(0,0,W,H);
+    g.fillStyle='#6f6'; g.font='800 64px sans-serif'; g.fillText(cnt,W/2,H/2);
+    g.fillStyle='#cfe'; g.font='600 15px sans-serif'; g.fillText('get ready…',W/2,H/2+40); }
+  else if(recState==='recording'){ g.fillStyle='#e33'; g.beginPath(); g.arc(24,24,6,0,7); g.fill();
+    g.fillStyle='#f88'; g.textAlign='left'; g.font='700 13px sans-serif'; g.fillText('REC',36,29); g.textAlign='center'; }
+  const cl=document.getElementById('recClock');
+  if(cl)cl.textContent=`bar ${Math.max(0,Math.floor(tnow/(num*beat))+1)} · ${Math.max(0,tnow).toFixed(1)}s · ${recHitsArr.length} hits`;
+}
+async function recBuildChart(){
+  const bpm=recBpmVal(), cal=+(document.getElementById('recCal')||{}).value||0;
+  const sig=(document.getElementById('recSig')||{}).value||'4/4';
+  const fd=new FormData();
+  fd.append('hits', JSON.stringify(recHitsArr.map(h=>[h.t,h.gm,h.vel])));
+  fd.append('bpm', bpm); fd.append('calibration_ms', cal);
+  fd.append('count_in_bars', 0); fd.append('start_time', 0); fd.append('time_sig', sig);
+  fd.append('title', ((document.getElementById('recTitle')||{}).value||'Recording').trim()||'Recording');
+  fd.append('artist', ((document.getElementById('recArtist')||{}).value||'').trim());
+  if(recProfileRemap) fd.append('profile_remap', JSON.stringify(recProfileRemap));
+  if(recPlayAlong && recPlayFile) fd.append('audio', recPlayFile, recPlayFile.name);
+  try{
+    const r=await fetch('/api/record/create',{method:'POST',body:fd});
+    const j=await r.json();
+    if(j.error){ document.getElementById('recStatus').textContent='Error: '+j.error; return; }
+    document.getElementById('recStatus').textContent=`Chart built. ${j.chips} notes from ${j.captured} hits, now editing.`;
+    curJob=j.job_id; edModelJob=null;              // force the editor to load the new job
+    document.getElementById('recStage').classList.add('hidden');
+    await openEditor();                            // full editor setup + per-job kit + Save/Download
+  }catch(e){ document.getElementById('recStatus').textContent='Error: '+e; }
+}
+
+/* ---- pane visibility: swap the three columns' contents by mode ---- */
+function recShowStage(){ const eb=document.getElementById('edBox'); if(eb)eb.classList.add('hidden');
+  const ph=document.getElementById('edPlaceholder'); if(ph)ph.classList.add('hidden');
+  const st=document.getElementById('recStage'); if(st)st.classList.remove('hidden'); setTimeout(recFit,20); }
+function setMode(m){
+  recAbort();   // leaving any mode stops an in-progress take -- no lingering loop or metronome
+  recRebindLane=-1;   // cancel any pending key-rebind when switching modes
+  if(m==='open'){ const b=document.getElementById('importBtn'); if(b)b.click(); recSyncSwitch(recMode); return; }
+  recMode=m; recSyncSwitch(m);
+  const genCards=document.querySelectorAll('#wcol-details .card:not(.recgen)');
+  const gorow=document.querySelector('#wcol-details .gorow'), imp=document.getElementById('importBtn');
+  const recSetup=document.getElementById('recSetup');
+  const viz=document.querySelector('#wcol-console .viz'), outh=document.getElementById('outh'),
+        log=document.getElementById('log'), hp=document.getElementById('recHitsPanel');
+  if(m==='record'){
+    recEnsureMidi();
+    recRenderLegend();   // refresh key chips (reflects any remaps / clears listening state)
+    genCards.forEach(c=>c.style.display='none'); if(gorow)gorow.style.display='none'; if(imp)imp.style.display='none';
+    if(recSetup)recSetup.style.display='';
+    if(viz)viz.style.display='none'; if(outh)outh.style.display='none'; if(log)log.style.display='none'; if(hp)hp.classList.remove('hidden');
+    recShowStage();
+  }else{ // generate
+    genCards.forEach(c=>c.style.display=''); if(gorow)gorow.style.display=''; if(imp)imp.style.display='';
+    if(recSetup)recSetup.style.display='none';
+    if(viz)viz.style.display=''; if(outh)outh.style.display=''; if(log)log.style.display=''; if(hp)hp.classList.add('hidden');
+    const st=document.getElementById('recStage'); if(st)st.classList.add('hidden');
+    if(edModel&&edModelJob===curJob&&curJob){ const es=document.getElementById('edBox'); if(es)es.classList.remove('hidden'); edShowEditor(); }
+    else edShowPlaceholder();
+  }
+}
+function recSyncSwitch(m){ document.querySelectorAll('#modeSwitch button').forEach(b=>b.classList.toggle('active',b.dataset.mode===m)); }
+
+/* wire up the switcher, legend, calibration, device detection, transport, keyboard, MIDI */
+(function recInit(){
+  const sw=document.getElementById('modeSwitch'); if(!sw)return;   // record UI absent -> no-op
+  sw.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+  const leg=document.getElementById('recLegend');
+  recKeysApplyStored(); recRenderLegend();
+  const kr=document.getElementById('recKeyReset'); if(kr)kr.onclick=recKeysReset;
+  const cal=document.getElementById('recCal');
+  if(cal)cal.oninput=()=>{document.getElementById('recCalVal').textContent=cal.value; recCalibrationSave();};
+  const sb=document.getElementById('recStart'); if(sb)sb.onclick=recStartTake;
+  const tb=document.getElementById('recStop'); if(tb)tb.onclick=recStopTake;
+  // Phase 3 controls
+  const pf=document.getElementById('recProfile'); if(pf)pf.onchange=recProfileChange;
+  const lb=document.getElementById('recLearnBtn'); if(lb)lb.onclick=recWizStart;
+  const ws=document.getElementById('recWizSkip'); if(ws)ws.onclick=()=>recWizSkip();
+  const wsv=document.getElementById('recWizSave'); if(wsv)wsv.onclick=recWizSave;
+  const wc=document.getElementById('recWizCancel'); if(wc)wc.onclick=recWizCancel;
+  const seg=document.getElementById('recModeSeg');
+  if(seg)seg.querySelectorAll('.seg').forEach(b=>b.onclick=()=>recSetPlayMode(b.dataset.rec));
+  const song=document.getElementById('recSong'); if(song)song.onchange=recSongPicked;
+  const db=document.getElementById('recDetectBpm'); if(db)db.onclick=recDetectBpm;
+  const tp=document.getElementById('recTap'); if(tp)tp.onclick=recTap;
+  const cc=document.getElementById('recConfirmClick'); if(cc)cc.onclick=recConfirmClick;
+  window.addEventListener('resize',()=>{ if(recMode==='record')recFit(); });
+  // keyboard stand-in for a real kit (dev/no-hardware); also drives the learn wizard
+  window.addEventListener('keydown',e=>{
+    if(recMode!=='record'||e.repeat)return;
+    const ae=document.activeElement; if(ae&&/^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName))return;
+    if(recRebindLane>=0){ e.preventDefault();
+      if(e.key==='Escape'){ const i=recRebindLane; recRebindLane=-1; recRenderLegend(); recKeyHintSet('Click a key, then press a new one to reassign it.'); return; }
+      const nk=(e.key===' ')?' ':e.key.toLowerCase(); if(nk.length!==1)return;   // ignore modifier-only presses; wait for a real key
+      recBindKey(recRebindLane,nk); return; }
+    const k=e.key===' '?' ':e.key.toLowerCase(); if(!(k in REC_KEYMAP))return;
+    e.preventDefault(); const raw=REC_LANES[REC_KEYMAP[k]].gm;
+    if(recWizLane>=0){ recWizCapture(raw); return; }
+    if(recState==='recording'||recState==='countin') recInput(raw,110);
+    else recFlash[REC_KEYMAP[k]]=recMnow();
+  },{passive:false});
+})();
+/* single entry for a struck pad (MIDI or keyboard): route to the wizard if it's running,
+   else remap the raw note through the active profile and register the hit for the take. */
+function recRawToLane(raw){
+  const gm=(recProfileRemap && recProfileRemap[raw]!=null)?recProfileRemap[raw]:raw;
+  return REC_LANES.findIndex(L=>L.gm===gm);
+}
+function recInput(raw,vel){
+  if(recWizLane>=0){ recWizCapture(raw); return; }
+  const li=recRawToLane(raw);
+  recHitRegister(li>=0?li:0, raw, vel);   // store RAW note; the server remaps via profile
+}
+/* Web MIDI is requested lazily (first time Record mode opens) so users who never record
+   are never prompted for MIDI access. Hot-plug via onstatechange. */
+let recMidiInit=false;
+function recSetDev(txt,ok){ const d=document.getElementById('recDev'); if(!d)return; d.textContent=txt; d.classList.toggle('ok',!!ok); }
+function recEnsureMidi(){
+  if(recMidiInit)return; recMidiInit=true;
+  recLoadProfiles();
+  if(navigator.requestMIDIAccess){
+    navigator.requestMIDIAccess().then(midi=>{
+      const scan=()=>{ const ins=[...midi.inputs.values()];
+        if(ins.length){ recDevName=ins[0].name||''; recSetDev('Connected: '+recDevName,true); recCalibrationLoad();
+          ins.forEach(inp=>inp.onmidimessage=msg=>{ const [s,note,vel]=msg.data;
+            if((s&0xf0)===0x90&&vel>0){ recInput(note,vel); } }); }
+        else { recDevName=''; recSetDev('No e-drums yet. Power on your module, or use the keyboard.',false); } };
+      scan(); midi.onstatechange=scan;
+    }).catch(()=>recSetDev('MIDI unavailable. Use the keyboard below.',false));
+  } else recSetDev('Web MIDI is not supported here. Use the keyboard below.',false);
+}
+
+/* ---- learn-my-kit profiles + per-device calibration (server-persisted) ---- */
+let recProfilesData={}, recStoreCal={};
+async function recLoadProfiles(){
+  try{
+    const j=await (await fetch('/api/record/profiles')).json();
+    recProfilesData={}; recStoreCal=j.calibration||{};
+    const sel=document.getElementById('recProfile'); if(!sel)return;
+    const cur=sel.value;
+    sel.innerHTML='<option value="">General MIDI (default)</option>';
+    (j.brands||[]).forEach(b=>{ if(b&&b!=='General MIDI (default)'){ const o=document.createElement('option'); o.value='brand:'+b; o.textContent=b; sel.appendChild(o);} });
+    Object.keys(j.profiles||{}).forEach(name=>{
+      recProfilesData[name]={}; const rm=j.profiles[name].remap||{};
+      Object.keys(rm).forEach(k=>recProfilesData[name][+k]=+rm[k]);
+      const o=document.createElement('option'); o.value='saved:'+name; o.textContent=name+' (my kit)'; sel.appendChild(o);
+    });
+    if(j.last_profile&&recProfilesData[j.last_profile]) sel.value='saved:'+j.last_profile;
+    else sel.value=cur||'';
+    recProfileChange();
+  }catch(e){}
+}
+function recProfileChange(){
+  const sel=document.getElementById('recProfile'); if(!sel)return;
+  const v=sel.value;
+  recProfileRemap=v.startsWith('saved:') ? (recProfilesData[v.slice(6)]||null) : null;
+}
+function recCalibrationLoad(){
+  const cal=document.getElementById('recCal'); if(!cal)return;
+  const v=recStoreCal[recDevName||'default'];
+  if(v!=null){ cal.value=v; document.getElementById('recCalVal').textContent=v; }
+}
+let recCalTimer=0;
+function recCalibrationSave(){
+  clearTimeout(recCalTimer);
+  recCalTimer=setTimeout(()=>{ const cal=document.getElementById('recCal'); if(!cal)return;
+    fetch('/api/record/calibration',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({device:recDevName||'default',ms:+cal.value})}).catch(()=>{});
+  },400);
+}
+
+/* ---- learn-my-kit wizard (Simon-says: hit each pad, capture its note) ---- */
+function recWizStart(){
+  if(recState==='recording'||recState==='countin')return;
+  recCaptures={}; recWizLane=0;
+  document.getElementById('recWiz').classList.remove('hidden');
+  document.getElementById('recWizNameRow').style.display='none';
+  document.getElementById('recWizSave').classList.add('hidden');
+  document.getElementById('recWizSkip').classList.remove('hidden');
+  recWizRender();
+}
+function recWizRender(){
+  const steps=document.getElementById('recWizSteps'); if(!steps)return;
+  steps.innerHTML=REC_LANES.map((L,i)=>{ let cls='st';
+    if(i===recWizLane)cls+=' cur';
+    else if(recCaptures[L.gm]!==undefined)cls+=(recCaptures[L.gm]===null?' skip':' done');
+    return `<span class="${cls}">${L.label}</span>`; }).join('');
+  if(recWizLane>=0&&recWizLane<REC_LANES.length){
+    document.getElementById('recWizPrompt').innerHTML='Hit your <b>'+REC_LANES[recWizLane].label+'</b>.';
+    document.getElementById('recWizNote').textContent='Waiting for a hit, or Skip this pad.';
+  }
+}
+function recWizCapture(raw){
+  if(recWizLane<0||recWizLane>=REC_LANES.length)return;
+  recCaptures[REC_LANES[recWizLane].gm]=raw;
+  document.getElementById('recWizNote').textContent='Got note '+raw+'.';
+  recWizRender(); setTimeout(recWizAdvance,300);
+}
+function recWizSkip(){
+  if(recWizLane<0||recWizLane>=REC_LANES.length)return;
+  recCaptures[REC_LANES[recWizLane].gm]=null; recWizRender(); recWizAdvance();
+}
+function recWizAdvance(){
+  recWizLane++;
+  if(recWizLane>=REC_LANES.length){ recWizNameStep(); return; }
+  recWizRender();
+}
+/* all pads done: switch the wizard card to an inline name+save step (no browser prompt(),
+   which some WebView2 hosts block). */
+function recWizNameStep(){
+  recWizLane=-1;
+  const done=Object.values(recCaptures).filter(v=>v!==null).length;
+  document.getElementById('recWizPrompt').innerHTML='Name your kit';
+  document.getElementById('recWizNote').textContent=done+' of '+REC_LANES.length+' pads learned. Skipped pads use the standard mapping.';
+  document.getElementById('recWizNameRow').style.display='flex';
+  document.getElementById('recWizSkip').classList.add('hidden');
+  document.getElementById('recWizSave').classList.remove('hidden');
+  const nm=document.getElementById('recWizName'); if(nm){ nm.focus(); nm.select(); }
+}
+async function recWizSave(){
+  const name=((document.getElementById('recWizName')||{}).value||'').trim();
+  if(!name){ document.getElementById('recWizNote').textContent='Please enter a name.'; return; }
+  try{
+    const j=await (await fetch('/api/record/profiles',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,captures:recCaptures,device:recDevName||''})})).json();
+    if(j.error){ document.getElementById('recWizNote').textContent='Could not save: '+j.error; return; }
+  }catch(e){ document.getElementById('recWizNote').textContent='Could not save: '+e; return; }
+  recCaptures=null;
+  document.getElementById('recWiz').classList.add('hidden');
+  await recLoadProfiles();
+  const sel=document.getElementById('recProfile'); if(sel){ sel.value='saved:'+name; recProfileChange(); }
+}
+function recWizCancel(){ recWizLane=-1; recCaptures=null; document.getElementById('recWiz').classList.add('hidden'); }
+
+/* ---- play-along: record over an uploaded song ---- */
+function recSetPlayMode(mode){
+  recPlayAlong=(mode==='playalong');
+  document.querySelectorAll('#recModeSeg .seg').forEach(b=>b.classList.toggle('active',b.dataset.rec===mode));
+  document.getElementById('recPlayBox').classList.toggle('hidden',!recPlayAlong);
+}
+function recSongPicked(e){
+  const f=e.target.files&&e.target.files[0]; recPlayFile=f||null;
+  const db=document.getElementById('recDetectBpm'); if(db)db.disabled=!recPlayFile;
+  if(recPlayFile){
+    if(recAudioEl){ try{URL.revokeObjectURL(recAudioEl.src);}catch(_){} }
+    recAudioEl=new Audio(URL.createObjectURL(recPlayFile)); recAudioEl.preload='auto';
+    document.getElementById('recPlayHint').textContent='Loaded '+recPlayFile.name+'. Detect its tempo, then play the click to check it.';
+  }
+}
+async function recDetectBpm(){
+  if(!recPlayFile)return;
+  const db=document.getElementById('recDetectBpm'), old=db.textContent; db.disabled=true; db.textContent='Detecting...';
+  try{
+    const fd=new FormData(); fd.append('audio',recPlayFile,recPlayFile.name);
+    const j=await (await fetch('/api/record/detect-bpm',{method:'POST',body:fd})).json();
+    if(j.bpm){ document.getElementById('recBpm').value=Math.round(j.bpm);
+      document.getElementById('recPlayHint').textContent='Detected about '+Math.round(j.bpm)+' BPM. Play the click to check it, adjust if it drifts.'; }
+    else document.getElementById('recPlayHint').textContent='Could not detect the tempo. Tap it in, or type the BPM.';
+  }catch(e){ document.getElementById('recPlayHint').textContent='Tempo detection failed. Tap it in, or type the BPM.'; }
+  db.disabled=false; db.textContent=old;
+}
+let recTapTimes=[];
+function recTap(){
+  const now=performance.now(); recTapTimes.push(now); recTapTimes=recTapTimes.filter(t=>now-t<3000);
+  if(recTapTimes.length>=2){
+    const gaps=[]; for(let i=1;i<recTapTimes.length;i++)gaps.push(recTapTimes[i]-recTapTimes[i-1]);
+    const avg=gaps.reduce((a,b)=>a+b,0)/gaps.length, bpm=Math.round(60000/avg);
+    if(bpm>=40&&bpm<=300){ document.getElementById('recBpm').value=bpm; document.getElementById('recTap').textContent='Tap Tempo ('+bpm+')'; }
+  } else document.getElementById('recTap').textContent='Keep tapping...';
+}
+let recClickAC=null, recClickStop=0;
+function recConfirmClick(){
+  if(recClickAC){ recStopConfirmClick(); return; }
+  try{ recClickAC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
+  const bpm=recBpmVal(), num=recNum(), beat=60/bpm, t0=recClickAC.currentTime+0.1;
+  for(let b=0;b<num*4;b++){ const o=recClickAC.createOscillator(),g=recClickAC.createGain();
+    o.frequency.value=(b%num===0)?1400:900; o.connect(g); g.connect(recClickAC.destination);
+    const w=t0+b*beat; g.gain.setValueAtTime(0.0001,w); g.gain.exponentialRampToValueAtTime(0.4,w+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,w+0.08); o.start(w); o.stop(w+0.09); }
+  if(recPlayAlong&&recAudioEl){ try{recAudioEl.currentTime=0; recAudioEl.play();}catch(_){} }
+  const btn=document.getElementById('recConfirmClick'); if(btn)btn.textContent='Stop the click';
+  recClickStop=setTimeout(recStopConfirmClick,(num*4*beat+0.3)*1000);
+}
+function recStopConfirmClick(){
+  clearTimeout(recClickStop);
+  if(recClickAC){ try{recClickAC.close();}catch(_){} recClickAC=null; }
+  if(recPlayAlong&&recAudioEl){ try{recAudioEl.pause(); recAudioEl.currentTime=0;}catch(_){} }
+  const btn=document.getElementById('recConfirmClick'); if(btn)btn.textContent='Play the click';
+}
 </script>
 </body>
 </html>
