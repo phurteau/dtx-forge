@@ -1,15 +1,22 @@
 # DTXScribe Roadmap
 
-What's shipped, what's in active development, and what's planned. This is a living document
-and dates/scope may change.
+What's shipped, what's available to try, and what's planned. This is a living document and
+scope may change.
 
-## In active development
+## Public preview
+
+Everything we set out to build is now shipped. Record mode, the chart editor, audio and tab
+transcription, and the difficulty system are all available today as a public preview. It works
+end to end, and we are still smoothing rough edges, so some bugs may still be present. Feedback
+is welcome.
+
+## Now available (public preview)
 
 ### Record mode - play your own charts on an electronic drum kit
 
-The next major feature. Instead of transcribing a chart from audio or a tab, you connect your
-electronic drum module, play, and DTXScribe turns your performance straight into a playable
-DTXMania chart - then opens it in the editor for cleanup.
+Instead of transcribing a chart from audio or a tab, connect your electronic drum module or use
+your computer keyboard, play, and DTXScribe turns your performance straight into a playable
+DTXMania chart, then opens it in the editor for cleanup.
 
 **Two ways to record:**
 
@@ -33,11 +40,18 @@ DTXMania chart - then opens it in the editor for cleanup.
 **Works with your kit.** The core of every mainstream module (kick, snare, toms, hi-hat, crash,
 ride) works out of the box over standard MIDI - Yamaha DTX, Roland TD, Alesis, and others.
 A quick guided "learn your kit" step captures anything non-standard, so any MIDI drum module is
-supported, and your kit profile is saved so you only do it once.
+supported, and your kit profile is saved so you only do it once. No kit? You can play on the
+computer keyboard instead, and reassign which key hits which drum.
 
-This feature is being tested rigorously before release.
+This is available now in public preview, and we keep refining it from testing and feedback.
 
 ## Recently shipped
+
+### v1.9.5
+- Record mode, in public preview.
+- A finer 1.0 to 9.99 difficulty scale.
+- Remappable keyboard-to-pad keys.
+- Clean shutdown with nothing left running in the background.
 
 ### v1.9.0
 - Full-length songs in the chart - the complete intro and outro are kept, not trimmed.
@@ -54,10 +68,14 @@ This feature is being tested rigorously before release.
 
 See [CHANGELOG.md](CHANGELOG.md) for the full history.
 
-## Under consideration
+## What's next
 
-- A pickable drum sample pack for recorded charts, so the kit can sound closer to a real kit.
+Future releases focus on accuracy and refinement rather than big new features:
+
+- Broader electronic drum coverage, checked against the published MIDI maps for more modules, so
+  more kits chart correctly out of the box.
 - Capturing dynamics (accents and ghost notes) from your playing.
 - Smarter automatic clean-up of repeated patterns.
+- A pickable drum sample pack for recorded charts, so the kit can sound closer to a real kit.
 
-Feedback and testing are welcome - open an issue with what you'd like to see.
+Feedback and testing are welcome. Open an issue with what you'd like to see.
